@@ -1,0 +1,28 @@
+// Hand-written helpers over the generated `openapi.ts`. Not regenerated - update
+// carefully if the shape of openapi-typescript's output ever changes.
+import type { components, operations } from '../openapi.js';
+
+type JsonContent<T> = T extends { content: { 'application/json': infer J } } ? J : never;
+
+/** JSON request body of an operation (e.g. `OperationRequest<'createUser'>`). */
+export type OperationRequest<OpId extends keyof operations> = JsonContent<
+  NonNullable<operations[OpId] extends { requestBody?: infer B } ? B : never>
+>;
+
+/** JSON 200/201 response body of an operation. */
+export type OperationResponse<OpId extends keyof operations> = operations[OpId]['responses'] extends {
+  200: infer R;
+}
+  ? JsonContent<R>
+  : operations[OpId]['responses'] extends { 201: infer R }
+    ? JsonContent<R>
+    : never;
+
+/** JSON response body for a specific status code of an operation. */
+export type OperationResponseByStatus<
+  OpId extends keyof operations,
+  Status extends keyof operations[OpId]['responses'],
+> = JsonContent<operations[OpId]['responses'][Status]>;
+
+/** A named schema from `components.schemas`. */
+export type Schema<Name extends keyof components['schemas']> = components['schemas'][Name];

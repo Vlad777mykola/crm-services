@@ -10,13 +10,13 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev": "concurrently -n frontend,backend -c blue,green \"yarn workspace frontend dev\" \"yarn workspace backend dev\"",
-    "build": "yarn workspace backend build && yarn workspace frontend build",
-    "lint": "yarn workspace backend lint && yarn workspace frontend lint",
-    "typecheck": "yarn workspace backend typecheck && yarn workspace frontend typecheck",
-    "test": "yarn workspace backend test && yarn workspace frontend test",
-    "contract:generate": "yarn workspace backend contract:generate && yarn workspace frontend contract:generate",
-    "contract:check": "yarn workspace backend contract:generate && yarn workspace frontend contract:generate && git diff --exit-code contracts/openapi.json frontend/src/shared/api/generated"
+    "dev": "concurrently -n frontend,backend -c blue,green \"yarn workspace @crm/frontend dev\" \"yarn workspace @crm/backend dev\"",
+    "build": "yarn workspace @crm/backend build && yarn workspace @crm/frontend build",
+    "lint": "yarn workspace @crm/backend lint && yarn workspace @crm/frontend lint",
+    "typecheck": "yarn workspace @crm/backend typecheck && yarn workspace @crm/frontend typecheck",
+    "test": "yarn workspace @crm/backend test && yarn workspace @crm/frontend test",
+    "openapi:generate-types": "yarn workspace @crm/backend openapi:generate-types",
+    "openapi:check": "yarn workspace @crm/backend openapi:check"
   },
   "devDependencies": {
     "concurrently": "^9.0.0"

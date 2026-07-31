@@ -6,6 +6,7 @@ import { notFoundHandler } from './common/middleware/notFoundHandler.js';
 import { requestLogger } from './common/middleware/requestLogger.js';
 import { env } from './env/env.js';
 import { healthRouter } from './modules/health/health.routes.js';
+import { usersRouter } from './modules/users/users.routes.js';
 
 export function createApp(): Express {
   const app = express();
@@ -15,6 +16,7 @@ export function createApp(): Express {
   app.use(requestLogger);
 
   app.use(healthRouter);
+  app.use(usersRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

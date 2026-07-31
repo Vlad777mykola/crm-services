@@ -1,0 +1,55 @@
+openapi: 3.0.3
+info:
+  title: CRM Services API
+  version: 0.1.0
+servers:
+  - url: http://localhost:4000
+tags:
+  - name: Health
+  - name: Users
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            message:
+              type: string
+            statusCode:
+              type: integer
+          required:
+            - message
+            - statusCode
+      required:
+        - error
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      tags:
+        - Health
+      summary: Health check
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  uptime:
+                    type: number
+                  timestamp:
+                    type: string
+                required:
+                  - status
+                  - uptime
+                  - timestamp
+  /users:
+    $ref: './openapi/users/paths.yaml#/UsersCollection'
+  /users/{id}:
+    $ref: './openapi/users/paths.yaml#/UserById'

@@ -1,0 +1,47 @@
+CreateUserRequest:
+  type: object
+  properties:
+    email:
+      type: string
+      format: email
+    name:
+      type: string
+      minLength: 1
+  required:
+    - email
+    - name
+
+User:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    email:
+      type: string
+      format: email
+    name:
+      type: string
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+  required:
+    - id
+    - email
+    - name
+    - createdAt
+    - updatedAt
+
+UserResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      $ref: '#/User'
+  required:
+    - message
+    - data

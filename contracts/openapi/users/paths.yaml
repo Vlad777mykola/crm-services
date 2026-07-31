@@ -1,0 +1,52 @@
+UsersCollection:
+  post:
+    operationId: createUser
+    tags:
+      - Users
+    summary: Create a new user
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: './schemas.yaml#/CreateUserRequest'
+    responses:
+      '201':
+        description: User created
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/UserResponse'
+      '409':
+        description: A user with this email already exists
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+
+UserById:
+  get:
+    operationId: getUserById
+    tags:
+      - Users
+    summary: Get a user by id
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: User found
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/UserResponse'
+      '404':
+        description: User not found
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
