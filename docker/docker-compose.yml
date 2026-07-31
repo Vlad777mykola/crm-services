@@ -1,0 +1,73 @@
+name: crm-services
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: crm
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+    env_file:
+      - ../backend/.env
+    environment:
+      # Overrides the .env file above (env_file has lower precedence than
+      # environment in Compose) - this service always runs in production mode,
+      # against the containers' internal hostnames.
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm
+      REDIS_URL: redis://redis:6379
+    ports:
+      - '4000:4000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Local-parity/tools container only - not part of the real deploy path
+  # (frontend deploys to GitHub Pages / later S3+CloudFront). Run with:
+  #   docker compose --profile tools up frontend
+  frontend:
+    profiles: ['tools']
+    build:
+      context: ..
+      dockerfile: frontend/Dockerfile
+    ports:
+      - '8080:80'
+
+  # Worker services (email/logs/notifications) are added under the `workers`
+  # profile once their entrypoints exist (Step 10). Example, once ready:
+  #   email-worker:
+  #     profiles: ['workers']
+  #     build: { context: .., dockerfile: backend/Dockerfile.worker }
+  #     command: ['node', 'dist/workers/email.worker.js']
+
+volumes:
+  postgres-data:
+  redis-data:

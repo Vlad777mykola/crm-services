@@ -10,6 +10,7 @@ const envSchema = z.object({
     .default('http://localhost:5173')
     .transform((value) => value.split(',').map((origin) => origin.trim())),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
+  DATABASE_URL: z.string().default('postgres://postgres:postgres@localhost:5432/crm'),
 });
 
 export type Env = z.infer<typeof envSchema>;
