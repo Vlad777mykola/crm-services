@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Editor / OS
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Yarn (classic) internals we don't need to track
+.yarn-integrity
+.pnp.*
+
+# Coverage / test artifacts
+coverage/
+
+# Docker volumes mounted for local dev (if any land here)
+docker/volumes/

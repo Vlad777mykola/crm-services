@@ -1,0 +1,24 @@
+{
+  "name": "crm-services",
+  "version": "0.0.0",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "concurrently -n frontend,backend -c blue,green \"yarn workspace frontend dev\" \"yarn workspace backend dev\"",
+    "build": "yarn workspace backend build && yarn workspace frontend build",
+    "lint": "yarn workspace backend lint && yarn workspace frontend lint",
+    "typecheck": "yarn workspace backend typecheck && yarn workspace frontend typecheck",
+    "test": "yarn workspace backend test && yarn workspace frontend test",
+    "contract:generate": "yarn workspace backend contract:generate && yarn workspace frontend contract:generate",
+    "contract:check": "yarn workspace backend contract:generate && yarn workspace frontend contract:generate && git diff --exit-code contracts/openapi.json frontend/src/shared/api/generated"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  }
+}
