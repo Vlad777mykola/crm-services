@@ -2,6 +2,8 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express, { type Express } from 'express';
 
+import { dashboardRouter } from '@/modules/dashboard/dashboard.routes.js';
+
 import { errorHandler } from './common/middleware/errorHandler.js';
 import { notFoundHandler } from './common/middleware/notFoundHandler.js';
 import { requestLogger } from './common/middleware/requestLogger.js';
@@ -39,6 +41,7 @@ export function createApp(): Express {
   app.use(appointmentsRouter);
   app.use(notificationsRouter);
   app.use(reviewsRouter);
+  app.use(dashboardRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

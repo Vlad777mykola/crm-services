@@ -16,6 +16,7 @@ tags:
   - name: Appointments
   - name: Notifications
   - name: Reviews
+  - name: Dashboard
 components:
   securitySchemes:
     bearerAuth:
@@ -171,4 +172,8 @@ paths:
     $ref: './openapi/notifications/paths.yaml#/MarkRead'
   /notifications/me/read-all:
     $ref: './openapi/notifications/paths.yaml#/MarkAllRead'
+  /app/summary:
+    $ref: './openapi/dashboard/paths.yaml#/AppSummary'
+  /companies/{companyId}/summary:
+    $ref: './openapi/dashboard/paths.yaml#/CompanySummary'
 

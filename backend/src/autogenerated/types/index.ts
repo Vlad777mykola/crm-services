@@ -9,3 +9,4 @@ export * from './services/index.js';
 export * from './appointments/index.js';
 export * from './notifications/index.js';
 export * from './reviews/index.js';
+export * from './dashboard/index.js';

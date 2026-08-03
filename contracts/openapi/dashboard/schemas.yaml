@@ -1,0 +1,123 @@
+DashboardRole:
+  type: string
+  enum: [client, company, specialist]
+
+DashboardAppointmentCounts:
+  type: object
+  properties:
+    pending:
+      type: integer
+    approved:
+      type: integer
+    completed:
+      type: integer
+  required: [pending, approved, completed]
+
+DashboardCompanyMembership:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    name:
+      type: string
+    status:
+      type: string
+      enum: [draft, published, suspended]
+    role:
+      type: string
+      enum: [owner, manager]
+  required: [id, name, status, role]
+
+DashboardSpecialistSummary:
+  type: object
+  nullable: true
+  properties:
+    id:
+      type: string
+      format: uuid
+    status:
+      type: string
+      enum: [draft, published, suspended]
+    pendingCompanyRequests:
+      type: integer
+    activeCompanies:
+      type: integer
+    assignedServices:
+      type: integer
+  required: [id, status, pendingCompanyRequests, activeCompanies, assignedServices]
+
+AppDashboardSummary:
+  type: object
+  properties:
+    roles:
+      type: array
+      items:
+        $ref: '#/DashboardRole'
+    unreadNotifications:
+      type: integer
+    appointments:
+      $ref: '#/DashboardAppointmentCounts'
+    companies:
+      type: array
+      items:
+        $ref: '#/DashboardCompanyMembership'
+    specialist:
+      $ref: '#/DashboardSpecialistSummary'
+  required: [roles, unreadNotifications, appointments, companies, specialist]
+
+AppDashboardSummaryResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      $ref: '#/AppDashboardSummary'
+  required: [message, data]
+
+DashboardServiceCounts:
+  type: object
+  properties:
+    total:
+      type: integer
+    draft:
+      type: integer
+    published:
+      type: integer
+  required: [total, draft, published]
+
+CompanyDashboardSummary:
+  type: object
+  properties:
+    company:
+      $ref: '../companies/schemas.yaml#/Company'
+    role:
+      type: string
+      enum: [owner, manager]
+    pendingAppointments:
+      type: integer
+    activeSpecialists:
+      type: integer
+    pendingSpecialistRequests:
+      type: integer
+    activeMembers:
+      type: integer
+    services:
+      $ref: '#/DashboardServiceCounts'
+  required:
+    - company
+    - role
+    - pendingAppointments
+    - activeSpecialists
+    - pendingSpecialistRequests
+    - activeMembers
+    - services
+
+CompanyDashboardSummaryResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      $ref: '#/CompanyDashboardSummary'
+  required: [message, data]

@@ -810,6 +810,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/app/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the current user's role-aware dashboard summary */
+        get: operations["getAppDashboardSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{companyId}/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a company management dashboard summary (owner/manager only) */
+        get: operations["getCompanyDashboardSummary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1315,6 +1349,61 @@ export interface components {
         NotificationResponse: {
             message: string;
             data: components["schemas"]["Notification"];
+        };
+        /** @enum {string} */
+        DashboardRole: "client" | "company" | "specialist";
+        DashboardAppointmentCounts: {
+            pending: number;
+            approved: number;
+            completed: number;
+        };
+        DashboardCompanyMembership: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** @enum {string} */
+            status: "draft" | "published" | "suspended";
+            /** @enum {string} */
+            role: "owner" | "manager";
+        };
+        DashboardSpecialistSummary: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            status: "draft" | "published" | "suspended";
+            pendingCompanyRequests: number;
+            activeCompanies: number;
+            assignedServices: number;
+        } | null;
+        AppDashboardSummary: {
+            roles: components["schemas"]["DashboardRole"][];
+            unreadNotifications: number;
+            appointments: components["schemas"]["DashboardAppointmentCounts"];
+            companies: components["schemas"]["DashboardCompanyMembership"][];
+            specialist: components["schemas"]["DashboardSpecialistSummary"];
+        };
+        AppDashboardSummaryResponse: {
+            message: string;
+            data: components["schemas"]["AppDashboardSummary"];
+        };
+        DashboardServiceCounts: {
+            total: number;
+            draft: number;
+            published: number;
+        };
+        CompanyDashboardSummary: {
+            company: components["schemas"]["Company"];
+            /** @enum {string} */
+            role: "owner" | "manager";
+            pendingAppointments: number;
+            activeSpecialists: number;
+            pendingSpecialistRequests: number;
+            activeMembers: number;
+            services: components["schemas"]["DashboardServiceCounts"];
+        };
+        CompanyDashboardSummaryResponse: {
+            message: string;
+            data: components["schemas"]["CompanyDashboardSummary"];
         };
     };
     responses: never;
@@ -3366,6 +3455,84 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getAppDashboardSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Dashboard summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppDashboardSummaryResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getCompanyDashboardSummary: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Company dashboard summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanyDashboardSummaryResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not a company owner/manager */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Company not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
