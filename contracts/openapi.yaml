@@ -9,6 +9,7 @@ tags:
   - name: Auth
   - name: Users
   - name: Companies
+  - name: Company Members
 components:
   securitySchemes:
     bearerAuth:
@@ -80,3 +81,9 @@ paths:
     $ref: './openapi/companies/paths.yaml#/Me'
   /companies/{companyId}:
     $ref: './openapi/companies/paths.yaml#/CompanyById'
+  /companies/{companyId}/members:
+    $ref: './openapi/company-members/paths.yaml#/Collection'
+  /companies/{companyId}/members/invite:
+    $ref: './openapi/company-members/paths.yaml#/Invite'
+  /companies/{companyId}/members/{memberId}:
+    $ref: './openapi/company-members/paths.yaml#/ByMemberId'

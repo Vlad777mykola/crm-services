@@ -1,0 +1,93 @@
+InviteMemberRequest:
+  type: object
+  properties:
+    email:
+      type: string
+      format: email
+  required:
+    - email
+
+UpdateMemberRequest:
+  type: object
+  properties:
+    status:
+      type: string
+      enum: [active, removed]
+  required:
+    - status
+
+CompanyMemberUser:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    name:
+      type: string
+    email:
+      type: string
+      format: email
+  required:
+    - id
+    - name
+    - email
+
+CompanyMember:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    companyId:
+      type: string
+      format: uuid
+    userId:
+      type: string
+      format: uuid
+    role:
+      type: string
+      enum: [owner, manager]
+    status:
+      type: string
+      enum: [active, removed]
+    user:
+      $ref: '#/CompanyMemberUser'
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+  required:
+    - id
+    - companyId
+    - userId
+    - role
+    - status
+    - user
+    - createdAt
+    - updatedAt
+
+CompanyMemberResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      $ref: '#/CompanyMember'
+  required:
+    - message
+    - data
+
+CompanyMemberListResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      type: array
+      items:
+        $ref: '#/CompanyMember'
+  required:
+    - message
+    - data

@@ -8,6 +8,7 @@ import { ProfilePage } from '@/pages/app/ProfilePage';
 import { CompaniesListPage } from '@/pages/companies/CompaniesListPage';
 import { CompanyPublicPage } from '@/pages/companies/CompanyPublicPage';
 import { CompanyDashboardPage } from '@/pages/company/CompanyDashboardPage';
+import { CompanyMembersPage } from '@/pages/company/CompanyMembersPage';
 import { CompanyProfilePage } from '@/pages/company/CompanyProfilePage';
 import { CreateCompanyPage } from '@/pages/company/CreateCompanyPage';
 import { HealthPage } from '@/pages/health/HealthPage';
@@ -70,6 +71,14 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <CompanyProfilePage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/company/:companyId/members',
+    element: (
+      <ProtectedRoute>
+        <CompanyMembersPage />
       </ProtectedRoute>
     ),
   },
