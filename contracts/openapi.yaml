@@ -6,8 +6,14 @@ servers:
   - url: http://localhost:4000
 tags:
   - name: Health
+  - name: Auth
   - name: Users
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     ErrorResponse:
       type: object
@@ -49,6 +55,16 @@ paths:
                   - status
                   - uptime
                   - timestamp
+  /auth/register:
+    $ref: './openapi/auth/paths.yaml#/Register'
+  /auth/login:
+    $ref: './openapi/auth/paths.yaml#/Login'
+  /auth/refresh:
+    $ref: './openapi/auth/paths.yaml#/Refresh'
+  /auth/logout:
+    $ref: './openapi/auth/paths.yaml#/Logout'
+  /auth/me:
+    $ref: './openapi/auth/paths.yaml#/Me'
   /users:
     $ref: './openapi/users/paths.yaml#/UsersCollection'
   /users/{id}:

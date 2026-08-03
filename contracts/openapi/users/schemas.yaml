@@ -22,6 +22,12 @@ User:
       format: email
     name:
       type: string
+    phone:
+      type: string
+      nullable: true
+    status:
+      type: string
+      enum: [active, disabled]
     createdAt:
       type: string
       format: date-time
@@ -32,6 +38,8 @@ User:
     - id
     - email
     - name
+    - phone
+    - status
     - createdAt
     - updatedAt
 

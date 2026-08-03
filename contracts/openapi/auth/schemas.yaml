@@ -1,0 +1,86 @@
+RegisterRequest:
+  type: object
+  properties:
+    email:
+      type: string
+      format: email
+    name:
+      type: string
+      minLength: 1
+    password:
+      type: string
+      minLength: 8
+  required:
+    - email
+    - name
+    - password
+
+LoginRequest:
+  type: object
+  properties:
+    email:
+      type: string
+      format: email
+    password:
+      type: string
+      minLength: 1
+  required:
+    - email
+    - password
+
+AuthSession:
+  type: object
+  properties:
+    user:
+      $ref: '../users/schemas.yaml#/User'
+    accessToken:
+      type: string
+  required:
+    - user
+    - accessToken
+
+AuthSessionResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      $ref: '#/AuthSession'
+  required:
+    - message
+    - data
+
+RefreshResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      type: object
+      properties:
+        accessToken:
+          type: string
+      required:
+        - accessToken
+  required:
+    - message
+    - data
+
+MeResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      $ref: '../users/schemas.yaml#/User'
+  required:
+    - message
+    - data
+
+MessageResponse:
+  type: object
+  properties:
+    message:
+      type: string
+  required:
+    - message

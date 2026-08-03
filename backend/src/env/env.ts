@@ -11,6 +11,10 @@ const envSchema = z.object({
     .transform((value) => value.split(',').map((origin) => origin.trim())),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   DATABASE_URL: z.string().default('postgres://postgres:postgres@localhost:5432/crm'),
+  JWT_ACCESS_SECRET: z.string().min(1).default('dev-access-secret-change-me'),
+  JWT_ACCESS_TTL_MINUTES: z.coerce.number().int().positive().default(15),
+  REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(30),
+  REFRESH_TOKEN_COOKIE_NAME: z.string().min(1).default('refreshToken'),
 });
 
 export type Env = z.infer<typeof envSchema>;
