@@ -40,6 +40,9 @@ export function AppHomePage() {
           <Link to="/specialist/profile">
             <Button>Specialist profile</Button>
           </Link>
+          <Link to="/specialist/company-requests">
+            <Button>Company requests</Button>
+          </Link>
           <Button danger onClick={onLogout}>
             Log out
           </Button>

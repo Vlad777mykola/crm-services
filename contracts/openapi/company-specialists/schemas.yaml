@@ -1,0 +1,160 @@
+SendSpecialistRequestRequest:
+  type: object
+  properties:
+    specialistProfileId:
+      type: string
+      format: uuid
+    message:
+      type: string
+      nullable: true
+  required:
+    - specialistProfileId
+
+CompanySummary:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    name:
+      type: string
+  required:
+    - id
+    - name
+
+SpecialistSummary:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    displayName:
+      type: string
+  required:
+    - id
+    - displayName
+
+CompanySpecialistRequest:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    companyId:
+      type: string
+      format: uuid
+    specialistProfileId:
+      type: string
+      format: uuid
+    requestedByUserId:
+      type: string
+      format: uuid
+    status:
+      type: string
+      enum: [pending, accepted, rejected, cancelled]
+    message:
+      type: string
+      nullable: true
+    respondedAt:
+      type: string
+      format: date-time
+      nullable: true
+    company:
+      $ref: '#/CompanySummary'
+    specialist:
+      $ref: '#/SpecialistSummary'
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+  required:
+    - id
+    - companyId
+    - specialistProfileId
+    - requestedByUserId
+    - status
+    - message
+    - respondedAt
+    - createdAt
+    - updatedAt
+
+CompanySpecialistRequestResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      $ref: '#/CompanySpecialistRequest'
+  required:
+    - message
+    - data
+
+CompanySpecialistRequestListResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      type: array
+      items:
+        $ref: '#/CompanySpecialistRequest'
+  required:
+    - message
+    - data
+
+CompanySpecialist:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    companyId:
+      type: string
+      format: uuid
+    specialistProfileId:
+      type: string
+      format: uuid
+    status:
+      type: string
+      enum: [active, paused, removed]
+    startedAt:
+      type: string
+      format: date-time
+    endedAt:
+      type: string
+      format: date-time
+      nullable: true
+    company:
+      $ref: '#/CompanySummary'
+    specialist:
+      $ref: '#/SpecialistSummary'
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+  required:
+    - id
+    - companyId
+    - specialistProfileId
+    - status
+    - startedAt
+    - endedAt
+    - createdAt
+    - updatedAt
+
+CompanySpecialistListResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      type: array
+      items:
+        $ref: '#/CompanySpecialist'
+  required:
+    - message
+    - data

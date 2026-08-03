@@ -10,8 +10,12 @@ import { CompanyPublicPage } from '@/pages/companies/CompanyPublicPage';
 import { CompanyDashboardPage } from '@/pages/company/CompanyDashboardPage';
 import { CompanyMembersPage } from '@/pages/company/CompanyMembersPage';
 import { CompanyProfilePage } from '@/pages/company/CompanyProfilePage';
+import { CompanySpecialistRequestsPage } from '@/pages/company/CompanySpecialistRequestsPage';
+import { CompanySpecialistsPage } from '@/pages/company/CompanySpecialistsPage';
 import { CreateCompanyPage } from '@/pages/company/CreateCompanyPage';
 import { HealthPage } from '@/pages/health/HealthPage';
+import { SpecialistCompaniesPage } from '@/pages/specialist/SpecialistCompaniesPage';
+import { SpecialistCompanyRequestsPage } from '@/pages/specialist/SpecialistCompanyRequestsPage';
 import { SpecialistProfilePage } from '@/pages/specialist/SpecialistProfilePage';
 import { SpecialistPublicPage } from '@/pages/specialists/SpecialistPublicPage';
 import { SpecialistsListPage } from '@/pages/specialists/SpecialistsListPage';
@@ -86,6 +90,22 @@ export const router = createBrowserRouter([
     ),
   },
   {
+    path: '/company/:companyId/specialists',
+    element: (
+      <ProtectedRoute>
+        <CompanySpecialistsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/company/:companyId/specialist-requests',
+    element: (
+      <ProtectedRoute>
+        <CompanySpecialistRequestsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: '/specialists',
     element: <SpecialistsListPage />,
   },
@@ -98,6 +118,22 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <SpecialistProfilePage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/specialist/company-requests',
+    element: (
+      <ProtectedRoute>
+        <SpecialistCompanyRequestsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/specialist/companies',
+    element: (
+      <ProtectedRoute>
+        <SpecialistCompaniesPage />
       </ProtectedRoute>
     ),
   },

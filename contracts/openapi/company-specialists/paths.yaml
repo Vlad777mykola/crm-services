@@ -1,0 +1,246 @@
+SendRequest:
+  post:
+    operationId: sendSpecialistRequest
+    tags:
+      - Company Specialists
+    summary: Send a request for a specialist to work for a company (owner/manager only)
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: './schemas.yaml#/SendSpecialistRequestRequest'
+    responses:
+      '201':
+        description: Request sent
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/CompanySpecialistRequestResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '403':
+        description: Not a company owner/manager
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '404':
+        description: Specialist profile not found
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '409':
+        description: A pending request or active relation already exists for this specialist
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+
+CompanyRequestsList:
+  get:
+    operationId: listCompanySpecialistRequests
+    tags:
+      - Company Specialists
+    summary: List the requests a company has sent to specialists (owner/manager only)
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: Company specialist requests
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/CompanySpecialistRequestListResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '403':
+        description: Not a company owner/manager
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+
+CompanySpecialistsList:
+  get:
+    operationId: listCompanySpecialists
+    tags:
+      - Company Specialists
+    summary: List a company's active specialists (public)
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: Active specialists working for this company
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/CompanySpecialistListResponse'
+
+MyCompanyRequests:
+  get:
+    operationId: listMySpecialistCompanyRequests
+    tags:
+      - Company Specialists
+    summary: List company requests sent to the current user's specialist profile
+    security:
+      - bearerAuth: []
+    responses:
+      '200':
+        description: Requests sent to the current user's specialist profile
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/CompanySpecialistRequestListResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '404':
+        description: This user does not have a specialist profile yet
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+
+MySpecialistCompanies:
+  get:
+    operationId: listMySpecialistCompanies
+    tags:
+      - Company Specialists
+    summary: List companies the current user's specialist profile is active in
+    security:
+      - bearerAuth: []
+    responses:
+      '200':
+        description: Companies the current user works for as a specialist
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/CompanySpecialistListResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '404':
+        description: This user does not have a specialist profile yet
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+
+AcceptRequest:
+  post:
+    operationId: acceptSpecialistCompanyRequest
+    tags:
+      - Company Specialists
+    summary: Accept a pending company request (specialist only)
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: requestId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: Request accepted
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/CompanySpecialistRequestResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '404':
+        description: Request not found
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '409':
+        description: This request has already been responded to
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+
+RejectRequest:
+  post:
+    operationId: rejectSpecialistCompanyRequest
+    tags:
+      - Company Specialists
+    summary: Reject a pending company request (specialist only)
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: requestId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: Request rejected
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/CompanySpecialistRequestResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '404':
+        description: Request not found
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '409':
+        description: This request has already been responded to
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'

@@ -11,6 +11,7 @@ tags:
   - name: Companies
   - name: Company Members
   - name: Specialists
+  - name: Company Specialists
 components:
   securitySchemes:
     bearerAuth:
@@ -96,3 +97,17 @@ paths:
     $ref: './openapi/specialists/paths.yaml#/Public'
   /specialists/{specialistId}:
     $ref: './openapi/specialists/paths.yaml#/BySpecialistId'
+  /companies/{companyId}/specialists/requests:
+    $ref: './openapi/company-specialists/paths.yaml#/SendRequest'
+  /companies/{companyId}/specialist-requests:
+    $ref: './openapi/company-specialists/paths.yaml#/CompanyRequestsList'
+  /companies/{companyId}/specialists:
+    $ref: './openapi/company-specialists/paths.yaml#/CompanySpecialistsList'
+  /specialists/me/company-requests:
+    $ref: './openapi/company-specialists/paths.yaml#/MyCompanyRequests'
+  /specialists/me/companies:
+    $ref: './openapi/company-specialists/paths.yaml#/MySpecialistCompanies'
+  /specialists/me/company-requests/{requestId}/accept:
+    $ref: './openapi/company-specialists/paths.yaml#/AcceptRequest'
+  /specialists/me/company-requests/{requestId}/reject:
+    $ref: './openapi/company-specialists/paths.yaml#/RejectRequest'

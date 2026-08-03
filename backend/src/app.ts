@@ -9,6 +9,7 @@ import { env } from './env/env.js';
 import { authRouter } from './modules/auth/auth.routes.js';
 import { companiesRouter } from './modules/companies/companies.routes.js';
 import { companyMembersRouter } from './modules/company-members/company-members.routes.js';
+import { companySpecialistsRouter } from './modules/company-specialists/company-specialists.routes.js';
 import { healthRouter } from './modules/health/health.routes.js';
 import { specialistsRouter } from './modules/specialists/specialists.routes.js';
 import { usersRouter } from './modules/users/users.routes.js';
@@ -27,6 +28,7 @@ export function createApp(): Express {
   app.use(companiesRouter);
   app.use(companyMembersRouter);
   app.use(specialistsRouter);
+  app.use(companySpecialistsRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);
