@@ -1,0 +1,95 @@
+CreateReviewRequest:
+  type: object
+  properties:
+    rating:
+      type: integer
+      minimum: 1
+      maximum: 5
+    comment:
+      type: string
+      nullable: true
+  required:
+    - rating
+
+ReviewClientSummary:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    name:
+      type: string
+  required:
+    - id
+    - name
+
+Review:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    appointmentId:
+      type: string
+      format: uuid
+    companyId:
+      type: string
+      format: uuid
+    serviceId:
+      type: string
+      format: uuid
+    specialistProfileId:
+      type: string
+      format: uuid
+      nullable: true
+    clientUserId:
+      type: string
+      format: uuid
+    rating:
+      type: integer
+    comment:
+      type: string
+      nullable: true
+    client:
+      $ref: '#/ReviewClientSummary'
+    service:
+      $ref: '../services/schemas.yaml#/ServiceSummary'
+    specialist:
+      $ref: '../company-specialists/schemas.yaml#/SpecialistSummary'
+    createdAt:
+      type: string
+      format: date-time
+  required:
+    - id
+    - appointmentId
+    - companyId
+    - serviceId
+    - specialistProfileId
+    - clientUserId
+    - rating
+    - comment
+    - createdAt
+
+ReviewResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      $ref: '#/Review'
+  required:
+    - message
+    - data
+
+ReviewListResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      type: array
+      items:
+        $ref: '#/Review'
+  required:
+    - message
+    - data

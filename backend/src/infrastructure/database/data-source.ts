@@ -11,6 +11,7 @@ import { CompanySpecialistRequest } from '@/modules/company-specialists/company-
 import { Appointment } from '@/modules/appointments/appointment.entity.js';
 import { Company } from '@/modules/companies/company.entity.js';
 import { Notification } from '@/modules/notifications/notification.entity.js';
+import { Review } from '@/modules/reviews/review.entity.js';
 import { ServiceSpecialist } from '@/modules/services/service-specialist.entity.js';
 import { Service } from '@/modules/services/service.entity.js';
 import { SpecialistProfile } from '@/modules/specialists/specialist-profile.entity.js';
@@ -36,6 +37,7 @@ export const AppDataSource = new DataSource({
     ServiceSpecialist,
     Appointment,
     Notification,
+    Review,
   ],
   migrations: [
     isProduction

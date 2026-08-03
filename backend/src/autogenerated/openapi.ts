@@ -657,6 +657,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/companies/{companyId}/appointments/{appointmentId}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark an approved appointment as completed (owner/manager only) */
+        post: operations["completeAppointment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/appointments/{appointmentId}/review": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Leave a review for your own completed appointment (one per appointment) */
+        post: operations["createReview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{companyId}/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List a company's reviews (public) */
+        get: operations["listCompanyReviews"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/services/{serviceId}/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List a service's reviews (public) */
+        get: operations["listServiceReviews"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/specialists/{specialistId}/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List a specialist's reviews (public) */
+        get: operations["listSpecialistReviews"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/notifications/me": {
         parameters: {
             query?: never;
@@ -1110,10 +1195,13 @@ export interface components {
             /** Format: date-time */
             requestedStartAt: string;
             /** @enum {string} */
-            status: "pending" | "approved" | "rejected" | "cancelled";
+            status: "pending" | "approved" | "rejected" | "cancelled" | "completed";
             notes: string | null;
             /** Format: date-time */
             respondedAt: string | null;
+            /** Format: date-time */
+            completedAt: string | null;
+            hasReview?: boolean;
             company?: components["schemas"]["CompanySummary"];
             service?: components["schemas"]["ServiceSummary"];
             specialist?: components["schemas"]["SpecialistSummary"];
@@ -1146,6 +1234,44 @@ export interface components {
         RespondToAppointmentRequest: {
             /** @enum {string} */
             status: "approved" | "rejected";
+        };
+        CreateReviewRequest: {
+            rating: number;
+            comment?: string | null;
+        };
+        ReviewClientSummary: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+        };
+        Review: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            appointmentId: string;
+            /** Format: uuid */
+            companyId: string;
+            /** Format: uuid */
+            serviceId: string;
+            /** Format: uuid */
+            specialistProfileId: string | null;
+            /** Format: uuid */
+            clientUserId: string;
+            rating: number;
+            comment: string | null;
+            client?: components["schemas"]["ReviewClientSummary"];
+            service?: components["schemas"]["ServiceSummary"];
+            specialist?: components["schemas"]["SpecialistSummary"];
+            /** Format: date-time */
+            createdAt: string;
+        };
+        ReviewResponse: {
+            message: string;
+            data: components["schemas"]["Review"];
+        };
+        ReviewListResponse: {
+            message: string;
+            data: components["schemas"]["Review"][];
         };
         Notification: {
             /** Format: uuid */
@@ -2905,6 +3031,184 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    completeAppointment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                appointmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Appointment marked as completed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppointmentResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not a company owner/manager */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Appointment not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Only approved appointments can be marked as completed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createReview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                appointmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateReviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Review created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Appointment not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Only completed appointments can be reviewed, or a review already exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listCompanyReviews: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Company reviews */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewListResponse"];
+                };
+            };
+        };
+    };
+    listServiceReviews: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Service reviews */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewListResponse"];
+                };
+            };
+        };
+    };
+    listSpecialistReviews: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                specialistId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Specialist reviews */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewListResponse"];
                 };
             };
         };

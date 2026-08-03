@@ -11,6 +11,8 @@ export enum NotificationType {
   APPOINTMENT_APPROVED = 'appointment.approved',
   APPOINTMENT_REJECTED = 'appointment.rejected',
   APPOINTMENT_CANCELLED = 'appointment.cancelled',
+  APPOINTMENT_COMPLETED = 'appointment.completed',
+  REVIEW_RECEIVED = 'review.received',
 }
 
 @Entity({ name: 'notifications' })

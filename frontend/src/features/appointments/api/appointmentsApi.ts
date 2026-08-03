@@ -2,7 +2,7 @@ import { authorizedFetch } from '@/shared/api/authorizedFetch';
 
 // NOTE: hand-written until Orval generates a typed client from contracts/openapi.json
 // (see contracts/README.md, Step 7/Phase 16). Shape mirrors contracts/openapi/appointments/schemas.yaml.
-export type AppointmentStatus = 'pending' | 'approved' | 'rejected' | 'cancelled';
+export type AppointmentStatus = 'pending' | 'approved' | 'rejected' | 'cancelled' | 'completed';
 
 export interface AppointmentCompanySummary {
   id: string;
@@ -35,6 +35,8 @@ export interface Appointment {
   status: AppointmentStatus;
   notes: string | null;
   respondedAt: string | null;
+  completedAt: string | null;
+  hasReview?: boolean;
   company?: AppointmentCompanySummary;
   service?: AppointmentServiceSummary;
   specialist?: AppointmentSpecialistSummary;
@@ -85,6 +87,14 @@ export async function respondToAppointment(
   const response = await authorizedFetch(`/companies/${companyId}/appointments/${appointmentId}`, {
     method: 'PATCH',
     body: JSON.stringify({ status }),
+  });
+  const body = await parseJsonOrThrow<{ data: Appointment }>(response);
+  return body.data;
+}
+
+export async function completeAppointment(companyId: string, appointmentId: string): Promise<Appointment> {
+  const response = await authorizedFetch(`/companies/${companyId}/appointments/${appointmentId}/complete`, {
+    method: 'POST',
   });
   const body = await parseJsonOrThrow<{ data: Appointment }>(response);
   return body.data;

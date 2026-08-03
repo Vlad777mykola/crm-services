@@ -3,6 +3,8 @@ import { Alert, Card, Descriptions, Empty, List, Space, Spin, Tag, Typography } 
 import { Link, useParams } from 'react-router';
 
 import { fetchCompanyById } from '@/features/companies/api/companiesApi';
+import { fetchCompanyReviews } from '@/features/reviews/api/reviewsApi';
+import { ReviewsList } from '@/features/reviews/ui/ReviewsList';
 import { fetchCompanyServices } from '@/features/services/api/servicesApi';
 
 function formatPrice(price: string | null): string {
@@ -21,6 +23,12 @@ export function CompanyPublicPage() {
   const { data: services } = useQuery({
     queryKey: ['company', companyId, 'services', 'public'],
     queryFn: () => fetchCompanyServices(companyId!),
+    enabled: Boolean(companyId),
+  });
+
+  const { data: reviews } = useQuery({
+    queryKey: ['company', companyId, 'reviews'],
+    queryFn: () => fetchCompanyReviews(companyId!),
     enabled: Boolean(companyId),
   });
 
@@ -71,6 +79,10 @@ export function CompanyPublicPage() {
             )}
           />
         )}
+      </Card>
+
+      <Card title="Reviews">
+        <ReviewsList reviews={reviews ?? []} />
       </Card>
     </Space>
   );

@@ -1,4 +1,4 @@
-import type { Repository } from 'typeorm';
+import { In, type Repository } from 'typeorm';
 
 import { AppError } from '@/common/errors/AppError.js';
 import { requireCompanyRole } from '@/common/permissions/companyPermissions.js';
@@ -6,6 +6,7 @@ import { AppDataSource } from '@/infrastructure/database/data-source.js';
 import { CompanyMemberRole } from '@/modules/company-members/company-member.entity.js';
 import { NotificationType } from '@/modules/notifications/notification.entity.js';
 import { createNotification, notifyCompanyManagers } from '@/modules/notifications/notifications.service.js';
+import { Review } from '@/modules/reviews/review.entity.js';
 import { ServiceSpecialist } from '@/modules/services/service-specialist.entity.js';
 import { Service, ServiceStatus } from '@/modules/services/service.entity.js';
 
@@ -17,6 +18,37 @@ function getAppointmentRepository(): Repository<Appointment> {
 }
 
 const APPOINTMENT_RELATIONS = { company: true, service: true, specialist: true, client: true } as const;
+
+async function attachHasReview(appointments: Appointment[]): Promise<Appointment[]> {
+  const completedIds = appointments
+    .filter((appointment) => appointment.status === AppointmentStatus.COMPLETED)
+    .map((appointment) => appointment.id);
+
+  const reviewedIds =
+    completedIds.length === 0
+      ? new Set<string>()
+      : new Set(
+          (
+            await AppDataSource.getRepository(Review).find({
+              where: { appointmentId: In(completedIds) },
+            })
+          ).map((review) => review.appointmentId),
+        );
+
+  for (const appointment of appointments) {
+    appointment.hasReview = reviewedIds.has(appointment.id);
+  }
+  return appointments;
+}
+
+async function loadAppointmentOrThrow(where: Record<string, unknown>): Promise<Appointment> {
+  const appointment = await getAppointmentRepository().findOne({ where, relations: APPOINTMENT_RELATIONS });
+  if (!appointment) {
+    throw new AppError('Appointment not found', 404);
+  }
+  const [withReview] = await attachHasReview([appointment]);
+  return withReview;
+}
 
 export async function createAppointment(
   companyId: string,
@@ -50,7 +82,7 @@ export async function createAppointment(
     }),
   );
 
-  const loaded = (await repository.findOne({ where: { id: appointment.id }, relations: APPOINTMENT_RELATIONS }))!;
+  const loaded = await loadAppointmentOrThrow({ id: appointment.id });
 
   await notifyCompanyManagers(
     companyId,
@@ -67,20 +99,22 @@ export async function listCompanyAppointments(companyId: string, requesterUserId
   await requireCompanyRole(companyId, requesterUserId, [CompanyMemberRole.OWNER, CompanyMemberRole.MANAGER]);
 
   const repository = getAppointmentRepository();
-  return repository.find({
+  const appointments = await repository.find({
     where: { companyId },
     relations: APPOINTMENT_RELATIONS,
     order: { createdAt: 'DESC' },
   });
+  return attachHasReview(appointments);
 }
 
 export async function listMyAppointments(clientUserId: string): Promise<Appointment[]> {
   const repository = getAppointmentRepository();
-  return repository.find({
+  const appointments = await repository.find({
     where: { clientUserId },
     relations: APPOINTMENT_RELATIONS,
     order: { createdAt: 'DESC' },
   });
+  return attachHasReview(appointments);
 }
 
 export async function respondToAppointment(
@@ -115,6 +149,40 @@ export async function respondToAppointment(
     { appointmentId: saved.id, companyId: saved.companyId, serviceId: saved.serviceId },
   );
 
+  saved.hasReview = false;
+  return saved;
+}
+
+export async function completeAppointment(
+  companyId: string,
+  appointmentId: string,
+  requesterUserId: string,
+): Promise<Appointment> {
+  await requireCompanyRole(companyId, requesterUserId, [CompanyMemberRole.OWNER, CompanyMemberRole.MANAGER]);
+
+  const repository = getAppointmentRepository();
+  const appointment = await repository.findOne({ where: { id: appointmentId, companyId }, relations: APPOINTMENT_RELATIONS });
+  if (!appointment) {
+    throw new AppError('Appointment not found', 404);
+  }
+
+  if (appointment.status !== AppointmentStatus.APPROVED) {
+    throw new AppError('Only approved appointments can be marked as completed', 409);
+  }
+
+  appointment.status = AppointmentStatus.COMPLETED;
+  appointment.completedAt = new Date();
+  const saved = await repository.save(appointment);
+
+  await createNotification(
+    saved.clientUserId,
+    NotificationType.APPOINTMENT_COMPLETED,
+    `Your appointment for ${saved.service.name} is complete`,
+    `Let others know how it went - leave a review for ${saved.company.name}.`,
+    { appointmentId: saved.id, companyId: saved.companyId, serviceId: saved.serviceId },
+  );
+
+  saved.hasReview = false;
   return saved;
 }
 
@@ -143,5 +211,6 @@ export async function cancelAppointment(appointmentId: string, clientUserId: str
     { appointmentId: saved.id, companyId: saved.companyId, serviceId: saved.serviceId },
   );
 
+  saved.hasReview = false;
   return saved;
 }

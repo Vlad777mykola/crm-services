@@ -11,6 +11,8 @@ Notification:
         - appointment.approved
         - appointment.rejected
         - appointment.cancelled
+        - appointment.completed
+        - review.received
     title:
       type: string
     body:

@@ -2,6 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import { Alert, Card, Descriptions, Spin, Tag, Typography } from 'antd';
 import { useParams } from 'react-router';
 
+import { fetchSpecialistReviews } from '@/features/reviews/api/reviewsApi';
+import { ReviewsList } from '@/features/reviews/ui/ReviewsList';
 import { fetchSpecialistById } from '@/features/specialists/api/specialistsApi';
 
 export function SpecialistPublicPage() {
@@ -10,6 +12,12 @@ export function SpecialistPublicPage() {
   const { data: specialist, isLoading, isError, error } = useQuery({
     queryKey: ['specialist', specialistId, 'public'],
     queryFn: () => fetchSpecialistById(specialistId!),
+    enabled: Boolean(specialistId),
+  });
+
+  const { data: reviews } = useQuery({
+    queryKey: ['specialist', specialistId, 'reviews'],
+    queryFn: () => fetchSpecialistReviews(specialistId!),
     enabled: Boolean(specialistId),
   });
 
@@ -40,6 +48,10 @@ export function SpecialistPublicPage() {
         {specialist.category && <Descriptions.Item label="Category">{specialist.category}</Descriptions.Item>}
         {specialist.city && <Descriptions.Item label="City">{specialist.city}</Descriptions.Item>}
       </Descriptions>
+      <Typography.Title level={5} style={{ marginTop: 24 }}>
+        Reviews
+      </Typography.Title>
+      <ReviewsList reviews={reviews ?? []} />
     </Card>
   );
 }

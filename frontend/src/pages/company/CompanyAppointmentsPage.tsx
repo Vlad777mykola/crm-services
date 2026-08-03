@@ -3,6 +3,7 @@ import { Alert, Button, Card, Empty, List, Space, Spin, Tag } from 'antd';
 import { Link, useParams } from 'react-router';
 
 import {
+  completeAppointment,
   fetchCompanyAppointments,
   respondToAppointment,
   type AppointmentStatus,
@@ -13,6 +14,7 @@ const STATUS_COLORS: Record<AppointmentStatus, string> = {
   approved: 'green',
   rejected: 'red',
   cancelled: 'default',
+  completed: 'blue',
 };
 
 function formatDate(value: string): string {
@@ -36,6 +38,11 @@ export function CompanyAppointmentsPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey }),
   });
 
+  const completeMutation = useMutation({
+    mutationFn: (appointmentId: string) => completeAppointment(companyId!, appointmentId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey }),
+  });
+
   return (
     <Card
       title="Appointment requests"
@@ -56,8 +63,8 @@ export function CompanyAppointmentsPage() {
           dataSource={appointments}
           renderItem={(appointment) => (
             <List.Item
-              actions={
-                appointment.status === 'pending'
+              actions={[
+                ...(appointment.status === 'pending'
                   ? [
                       <Button
                         key="approve"
@@ -78,8 +85,21 @@ export function CompanyAppointmentsPage() {
                         Reject
                       </Button>,
                     ]
-                  : []
-              }
+                  : []),
+                ...(appointment.status === 'approved'
+                  ? [
+                      <Button
+                        key="complete"
+                        size="small"
+                        type="primary"
+                        loading={completeMutation.isPending}
+                        onClick={() => completeMutation.mutate(appointment.id)}
+                      >
+                        Mark completed
+                      </Button>,
+                    ]
+                  : []),
+              ]}
             >
               <List.Item.Meta
                 title={

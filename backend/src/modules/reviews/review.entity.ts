@@ -7,29 +7,32 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
   type Relation,
-  UpdateDateColumn,
+  Unique,
 } from 'typeorm';
 
+import { Appointment } from '@/modules/appointments/appointment.entity.js';
 import { Company } from '@/modules/companies/company.entity.js';
 import { Service } from '@/modules/services/service.entity.js';
 import { SpecialistProfile } from '@/modules/specialists/specialist-profile.entity.js';
 import { User } from '@/modules/users/user.entity.js';
 
-export enum AppointmentStatus {
-  PENDING = 'pending',
-  APPROVED = 'approved',
-  REJECTED = 'rejected',
-  CANCELLED = 'cancelled',
-  COMPLETED = 'completed',
-}
-
-// A client's request for a company's service, optionally with a preferred
-// specialist. Approval/rejection is done by the company owner/manager; the
-// client may cancel their own pending/approved request.
-@Entity({ name: 'appointments' })
-export class Appointment {
+// One review per completed appointment (see the unique index on `appointmentId`).
+// companyId/serviceId/specialistProfileId are denormalized from the appointment at
+// review time so listing a company's/service's/specialist's reviews doesn't require
+// joining through appointments.
+@Entity({ name: 'reviews' })
+@Unique('UQ_reviews_appointment', ['appointmentId'])
+export class Review {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
+
+  @Index({ unique: true })
+  @Column({ type: 'uuid' })
+  appointmentId!: string;
+
+  @ManyToOne(() => Appointment, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'appointmentId' })
+  appointment!: Relation<Appointment>;
 
   @Index()
   @Column({ type: 'uuid' })
@@ -55,7 +58,6 @@ export class Appointment {
   @JoinColumn({ name: 'specialistProfileId' })
   specialist!: Relation<SpecialistProfile> | null;
 
-  @Index()
   @Column({ type: 'uuid' })
   clientUserId!: string;
 
@@ -63,28 +65,12 @@ export class Appointment {
   @JoinColumn({ name: 'clientUserId' })
   client!: Relation<User>;
 
-  @Column({ type: 'timestamptz' })
-  requestedStartAt!: Date;
-
-  @Column({ type: 'enum', enum: AppointmentStatus, default: AppointmentStatus.PENDING })
-  status!: AppointmentStatus;
+  @Column({ type: 'smallint' })
+  rating!: number;
 
   @Column({ type: 'text', nullable: true })
-  notes!: string | null;
-
-  @Column({ type: 'timestamptz', nullable: true })
-  respondedAt!: Date | null;
-
-  @Column({ type: 'timestamptz', nullable: true })
-  completedAt!: Date | null;
+  comment!: string | null;
 
   @CreateDateColumn()
   createdAt!: Date;
-
-  @UpdateDateColumn()
-  updatedAt!: Date;
-
-  // Not a DB column - populated by appointments.service.ts so API responses can tell
-  // the client/company whether a review already exists without a second round trip.
-  hasReview?: boolean;
 }

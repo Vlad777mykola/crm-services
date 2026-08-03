@@ -1,14 +1,22 @@
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, Button, Card, Empty, List, Space, Spin, Tag } from 'antd';
+import { Alert, Button, Card, Empty, Input, List, Modal, Rate, Space, Spin, Tag } from 'antd';
 import { Link } from 'react-router';
 
-import { cancelAppointment, fetchMyAppointments, type AppointmentStatus } from '@/features/appointments/api/appointmentsApi';
+import {
+  cancelAppointment,
+  fetchMyAppointments,
+  type Appointment,
+  type AppointmentStatus,
+} from '@/features/appointments/api/appointmentsApi';
+import { createReview, type CreateReviewInput } from '@/features/reviews/api/reviewsApi';
 
 const STATUS_COLORS: Record<AppointmentStatus, string> = {
   pending: 'gold',
   approved: 'green',
   rejected: 'red',
   cancelled: 'default',
+  completed: 'blue',
 };
 
 function formatDate(value: string): string {
@@ -18,6 +26,9 @@ function formatDate(value: string): string {
 export function MyAppointmentsPage() {
   const queryClient = useQueryClient();
   const queryKey = ['appointments', 'me'];
+  const [reviewingAppointment, setReviewingAppointment] = useState<Appointment | null>(null);
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState('');
 
   const { data: appointments, isLoading, isError, error } = useQuery({
     queryKey,
@@ -28,6 +39,24 @@ export function MyAppointmentsPage() {
     mutationFn: (appointmentId: string) => cancelAppointment(appointmentId),
     onSuccess: () => queryClient.invalidateQueries({ queryKey }),
   });
+
+  const reviewMutation = useMutation({
+    mutationFn: ({ appointmentId, input }: { appointmentId: string; input: CreateReviewInput }) =>
+      createReview(appointmentId, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey });
+      setReviewingAppointment(null);
+      setRating(5);
+      setComment('');
+    },
+  });
+
+  const openReviewModal = (appointment: Appointment) => {
+    reviewMutation.reset();
+    setRating(5);
+    setComment('');
+    setReviewingAppointment(appointment);
+  };
 
   return (
     <Card title="My appointment requests" extra={<Link to="/app">Back home</Link>} style={{ maxWidth: 720, margin: '2rem auto' }}>
@@ -51,8 +80,8 @@ export function MyAppointmentsPage() {
           dataSource={appointments}
           renderItem={(appointment) => (
             <List.Item
-              actions={
-                ['pending', 'approved'].includes(appointment.status)
+              actions={[
+                ...(['pending', 'approved'].includes(appointment.status)
                   ? [
                       <Button
                         key="cancel"
@@ -64,8 +93,15 @@ export function MyAppointmentsPage() {
                         Cancel
                       </Button>,
                     ]
-                  : []
-              }
+                  : []),
+                ...(appointment.status === 'completed' && !appointment.hasReview
+                  ? [
+                      <Button key="review" size="small" type="primary" onClick={() => openReviewModal(appointment)}>
+                        Leave a review
+                      </Button>,
+                    ]
+                  : []),
+              ]}
             >
               <List.Item.Meta
                 title={
@@ -91,6 +127,37 @@ export function MyAppointmentsPage() {
           )}
         />
       )}
+
+      <Modal
+        title={reviewingAppointment?.service ? `Review ${reviewingAppointment.service.name}` : 'Leave a review'}
+        open={Boolean(reviewingAppointment)}
+        onCancel={() => setReviewingAppointment(null)}
+        onOk={() =>
+          reviewingAppointment &&
+          reviewMutation.mutate({ appointmentId: reviewingAppointment.id, input: { rating, comment: comment || null } })
+        }
+        confirmLoading={reviewMutation.isPending}
+        okText="Submit review"
+        destroyOnClose
+      >
+        {reviewMutation.isError && (
+          <Alert
+            type="error"
+            message={reviewMutation.error instanceof Error ? reviewMutation.error.message : 'Failed to submit review'}
+            style={{ marginBottom: 16 }}
+            showIcon
+          />
+        )}
+        <Space direction="vertical" style={{ display: 'flex' }} size="middle">
+          <Rate value={rating} onChange={setRating} />
+          <Input.TextArea
+            rows={3}
+            placeholder="Share details about your experience (optional)"
+            value={comment}
+            onChange={(event) => setComment(event.target.value)}
+          />
+        </Space>
+      </Modal>
     </Card>
   );
 }

@@ -16,6 +16,7 @@ import {
 } from './appointments.schemas.js';
 import {
   cancelAppointment,
+  completeAppointment,
   createAppointment,
   listCompanyAppointments,
   listMyAppointments,
@@ -70,6 +71,21 @@ appointmentsRouter.patch(
         req.body as RespondToAppointmentInput,
       );
       res.status(200).json({ message: 'Appointment updated', data: appointment });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+appointmentsRouter.post(
+  '/companies/:companyId/appointments/:appointmentId/complete',
+  requireAuth,
+  validate(appointmentIdParamsSchema, 'params'),
+  async (req, res, next) => {
+    try {
+      const { companyId, appointmentId } = req.params as unknown as AppointmentIdParams;
+      const appointment = await completeAppointment(companyId, appointmentId, req.auth!.userId);
+      res.status(200).json({ message: 'Appointment marked as completed', data: appointment });
     } catch (err) {
       next(err);
     }

@@ -2,6 +2,8 @@ import { useQuery } from '@tanstack/react-query';
 import { Alert, Button, Card, Descriptions, Space, Spin, Typography } from 'antd';
 import { Link, useParams } from 'react-router';
 
+import { fetchServiceReviews } from '@/features/reviews/api/reviewsApi';
+import { ReviewsList } from '@/features/reviews/ui/ReviewsList';
 import { fetchServiceById } from '@/features/services/api/servicesApi';
 
 function formatPrice(price: string | null): string {
@@ -14,6 +16,12 @@ export function ServicePublicPage() {
   const { data: service, isLoading, isError, error } = useQuery({
     queryKey: ['service', serviceId, 'public'],
     queryFn: () => fetchServiceById(serviceId!),
+    enabled: Boolean(serviceId),
+  });
+
+  const { data: reviews } = useQuery({
+    queryKey: ['service', serviceId, 'reviews'],
+    queryFn: () => fetchServiceReviews(serviceId!),
     enabled: Boolean(serviceId),
   });
 
@@ -50,6 +58,10 @@ export function ServicePublicPage() {
           <Button type="primary">Request appointment</Button>
         </Link>
       </Space>
+      <Typography.Title level={5} style={{ marginTop: 24 }}>
+        Reviews
+      </Typography.Title>
+      <ReviewsList reviews={reviews ?? []} />
     </Card>
   );
 }

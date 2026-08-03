@@ -15,6 +15,7 @@ tags:
   - name: Services
   - name: Appointments
   - name: Notifications
+  - name: Reviews
 components:
   securitySchemes:
     bearerAuth:
@@ -136,6 +137,16 @@ paths:
     $ref: './openapi/appointments/paths.yaml#/MyAppointments'
   /appointments/{appointmentId}/cancel:
     $ref: './openapi/appointments/paths.yaml#/Cancel'
+  /companies/{companyId}/appointments/{appointmentId}/complete:
+    $ref: './openapi/appointments/paths.yaml#/Complete'
+  /appointments/{appointmentId}/review:
+    $ref: './openapi/reviews/paths.yaml#/CreateForAppointment'
+  /companies/{companyId}/reviews:
+    $ref: './openapi/reviews/paths.yaml#/CompanyReviews'
+  /services/{serviceId}/reviews:
+    $ref: './openapi/reviews/paths.yaml#/ServiceReviews'
+  /specialists/{specialistId}/reviews:
+    $ref: './openapi/reviews/paths.yaml#/SpecialistReviews'
   /notifications/me:
     $ref: './openapi/notifications/paths.yaml#/MyNotifications'
   /notifications/me/unread-count:
@@ -144,3 +155,4 @@ paths:
     $ref: './openapi/notifications/paths.yaml#/MarkRead'
   /notifications/me/read-all:
     $ref: './openapi/notifications/paths.yaml#/MarkAllRead'
+
