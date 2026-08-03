@@ -1,0 +1,153 @@
+Collection:
+  post:
+    operationId: createService
+    tags:
+      - Services
+    summary: Create a service in a company's catalog (owner/manager only, starts as draft)
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: './schemas.yaml#/CreateServiceRequest'
+    responses:
+      '201':
+        description: Service created
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/ServiceResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '403':
+        description: Not a company owner/manager
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+  get:
+    operationId: listCompanyServices
+    tags:
+      - Services
+    summary: List a company's services (published only for non-members, all statuses for owner/manager)
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: Company services
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/ServiceListResponse'
+
+ByServiceId:
+  patch:
+    operationId: updateService
+    tags:
+      - Services
+    summary: Update or publish a service (owner/manager only)
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: serviceId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: './schemas.yaml#/UpdateServiceRequest'
+    responses:
+      '200':
+        description: Service updated
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/ServiceResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '403':
+        description: Not a company owner/manager
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '404':
+        description: Service not found
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+
+PublicList:
+  get:
+    operationId: listPublicServices
+    tags:
+      - Services
+    summary: Browse all published services across companies (public marketplace listing)
+    responses:
+      '200':
+        description: Published services
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/ServiceListResponse'
+
+BySlugId:
+  get:
+    operationId: getServiceById
+    tags:
+      - Services
+    summary: Get a single service (published is public, draft/suspended visible to the owning company's owner/manager only)
+    parameters:
+      - name: serviceId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: Service found
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/ServiceResponse'
+      '404':
+        description: Service not found
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'

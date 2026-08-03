@@ -70,6 +70,9 @@ export function CompanyDashboardPage() {
         <Link to={`/company/${company.id}/specialists`}>
           <Button>Specialists</Button>
         </Link>
+        <Link to={`/company/${company.id}/services`}>
+          <Button>Services</Button>
+        </Link>
         {company.status === 'draft' && (
           <Button type="primary" loading={publishMutation.isPending} onClick={() => publishMutation.mutate()}>
             Publish company

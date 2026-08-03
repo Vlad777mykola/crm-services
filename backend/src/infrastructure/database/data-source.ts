@@ -9,6 +9,7 @@ import { CompanyMember } from '@/modules/company-members/company-member.entity.j
 import { CompanySpecialist } from '@/modules/company-specialists/company-specialist.entity.js';
 import { CompanySpecialistRequest } from '@/modules/company-specialists/company-specialist-request.entity.js';
 import { Company } from '@/modules/companies/company.entity.js';
+import { Service } from '@/modules/services/service.entity.js';
 import { SpecialistProfile } from '@/modules/specialists/specialist-profile.entity.js';
 import { User } from '@/modules/users/user.entity.js';
 
@@ -28,6 +29,7 @@ export const AppDataSource = new DataSource({
     SpecialistProfile,
     CompanySpecialistRequest,
     CompanySpecialist,
+    Service,
   ],
   migrations: [
     isProduction

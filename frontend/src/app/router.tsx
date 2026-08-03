@@ -12,8 +12,11 @@ import { CompanyMembersPage } from '@/pages/company/CompanyMembersPage';
 import { CompanyProfilePage } from '@/pages/company/CompanyProfilePage';
 import { CompanySpecialistRequestsPage } from '@/pages/company/CompanySpecialistRequestsPage';
 import { CompanySpecialistsPage } from '@/pages/company/CompanySpecialistsPage';
+import { CompanyServicesPage } from '@/pages/company/CompanyServicesPage';
 import { CreateCompanyPage } from '@/pages/company/CreateCompanyPage';
 import { HealthPage } from '@/pages/health/HealthPage';
+import { ServicePublicPage } from '@/pages/services/ServicePublicPage';
+import { ServicesListPage } from '@/pages/services/ServicesListPage';
 import { SpecialistCompaniesPage } from '@/pages/specialist/SpecialistCompaniesPage';
 import { SpecialistCompanyRequestsPage } from '@/pages/specialist/SpecialistCompanyRequestsPage';
 import { SpecialistProfilePage } from '@/pages/specialist/SpecialistProfilePage';
@@ -104,6 +107,22 @@ export const router = createBrowserRouter([
         <CompanySpecialistRequestsPage />
       </ProtectedRoute>
     ),
+  },
+  {
+    path: '/company/:companyId/services',
+    element: (
+      <ProtectedRoute>
+        <CompanyServicesPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/services',
+    element: <ServicesListPage />,
+  },
+  {
+    path: '/services/:serviceId',
+    element: <ServicePublicPage />,
   },
   {
     path: '/specialists',

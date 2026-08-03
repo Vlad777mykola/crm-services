@@ -1,0 +1,114 @@
+CreateServiceRequest:
+  type: object
+  properties:
+    name:
+      type: string
+      minLength: 1
+    description:
+      type: string
+      nullable: true
+    category:
+      type: string
+      nullable: true
+    durationMinutes:
+      type: integer
+      minimum: 1
+    price:
+      type: string
+      nullable: true
+      description: Decimal string, e.g. "49.99". Null means "price on request".
+  required:
+    - name
+    - durationMinutes
+
+UpdateServiceRequest:
+  type: object
+  properties:
+    name:
+      type: string
+      minLength: 1
+    description:
+      type: string
+      nullable: true
+    category:
+      type: string
+      nullable: true
+    durationMinutes:
+      type: integer
+      minimum: 1
+    price:
+      type: string
+      nullable: true
+    status:
+      type: string
+      enum: [draft, published]
+      description: "`suspended` is a moderation-only state, not settable here."
+
+Service:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    companyId:
+      type: string
+      format: uuid
+    name:
+      type: string
+    description:
+      type: string
+      nullable: true
+    category:
+      type: string
+      nullable: true
+    durationMinutes:
+      type: integer
+    price:
+      type: string
+      nullable: true
+    status:
+      type: string
+      enum: [draft, published, suspended]
+    company:
+      $ref: '../company-specialists/schemas.yaml#/CompanySummary'
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+  required:
+    - id
+    - companyId
+    - name
+    - description
+    - category
+    - durationMinutes
+    - price
+    - status
+    - createdAt
+    - updatedAt
+
+ServiceResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      $ref: '#/Service'
+  required:
+    - message
+    - data
+
+ServiceListResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      type: array
+      items:
+        $ref: '#/Service'
+  required:
+    - message
+    - data
