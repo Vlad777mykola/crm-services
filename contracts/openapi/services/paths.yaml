@@ -151,3 +151,156 @@ BySlugId:
           application/json:
             schema:
               $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+
+SpecialistsCollection:
+  post:
+    operationId: assignServiceSpecialist
+    tags:
+      - Services
+    summary: Assign a specialist (already active at the company) to perform a service (owner/manager only)
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: serviceId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: './schemas.yaml#/AssignServiceSpecialistRequest'
+    responses:
+      '201':
+        description: Specialist assigned
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/ServiceSpecialistResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '403':
+        description: Not a company owner/manager
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '404':
+        description: Service not found
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '409':
+        description: Specialist is not active in this company, or is already assigned
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+  get:
+    operationId: listServiceSpecialists
+    tags:
+      - Services
+    summary: List specialists assigned to a service (visibility follows the service's own visibility rules)
+    parameters:
+      - name: serviceId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: Assigned specialists
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/ServiceSpecialistListResponse'
+      '404':
+        description: Service not found
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+
+BySpecialistProfileId:
+  delete:
+    operationId: unassignServiceSpecialist
+    tags:
+      - Services
+    summary: Remove a specialist from a service (owner/manager only)
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: serviceId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: specialistProfileId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: Specialist unassigned
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/ServiceSpecialistResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '403':
+        description: Not a company owner/manager
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '404':
+        description: Assignment not found
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+
+MyServices:
+  get:
+    operationId: listMySpecialistServices
+    tags:
+      - Services
+    summary: List services the current user's specialist profile is assigned to perform
+    security:
+      - bearerAuth: []
+    responses:
+      '200':
+        description: Services the current user is assigned to perform
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/ServiceSpecialistListResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '404':
+        description: This user does not have a specialist profile yet
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'

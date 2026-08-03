@@ -10,4 +10,12 @@ export type ListCompanyServicesResponse = OperationResponseByStatus<'listCompany
 export type ListPublicServicesResponse = OperationResponseByStatus<'listPublicServices', 200>;
 export type GetServiceByIdResponse = OperationResponseByStatus<'getServiceById', 200>;
 
+export type AssignServiceSpecialistRequest = OperationRequest<'assignServiceSpecialist'>;
+export type AssignServiceSpecialistResponse = OperationResponseByStatus<'assignServiceSpecialist', 201>;
+
+export type ListServiceSpecialistsResponse = OperationResponseByStatus<'listServiceSpecialists', 200>;
+export type UnassignServiceSpecialistResponse = OperationResponseByStatus<'unassignServiceSpecialist', 200>;
+export type ListMySpecialistServicesResponse = OperationResponseByStatus<'listMySpecialistServices', 200>;
+
 export type ServiceSchema = Schema<'Service'>;
+export type ServiceSpecialistSchema = Schema<'ServiceSpecialist'>;

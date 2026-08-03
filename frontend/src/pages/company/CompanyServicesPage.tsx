@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, Button, Card, Empty, List, Modal, Space, Spin, Tag } from 'antd';
-import { useParams } from 'react-router';
+import { Link, useParams } from 'react-router';
 
 import { createService, fetchCompanyServices, updateService, type Service } from '@/features/services/api/servicesApi';
 import { ServiceForm } from '@/features/services/ui/ServiceForm';
@@ -100,6 +100,9 @@ export function CompanyServicesPage() {
                 <Button key="edit" size="small" onClick={() => { setFormError(null); setEditingService(service); }}>
                   Edit
                 </Button>,
+                <Link key="specialists" to={`/company/${companyId}/services/${service.id}/specialists`}>
+                  <Button size="small">Specialists</Button>
+                </Link>,
                 service.status === 'draft' ? (
                   <Button
                     key="publish"

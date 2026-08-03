@@ -8,7 +8,9 @@ import { Session } from '@/modules/auth/sessions/session.entity.js';
 import { CompanyMember } from '@/modules/company-members/company-member.entity.js';
 import { CompanySpecialist } from '@/modules/company-specialists/company-specialist.entity.js';
 import { CompanySpecialistRequest } from '@/modules/company-specialists/company-specialist-request.entity.js';
+import { Appointment } from '@/modules/appointments/appointment.entity.js';
 import { Company } from '@/modules/companies/company.entity.js';
+import { ServiceSpecialist } from '@/modules/services/service-specialist.entity.js';
 import { Service } from '@/modules/services/service.entity.js';
 import { SpecialistProfile } from '@/modules/specialists/specialist-profile.entity.js';
 import { User } from '@/modules/users/user.entity.js';
@@ -30,6 +32,8 @@ export const AppDataSource = new DataSource({
     CompanySpecialistRequest,
     CompanySpecialist,
     Service,
+    ServiceSpecialist,
+    Appointment,
   ],
   migrations: [
     isProduction

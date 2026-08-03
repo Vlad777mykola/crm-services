@@ -536,6 +536,127 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/services/{serviceId}/specialists": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List specialists assigned to a service (visibility follows the service's own visibility rules) */
+        get: operations["listServiceSpecialists"];
+        put?: never;
+        /** Assign a specialist (already active at the company) to perform a service (owner/manager only) */
+        post: operations["assignServiceSpecialist"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/services/{serviceId}/specialists/{specialistProfileId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a specialist from a service (owner/manager only) */
+        delete: operations["unassignServiceSpecialist"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/specialists/me/services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List services the current user's specialist profile is assigned to perform */
+        get: operations["listMySpecialistServices"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{companyId}/appointments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List a company's appointment requests (owner/manager only) */
+        get: operations["listCompanyAppointments"];
+        put?: never;
+        /** Request an appointment for a company's service (any authenticated user) */
+        post: operations["createAppointment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{companyId}/appointments/{appointmentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Approve or reject a pending appointment request (owner/manager only) */
+        patch: operations["respondToAppointment"];
+        trace?: never;
+    };
+    "/appointments/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the current user's own appointment requests */
+        get: operations["listMyAppointments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/appointments/{appointmentId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel your own pending or approved appointment */
+        post: operations["cancelAppointment"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -869,6 +990,94 @@ export interface components {
              * @enum {string}
              */
             status?: "draft" | "published";
+        };
+        ServiceSummary: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+        };
+        ServiceSpecialist: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            serviceId: string;
+            /** Format: uuid */
+            companyId: string;
+            /** Format: uuid */
+            specialistProfileId: string;
+            specialist?: components["schemas"]["SpecialistSummary"];
+            service?: components["schemas"]["ServiceSummary"];
+            /** Format: date-time */
+            createdAt: string;
+        };
+        ServiceSpecialistListResponse: {
+            message: string;
+            data: components["schemas"]["ServiceSpecialist"][];
+        };
+        AssignServiceSpecialistRequest: {
+            /** Format: uuid */
+            specialistProfileId: string;
+        };
+        ServiceSpecialistResponse: {
+            message: string;
+            data: components["schemas"]["ServiceSpecialist"];
+        };
+        AppointmentClientSummary: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            email: string;
+        };
+        Appointment: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            companyId: string;
+            /** Format: uuid */
+            serviceId: string;
+            /** Format: uuid */
+            specialistProfileId: string | null;
+            /** Format: uuid */
+            clientUserId: string;
+            /** Format: date-time */
+            requestedStartAt: string;
+            /** @enum {string} */
+            status: "pending" | "approved" | "rejected" | "cancelled";
+            notes: string | null;
+            /** Format: date-time */
+            respondedAt: string | null;
+            company?: components["schemas"]["CompanySummary"];
+            service?: components["schemas"]["ServiceSummary"];
+            specialist?: components["schemas"]["SpecialistSummary"];
+            client?: components["schemas"]["AppointmentClientSummary"];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        AppointmentListResponse: {
+            message: string;
+            data: components["schemas"]["Appointment"][];
+        };
+        CreateAppointmentRequest: {
+            /** Format: uuid */
+            serviceId: string;
+            /**
+             * Format: uuid
+             * @description Optional preferred specialist. Must be assigned to the service if provided.
+             */
+            specialistProfileId?: string | null;
+            /** Format: date-time */
+            requestedStartAt: string;
+            notes?: string | null;
+        };
+        AppointmentResponse: {
+            message: string;
+            data: components["schemas"]["Appointment"];
+        };
+        RespondToAppointmentRequest: {
+            /** @enum {string} */
+            status: "approved" | "rejected";
         };
     };
     responses: never;
@@ -2178,6 +2387,421 @@ export interface operations {
             };
             /** @description Service not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listServiceSpecialists: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Assigned specialists */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceSpecialistListResponse"];
+                };
+            };
+            /** @description Service not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    assignServiceSpecialist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignServiceSpecialistRequest"];
+            };
+        };
+        responses: {
+            /** @description Specialist assigned */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceSpecialistResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not a company owner/manager */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Specialist is not active in this company, or is already assigned */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    unassignServiceSpecialist: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                serviceId: string;
+                specialistProfileId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Specialist unassigned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceSpecialistResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not a company owner/manager */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Assignment not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listMySpecialistServices: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Services the current user is assigned to perform */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceSpecialistListResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description This user does not have a specialist profile yet */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listCompanyAppointments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Company appointments */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppointmentListResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not a company owner/manager */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createAppointment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAppointmentRequest"];
+            };
+        };
+        responses: {
+            /** @description Appointment requested */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppointmentResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service (or preferred specialist) not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Preferred specialist is not assigned to this service */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    respondToAppointment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                appointmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RespondToAppointmentRequest"];
+            };
+        };
+        responses: {
+            /** @description Appointment updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppointmentResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not a company owner/manager */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Appointment not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description This appointment has already been responded to */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    listMyAppointments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Your appointments */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppointmentListResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    cancelAppointment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                appointmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Appointment cancelled */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AppointmentResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Appointment not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description This appointment can no longer be cancelled */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

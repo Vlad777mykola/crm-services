@@ -1,0 +1,201 @@
+Collection:
+  post:
+    operationId: createAppointment
+    tags:
+      - Appointments
+    summary: Request an appointment for a company's service (any authenticated user)
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: './schemas.yaml#/CreateAppointmentRequest'
+    responses:
+      '201':
+        description: Appointment requested
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/AppointmentResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '404':
+        description: Service (or preferred specialist) not found
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '409':
+        description: Preferred specialist is not assigned to this service
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+  get:
+    operationId: listCompanyAppointments
+    tags:
+      - Appointments
+    summary: List a company's appointment requests (owner/manager only)
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: Company appointments
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/AppointmentListResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '403':
+        description: Not a company owner/manager
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+
+ByAppointmentId:
+  patch:
+    operationId: respondToAppointment
+    tags:
+      - Appointments
+    summary: Approve or reject a pending appointment request (owner/manager only)
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: appointmentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: './schemas.yaml#/RespondToAppointmentRequest'
+    responses:
+      '200':
+        description: Appointment updated
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/AppointmentResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '403':
+        description: Not a company owner/manager
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '404':
+        description: Appointment not found
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '409':
+        description: This appointment has already been responded to
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+
+MyAppointments:
+  get:
+    operationId: listMyAppointments
+    tags:
+      - Appointments
+    summary: List the current user's own appointment requests
+    security:
+      - bearerAuth: []
+    responses:
+      '200':
+        description: Your appointments
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/AppointmentListResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+
+Cancel:
+  post:
+    operationId: cancelAppointment
+    tags:
+      - Appointments
+    summary: Cancel your own pending or approved appointment
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: appointmentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: Appointment cancelled
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/AppointmentResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '404':
+        description: Appointment not found
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '409':
+        description: This appointment can no longer be cancelled
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'

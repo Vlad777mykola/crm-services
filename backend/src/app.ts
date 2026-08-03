@@ -7,10 +7,12 @@ import { notFoundHandler } from './common/middleware/notFoundHandler.js';
 import { requestLogger } from './common/middleware/requestLogger.js';
 import { env } from './env/env.js';
 import { authRouter } from './modules/auth/auth.routes.js';
+import { appointmentsRouter } from './modules/appointments/appointments.routes.js';
 import { companiesRouter } from './modules/companies/companies.routes.js';
 import { companyMembersRouter } from './modules/company-members/company-members.routes.js';
 import { companySpecialistsRouter } from './modules/company-specialists/company-specialists.routes.js';
 import { healthRouter } from './modules/health/health.routes.js';
+import { serviceSpecialistsRouter } from './modules/services/service-specialists.routes.js';
 import { servicesRouter } from './modules/services/services.routes.js';
 import { specialistsRouter } from './modules/specialists/specialists.routes.js';
 import { usersRouter } from './modules/users/users.routes.js';
@@ -31,6 +33,8 @@ export function createApp(): Express {
   app.use(specialistsRouter);
   app.use(companySpecialistsRouter);
   app.use(servicesRouter);
+  app.use(serviceSpecialistsRouter);
+  app.use(appointmentsRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

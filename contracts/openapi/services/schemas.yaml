@@ -112,3 +112,77 @@ ServiceListResponse:
   required:
     - message
     - data
+
+AssignServiceSpecialistRequest:
+  type: object
+  properties:
+    specialistProfileId:
+      type: string
+      format: uuid
+  required:
+    - specialistProfileId
+
+ServiceSummary:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    name:
+      type: string
+  required:
+    - id
+    - name
+
+ServiceSpecialist:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    serviceId:
+      type: string
+      format: uuid
+    companyId:
+      type: string
+      format: uuid
+    specialistProfileId:
+      type: string
+      format: uuid
+    specialist:
+      $ref: '../company-specialists/schemas.yaml#/SpecialistSummary'
+    service:
+      $ref: '#/ServiceSummary'
+    createdAt:
+      type: string
+      format: date-time
+  required:
+    - id
+    - serviceId
+    - companyId
+    - specialistProfileId
+    - createdAt
+
+ServiceSpecialistResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      $ref: '#/ServiceSpecialist'
+  required:
+    - message
+    - data
+
+ServiceSpecialistListResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      type: array
+      items:
+        $ref: '#/ServiceSpecialist'
+  required:
+    - message
+    - data

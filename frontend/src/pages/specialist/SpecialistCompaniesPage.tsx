@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Alert, Card, Empty, List, Spin } from 'antd';
+import { Alert, Card, Empty, List, Space, Spin } from 'antd';
 import { Link } from 'react-router';
 
 import { fetchMySpecialistCompanies } from '@/features/company-specialists/api/companySpecialistsApi';
@@ -13,7 +13,12 @@ export function SpecialistCompaniesPage() {
   return (
     <Card
       title="Companies you work for"
-      extra={<Link to="/specialist/company-requests">Company requests</Link>}
+      extra={
+        <Space>
+          <Link to="/specialist/services">My services</Link>
+          <Link to="/specialist/company-requests">Company requests</Link>
+        </Space>
+      }
       style={{ maxWidth: 640, margin: '2rem auto' }}
     >
       {isLoading && <Spin style={{ display: 'block', margin: '2rem auto' }} />}

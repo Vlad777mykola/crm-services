@@ -13,6 +13,7 @@ tags:
   - name: Specialists
   - name: Company Specialists
   - name: Services
+  - name: Appointments
 components:
   securitySchemes:
     bearerAuth:
@@ -120,3 +121,17 @@ paths:
     $ref: './openapi/services/paths.yaml#/PublicList'
   /services/{serviceId}:
     $ref: './openapi/services/paths.yaml#/BySlugId'
+  /services/{serviceId}/specialists:
+    $ref: './openapi/services/paths.yaml#/SpecialistsCollection'
+  /services/{serviceId}/specialists/{specialistProfileId}:
+    $ref: './openapi/services/paths.yaml#/BySpecialistProfileId'
+  /specialists/me/services:
+    $ref: './openapi/services/paths.yaml#/MyServices'
+  /companies/{companyId}/appointments:
+    $ref: './openapi/appointments/paths.yaml#/Collection'
+  /companies/{companyId}/appointments/{appointmentId}:
+    $ref: './openapi/appointments/paths.yaml#/ByAppointmentId'
+  /appointments/me:
+    $ref: './openapi/appointments/paths.yaml#/MyAppointments'
+  /appointments/{appointmentId}/cancel:
+    $ref: './openapi/appointments/paths.yaml#/Cancel'

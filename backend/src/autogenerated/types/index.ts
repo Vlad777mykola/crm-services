@@ -6,3 +6,4 @@ export * from './company-members/index.js';
 export * from './specialists/index.js';
 export * from './company-specialists/index.js';
 export * from './services/index.js';
+export * from './appointments/index.js';

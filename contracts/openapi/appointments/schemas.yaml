@@ -1,0 +1,127 @@
+CreateAppointmentRequest:
+  type: object
+  properties:
+    serviceId:
+      type: string
+      format: uuid
+    specialistProfileId:
+      type: string
+      format: uuid
+      nullable: true
+      description: Optional preferred specialist. Must be assigned to the service if provided.
+    requestedStartAt:
+      type: string
+      format: date-time
+    notes:
+      type: string
+      nullable: true
+  required:
+    - serviceId
+    - requestedStartAt
+
+RespondToAppointmentRequest:
+  type: object
+  properties:
+    status:
+      type: string
+      enum: [approved, rejected]
+  required:
+    - status
+
+AppointmentClientSummary:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    name:
+      type: string
+    email:
+      type: string
+  required:
+    - id
+    - name
+    - email
+
+Appointment:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    companyId:
+      type: string
+      format: uuid
+    serviceId:
+      type: string
+      format: uuid
+    specialistProfileId:
+      type: string
+      format: uuid
+      nullable: true
+    clientUserId:
+      type: string
+      format: uuid
+    requestedStartAt:
+      type: string
+      format: date-time
+    status:
+      type: string
+      enum: [pending, approved, rejected, cancelled]
+    notes:
+      type: string
+      nullable: true
+    respondedAt:
+      type: string
+      format: date-time
+      nullable: true
+    company:
+      $ref: '../company-specialists/schemas.yaml#/CompanySummary'
+    service:
+      $ref: '../services/schemas.yaml#/ServiceSummary'
+    specialist:
+      $ref: '../company-specialists/schemas.yaml#/SpecialistSummary'
+    client:
+      $ref: '#/AppointmentClientSummary'
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+  required:
+    - id
+    - companyId
+    - serviceId
+    - specialistProfileId
+    - clientUserId
+    - requestedStartAt
+    - status
+    - notes
+    - respondedAt
+    - createdAt
+    - updatedAt
+
+AppointmentResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      $ref: '#/Appointment'
+  required:
+    - message
+    - data
+
+AppointmentListResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      type: array
+      items:
+        $ref: '#/Appointment'
+  required:
+    - message
+    - data

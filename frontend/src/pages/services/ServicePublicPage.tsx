@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Alert, Card, Descriptions, Spin, Typography } from 'antd';
+import { Alert, Button, Card, Descriptions, Space, Spin, Typography } from 'antd';
 import { Link, useParams } from 'react-router';
 
 import { fetchServiceById } from '@/features/services/api/servicesApi';
@@ -45,6 +45,11 @@ export function ServicePublicPage() {
           </Descriptions.Item>
         )}
       </Descriptions>
+      <Space style={{ marginTop: 16 }}>
+        <Link to={`/services/${service.id}/book`}>
+          <Button type="primary">Request appointment</Button>
+        </Link>
+      </Space>
     </Card>
   );
 }

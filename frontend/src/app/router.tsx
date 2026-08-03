@@ -4,22 +4,27 @@ import { LoginPage } from '@/features/auth/ui/LoginPage';
 import { ProtectedRoute } from '@/features/auth/ui/ProtectedRoute';
 import { RegisterPage } from '@/features/auth/ui/RegisterPage';
 import { AppHomePage } from '@/pages/app/AppHomePage';
+import { MyAppointmentsPage } from '@/pages/app/MyAppointmentsPage';
 import { ProfilePage } from '@/pages/app/ProfilePage';
+import { RequestAppointmentPage } from '@/pages/appointments/RequestAppointmentPage';
 import { CompaniesListPage } from '@/pages/companies/CompaniesListPage';
 import { CompanyPublicPage } from '@/pages/companies/CompanyPublicPage';
+import { CompanyAppointmentsPage } from '@/pages/company/CompanyAppointmentsPage';
 import { CompanyDashboardPage } from '@/pages/company/CompanyDashboardPage';
 import { CompanyMembersPage } from '@/pages/company/CompanyMembersPage';
 import { CompanyProfilePage } from '@/pages/company/CompanyProfilePage';
+import { CompanyServicesPage } from '@/pages/company/CompanyServicesPage';
 import { CompanySpecialistRequestsPage } from '@/pages/company/CompanySpecialistRequestsPage';
 import { CompanySpecialistsPage } from '@/pages/company/CompanySpecialistsPage';
-import { CompanyServicesPage } from '@/pages/company/CompanyServicesPage';
 import { CreateCompanyPage } from '@/pages/company/CreateCompanyPage';
+import { ServiceSpecialistsPage } from '@/pages/company/ServiceSpecialistsPage';
 import { HealthPage } from '@/pages/health/HealthPage';
 import { ServicePublicPage } from '@/pages/services/ServicePublicPage';
 import { ServicesListPage } from '@/pages/services/ServicesListPage';
 import { SpecialistCompaniesPage } from '@/pages/specialist/SpecialistCompaniesPage';
 import { SpecialistCompanyRequestsPage } from '@/pages/specialist/SpecialistCompanyRequestsPage';
 import { SpecialistProfilePage } from '@/pages/specialist/SpecialistProfilePage';
+import { SpecialistServicesPage } from '@/pages/specialist/SpecialistServicesPage';
 import { SpecialistPublicPage } from '@/pages/specialists/SpecialistPublicPage';
 import { SpecialistsListPage } from '@/pages/specialists/SpecialistsListPage';
 
@@ -49,6 +54,14 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <ProfilePage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/app/appointments',
+    element: (
+      <ProtectedRoute>
+        <MyAppointmentsPage />
       </ProtectedRoute>
     ),
   },
@@ -117,12 +130,36 @@ export const router = createBrowserRouter([
     ),
   },
   {
+    path: '/company/:companyId/services/:serviceId/specialists',
+    element: (
+      <ProtectedRoute>
+        <ServiceSpecialistsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/company/:companyId/appointments',
+    element: (
+      <ProtectedRoute>
+        <CompanyAppointmentsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: '/services',
     element: <ServicesListPage />,
   },
   {
     path: '/services/:serviceId',
     element: <ServicePublicPage />,
+  },
+  {
+    path: '/services/:serviceId/book',
+    element: (
+      <ProtectedRoute>
+        <RequestAppointmentPage />
+      </ProtectedRoute>
+    ),
   },
   {
     path: '/specialists',
@@ -153,6 +190,14 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <SpecialistCompaniesPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/specialist/services',
+    element: (
+      <ProtectedRoute>
+        <SpecialistServicesPage />
       </ProtectedRoute>
     ),
   },
