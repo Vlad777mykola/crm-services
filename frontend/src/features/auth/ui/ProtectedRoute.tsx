@@ -2,7 +2,7 @@ import type { PropsWithChildren } from 'react';
 import { Spin } from 'antd';
 import { Navigate } from 'react-router';
 
-import { useAuth } from '../model/useAuth';
+import { useAuth } from '@/features/auth/model/useAuth';
 
 export function ProtectedRoute({ children }: PropsWithChildren) {
   const { status } = useAuth();

@@ -2,8 +2,8 @@ import type { NextFunction, Request, Response } from 'express';
 
 // `../auth/express.d.ts` augments `Express.Request` with `auth` - picked up automatically
 // by tsc via `include`, no runtime import needed (it has no JS output).
-import { verifyAccessToken } from '../auth/jwt.js';
-import { AppError } from '../errors/AppError.js';
+import { verifyAccessToken } from '@/common/auth/jwt.js';
+import { AppError } from '@/common/errors/AppError.js';
 
 function extractBearerToken(req: Request): string | undefined {
   const header = req.headers.authorization;

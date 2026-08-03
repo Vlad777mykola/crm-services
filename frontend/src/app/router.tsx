@@ -1,10 +1,11 @@
 import { createBrowserRouter } from 'react-router';
 
-import { LoginPage } from '../features/auth/ui/LoginPage';
-import { ProtectedRoute } from '../features/auth/ui/ProtectedRoute';
-import { RegisterPage } from '../features/auth/ui/RegisterPage';
-import { AppHomePage } from '../pages/app/AppHomePage';
-import { HealthPage } from '../pages/health/HealthPage';
+import { LoginPage } from '@/features/auth/ui/LoginPage';
+import { ProtectedRoute } from '@/features/auth/ui/ProtectedRoute';
+import { RegisterPage } from '@/features/auth/ui/RegisterPage';
+import { AppHomePage } from '@/pages/app/AppHomePage';
+import { ProfilePage } from '@/pages/app/ProfilePage';
+import { HealthPage } from '@/pages/health/HealthPage';
 
 export const router = createBrowserRouter([
   {
@@ -24,6 +25,14 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <AppHomePage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/app/profile',
+    element: (
+      <ProtectedRoute>
+        <ProfilePage />
       </ProtectedRoute>
     ),
   },

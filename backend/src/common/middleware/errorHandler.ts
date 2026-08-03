@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 
-import { logger } from '../../infrastructure/logger/logger.js';
-import { AppError } from '../errors/AppError.js';
+import { logger } from '@/infrastructure/logger/logger.js';
+import { AppError } from '@/common/errors/AppError.js';
 
 export function errorHandler(err: unknown, req: Request, res: Response, _next: NextFunction): void {
   const statusCode = err instanceof AppError ? err.statusCode : 500;

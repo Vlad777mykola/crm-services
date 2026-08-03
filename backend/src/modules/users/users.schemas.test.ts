@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { createUserRequestSchema, userIdParamsSchema } from './users.schemas.js';
+import { createUserRequestSchema, updateUserRequestSchema, userIdParamsSchema } from './users.schemas.js';
 
 describe('createUserRequestSchema', () => {
   it('accepts a valid payload', () => {
@@ -27,6 +27,33 @@ describe('userIdParamsSchema', () => {
 
   it('rejects a non-uuid id', () => {
     const result = userIdParamsSchema.safeParse({ id: 'not-a-uuid' });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('updateUserRequestSchema', () => {
+  it('accepts an empty patch', () => {
+    const result = updateUserRequestSchema.safeParse({});
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts a partial patch with nullable fields cleared', () => {
+    const result = updateUserRequestSchema.safeParse({ phone: null, city: null, bio: null });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts a full patch', () => {
+    const result = updateUserRequestSchema.safeParse({
+      name: 'Jane Doe',
+      phone: '+1234567890',
+      city: 'Berlin',
+      bio: 'Hello there',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects an empty name', () => {
+    const result = updateUserRequestSchema.safeParse({ name: '' });
     expect(result.success).toBe(false);
   });
 });

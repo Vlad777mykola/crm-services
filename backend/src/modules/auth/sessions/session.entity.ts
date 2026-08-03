@@ -10,7 +10,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-import { User } from '../../users/user.entity.js';
+import { User } from '@/modules/users/user.entity.js';
 
 export enum SessionStatus {
   ACTIVE = 'active',

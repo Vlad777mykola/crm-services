@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Alert, Card, Descriptions, Spin } from 'antd';
 
-import { apiFetch } from '../../shared/api/client';
+import { apiFetch } from '@/shared/api/client';
 
 interface HealthResponse {
   status: string;

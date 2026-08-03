@@ -1,5 +1,5 @@
-import { authorizedFetch } from '../../../shared/api/authorizedFetch';
-import { getApiUrl } from '../../../shared/lib/env';
+import { authorizedFetch } from '@/shared/api/authorizedFetch';
+import { getApiUrl } from '@/shared/lib/env';
 
 // NOTE: hand-written until Orval generates a typed client from contracts/openapi.json
 // (see contracts/README.md, Step 7/Phase 16). Shape mirrors contracts/openapi/auth/schemas.yaml.
@@ -8,6 +8,8 @@ export interface AuthUser {
   email: string;
   name: string;
   phone: string | null;
+  city: string | null;
+  bio: string | null;
   status: 'active' | 'disabled';
   createdAt: string;
   updatedAt: string;

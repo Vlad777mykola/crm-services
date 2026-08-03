@@ -2,10 +2,10 @@ import 'reflect-metadata';
 
 import { DataSource } from 'typeorm';
 
-import { env } from '../../env/env.js';
-import { AuthIdentity } from '../../modules/auth/identities/auth-identity.entity.js';
-import { Session } from '../../modules/auth/sessions/session.entity.js';
-import { User } from '../../modules/users/user.entity.js';
+import { env } from '@/env/env.js';
+import { AuthIdentity } from '@/modules/auth/identities/auth-identity.entity.js';
+import { Session } from '@/modules/auth/sessions/session.entity.js';
+import { User } from '@/modules/users/user.entity.js';
 
 const isProduction = env.NODE_ENV === 'production';
 

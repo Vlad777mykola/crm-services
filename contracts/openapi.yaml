@@ -67,5 +67,7 @@ paths:
     $ref: './openapi/auth/paths.yaml#/Me'
   /users:
     $ref: './openapi/users/paths.yaml#/UsersCollection'
+  /users/me:
+    $ref: './openapi/users/paths.yaml#/Me'
   /users/{id}:
     $ref: './openapi/users/paths.yaml#/UserById'

@@ -1,12 +1,13 @@
 import type { Repository } from 'typeorm';
 
-import { hashPassword, verifyPassword } from '../../common/auth/password.js';
-import { signAccessToken } from '../../common/auth/jwt.js';
-import { generateRefreshToken, hashRefreshToken } from '../../common/auth/refresh-token.js';
-import { AppError } from '../../common/errors/AppError.js';
-import { env } from '../../env/env.js';
-import { AppDataSource } from '../../infrastructure/database/data-source.js';
-import { User, UserStatus } from '../users/user.entity.js';
+import { hashPassword, verifyPassword } from '@/common/auth/password.js';
+import { signAccessToken } from '@/common/auth/jwt.js';
+import { generateRefreshToken, hashRefreshToken } from '@/common/auth/refresh-token.js';
+import { AppError } from '@/common/errors/AppError.js';
+import { env } from '@/env/env.js';
+import { AppDataSource } from '@/infrastructure/database/data-source.js';
+import { User, UserStatus } from '@/modules/users/user.entity.js';
+
 import { AuthIdentity } from './identities/auth-identity.entity.js';
 import { Session, SessionStatus } from './sessions/session.entity.js';
 

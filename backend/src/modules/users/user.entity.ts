@@ -21,6 +21,12 @@ export class User {
   @Column({ type: 'varchar', length: 30, nullable: true })
   phone!: string | null;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  city!: string | null;
+
+  @Column({ type: 'text', nullable: true })
+  bio!: string | null;
+
   @Column({ type: 'enum', enum: UserStatus, default: UserStatus.ACTIVE })
   status!: UserStatus;
 

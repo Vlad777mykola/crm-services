@@ -11,7 +11,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-import { User } from '../../users/user.entity.js';
+import { User } from '@/modules/users/user.entity.js';
 
 /**
  * One row per (user, auth provider) pair. `provider` is e.g. "password", "google",

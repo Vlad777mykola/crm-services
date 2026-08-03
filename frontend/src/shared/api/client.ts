@@ -1,4 +1,4 @@
-import { getApiUrl } from '../lib/env';
+import { getApiUrl } from '@/shared/lib/env';
 
 // NOTE(step 7): this hand-written fetch wrapper is a stand-in until Orval generates
 // a typed client from contracts/openapi.json into shared/api/generated/. Callers should

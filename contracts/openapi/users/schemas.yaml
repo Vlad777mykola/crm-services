@@ -25,6 +25,12 @@ User:
     phone:
       type: string
       nullable: true
+    city:
+      type: string
+      nullable: true
+    bio:
+      type: string
+      nullable: true
     status:
       type: string
       enum: [active, disabled]
@@ -39,9 +45,27 @@ User:
     - email
     - name
     - phone
+    - city
+    - bio
     - status
     - createdAt
     - updatedAt
+
+UpdateUserRequest:
+  type: object
+  properties:
+    name:
+      type: string
+      minLength: 1
+    phone:
+      type: string
+      nullable: true
+    city:
+      type: string
+      nullable: true
+    bio:
+      type: string
+      nullable: true
 
 UserResponse:
   type: object

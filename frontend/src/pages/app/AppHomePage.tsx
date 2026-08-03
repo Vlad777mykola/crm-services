@@ -1,7 +1,7 @@
-import { Button, Card, Descriptions, Typography } from 'antd';
-import { useNavigate } from 'react-router';
+import { Button, Card, Descriptions, Space, Typography } from 'antd';
+import { Link, useNavigate } from 'react-router';
 
-import { useAuth } from '../../features/auth/model/useAuth';
+import { useAuth } from '@/features/auth/model/useAuth';
 
 export function AppHomePage() {
   const { user, logout } = useAuth();
@@ -21,9 +21,14 @@ export function AppHomePage() {
         <Descriptions.Item label="Email">{user?.email}</Descriptions.Item>
         <Descriptions.Item label="Status">{user?.status}</Descriptions.Item>
       </Descriptions>
-      <Button danger onClick={onLogout} style={{ marginTop: 16 }}>
-        Log out
-      </Button>
+      <Space style={{ marginTop: 16 }}>
+        <Link to="/app/profile">
+          <Button>Edit profile</Button>
+        </Link>
+        <Button danger onClick={onLogout}>
+          Log out
+        </Button>
+      </Space>
     </Card>
   );
 }

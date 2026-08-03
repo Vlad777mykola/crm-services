@@ -4,8 +4,8 @@ import { Alert, Button, Card, Form, Input, Typography } from 'antd';
 import { Controller, useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router';
 
-import { useAuth } from '../model/useAuth';
-import { loginFormSchema, type LoginFormValues } from '../model/schemas';
+import { useAuth } from '@/features/auth/model/useAuth';
+import { loginFormSchema, type LoginFormValues } from '@/features/auth/model/schemas';
 
 export function LoginPage() {
   const { login } = useAuth();

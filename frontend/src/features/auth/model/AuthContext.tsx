@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState, type PropsWithChildren } from 'react';
 
-import { setAccessToken } from '../../../shared/api/tokenStore';
 import {
   fetchCurrentUser,
   loginRequest,
@@ -8,7 +7,9 @@ import {
   refreshRequest,
   registerRequest,
   type AuthUser,
-} from '../api/authApi';
+} from '@/features/auth/api/authApi';
+import { setAccessToken } from '@/shared/api/tokenStore';
+
 import { AuthContext, type AuthStatus } from './authContextInstance';
 
 export function AuthProvider({ children }: PropsWithChildren) {

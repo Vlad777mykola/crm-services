@@ -1,9 +1,10 @@
 import type { CookieOptions, Request } from 'express';
 import { Router } from 'express';
 
-import { requireAuth } from '../../common/middleware/requireAuth.js';
-import { validate } from '../../common/middleware/validate.js';
-import { env } from '../../env/env.js';
+import { requireAuth } from '@/common/middleware/requireAuth.js';
+import { validate } from '@/common/middleware/validate.js';
+import { env } from '@/env/env.js';
+
 import { loginRequestSchema, registerRequestSchema } from './auth.schemas.js';
 import { getCurrentUser, login, logout, refresh, register, type RequestMeta } from './auth.service.js';
 

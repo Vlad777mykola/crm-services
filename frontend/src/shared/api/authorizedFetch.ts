@@ -1,4 +1,4 @@
-import { getApiUrl } from '../lib/env';
+import { getApiUrl } from '@/shared/lib/env';
 import { getAccessToken, setAccessToken } from './tokenStore';
 
 // Deduplicates concurrent refresh attempts so a burst of 401s only triggers one

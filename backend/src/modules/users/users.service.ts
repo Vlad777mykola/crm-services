@@ -1,7 +1,8 @@
 import type { Repository } from 'typeorm';
 
-import { AppError } from '../../common/errors/AppError.js';
-import { AppDataSource } from '../../infrastructure/database/data-source.js';
+import { AppError } from '@/common/errors/AppError.js';
+import { AppDataSource } from '@/infrastructure/database/data-source.js';
+
 import { User } from './user.entity.js';
 
 function getUserRepository(): Repository<User> {
@@ -29,4 +30,19 @@ export async function getUserById(id: string): Promise<User> {
   }
 
   return user;
+}
+
+export async function updateUserProfile(
+  userId: string,
+  patch: { name?: string; phone?: string | null; city?: string | null; bio?: string | null },
+): Promise<User> {
+  const repository = getUserRepository();
+
+  const user = await repository.findOne({ where: { id: userId } });
+  if (!user) {
+    throw new AppError('User not found', 404);
+  }
+
+  Object.assign(user, patch);
+  return repository.save(user);
 }

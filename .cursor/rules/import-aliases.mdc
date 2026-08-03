@@ -1,0 +1,44 @@
+---
+description: Use path aliases instead of relative parent-folder imports
+globs: frontend/src/**/*.ts,frontend/src/**/*.tsx,backend/src/**/*.ts
+alwaysApply: false
+---
+
+# Import Aliases
+
+Both `frontend` and `backend` are configured with a `@/*` path alias that maps to
+that package's `src/*` folder (see `tsconfig*.json`, `vite.config.ts`,
+`vitest.config.ts`, and `backend/tsconfig.json` + `tsc-alias` in the build step).
+
+## Rule
+
+- **Same directory** (`./foo.js`) or **descending into a child folder**
+  (`./child/foo.js`): keep a **relative** import. These stay local to the
+  current module and don't need an alias.
+- **Any import that goes up a directory** (starts with `../`, regardless of how
+  many levels): use the **`@/...` alias** rooted at `src/` instead. Never write
+  `../../../shared/...` or `../users/user.entity.js`.
+
+```ts
+// ❌ BAD - ascends into another folder with a relative path
+import { AppError } from '../../common/errors/AppError.js';
+import { useAuth } from '../../features/auth/model/useAuth';
+
+// ✅ GOOD - use the alias for anything outside the current folder
+import { AppError } from '@/common/errors/AppError.js';
+import { useAuth } from '@/features/auth/model/useAuth';
+
+// ✅ GOOD - same-directory and child-directory imports stay relative
+import { userIdParamsSchema } from './users.schemas.js';
+import { AuthIdentity } from './identities/auth-identity.entity.js';
+```
+
+## Notes
+
+- Backend imports still need the explicit `.js` extension (Node ESM /
+  `NodeNext`), e.g. `@/env/env.js`. `tsc-alias` rewrites `@/...` back to real
+  relative paths in the compiled `dist/` output during `yarn build`, so
+  production `node dist/main.js` never sees the alias.
+- Frontend imports don't need an extension, e.g. `@/shared/api/client`.
+- When adding a new top-level folder under `src/` (frontend or backend), no
+  extra config is needed - it's already covered by the single `@/*` mapping.
