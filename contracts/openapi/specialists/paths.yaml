@@ -1,0 +1,137 @@
+Profile:
+  post:
+    operationId: createSpecialistProfile
+    tags:
+      - Specialists
+    summary: Create the current user's specialist profile (one per user)
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: './schemas.yaml#/CreateSpecialistProfileRequest'
+    responses:
+      '201':
+        description: Specialist profile created
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/SpecialistProfileResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '409':
+        description: This user already has a specialist profile
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+
+Me:
+  get:
+    operationId: getMySpecialistProfile
+    tags:
+      - Specialists
+    summary: Get the current user's specialist profile
+    security:
+      - bearerAuth: []
+    responses:
+      '200':
+        description: Current user's specialist profile
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/SpecialistProfileResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '404':
+        description: This user does not have a specialist profile yet
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+  patch:
+    operationId: updateMySpecialistProfile
+    tags:
+      - Specialists
+    summary: Update the current user's specialist profile
+    security:
+      - bearerAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: './schemas.yaml#/UpdateSpecialistProfileRequest'
+    responses:
+      '200':
+        description: Specialist profile updated
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/SpecialistProfileResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '404':
+        description: This user does not have a specialist profile yet
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+
+Public:
+  get:
+    operationId: getPublicSpecialists
+    tags:
+      - Specialists
+    summary: List published specialist profiles
+    responses:
+      '200':
+        description: Published specialist profiles
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/SpecialistProfileListResponse'
+
+BySpecialistId:
+  get:
+    operationId: getSpecialistById
+    tags:
+      - Specialists
+    summary: Get a specialist profile by id (published profiles are public; drafts are owner-only)
+    security:
+      - {}
+      - bearerAuth: []
+    parameters:
+      - name: specialistId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: Specialist profile found
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/SpecialistProfileResponse'
+      '404':
+        description: Specialist profile not found
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'

@@ -1,0 +1,117 @@
+CreateSpecialistProfileRequest:
+  type: object
+  properties:
+    displayName:
+      type: string
+      minLength: 1
+    headline:
+      type: string
+      nullable: true
+    bio:
+      type: string
+      nullable: true
+    category:
+      type: string
+      nullable: true
+    city:
+      type: string
+      nullable: true
+    isRemoteSupported:
+      type: boolean
+  required:
+    - displayName
+
+UpdateSpecialistProfileRequest:
+  type: object
+  properties:
+    displayName:
+      type: string
+      minLength: 1
+    headline:
+      type: string
+      nullable: true
+    bio:
+      type: string
+      nullable: true
+    category:
+      type: string
+      nullable: true
+    city:
+      type: string
+      nullable: true
+    isRemoteSupported:
+      type: boolean
+    status:
+      type: string
+      enum: [draft, published]
+
+SpecialistProfile:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    userId:
+      type: string
+      format: uuid
+    displayName:
+      type: string
+    headline:
+      type: string
+      nullable: true
+    bio:
+      type: string
+      nullable: true
+    category:
+      type: string
+      nullable: true
+    city:
+      type: string
+      nullable: true
+    isRemoteSupported:
+      type: boolean
+    status:
+      type: string
+      enum: [draft, published, suspended]
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+  required:
+    - id
+    - userId
+    - displayName
+    - headline
+    - bio
+    - category
+    - city
+    - isRemoteSupported
+    - status
+    - createdAt
+    - updatedAt
+
+SpecialistProfileResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      $ref: '#/SpecialistProfile'
+  required:
+    - message
+    - data
+
+SpecialistProfileListResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      type: array
+      items:
+        $ref: '#/SpecialistProfile'
+  required:
+    - message
+    - data

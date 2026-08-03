@@ -12,6 +12,9 @@ import { CompanyMembersPage } from '@/pages/company/CompanyMembersPage';
 import { CompanyProfilePage } from '@/pages/company/CompanyProfilePage';
 import { CreateCompanyPage } from '@/pages/company/CreateCompanyPage';
 import { HealthPage } from '@/pages/health/HealthPage';
+import { SpecialistProfilePage } from '@/pages/specialist/SpecialistProfilePage';
+import { SpecialistPublicPage } from '@/pages/specialists/SpecialistPublicPage';
+import { SpecialistsListPage } from '@/pages/specialists/SpecialistsListPage';
 
 export const router = createBrowserRouter([
   {
@@ -79,6 +82,22 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <CompanyMembersPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/specialists',
+    element: <SpecialistsListPage />,
+  },
+  {
+    path: '/specialists/:specialistId',
+    element: <SpecialistPublicPage />,
+  },
+  {
+    path: '/specialist/profile',
+    element: (
+      <ProtectedRoute>
+        <SpecialistProfilePage />
       </ProtectedRoute>
     ),
   },

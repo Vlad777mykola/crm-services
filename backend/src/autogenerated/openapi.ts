@@ -279,6 +279,75 @@ export interface paths {
         patch: operations["updateCompanyMember"];
         trace?: never;
     };
+    "/specialists/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create the current user's specialist profile (one per user) */
+        post: operations["createSpecialistProfile"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/specialists/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get the current user's specialist profile */
+        get: operations["getMySpecialistProfile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update the current user's specialist profile */
+        patch: operations["updateMySpecialistProfile"];
+        trace?: never;
+    };
+    "/specialists/public": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List published specialist profiles */
+        get: operations["getPublicSpecialists"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/specialists/{specialistId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a specialist profile by id (published profiles are public; drafts are owner-only) */
+        get: operations["getSpecialistById"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -454,6 +523,50 @@ export interface components {
         UpdateMemberRequest: {
             /** @enum {string} */
             status: "active" | "removed";
+        };
+        CreateSpecialistProfileRequest: {
+            displayName: string;
+            headline?: string | null;
+            bio?: string | null;
+            category?: string | null;
+            city?: string | null;
+            isRemoteSupported?: boolean;
+        };
+        SpecialistProfile: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            userId: string;
+            displayName: string;
+            headline: string | null;
+            bio: string | null;
+            category: string | null;
+            city: string | null;
+            isRemoteSupported: boolean;
+            /** @enum {string} */
+            status: "draft" | "published" | "suspended";
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        SpecialistProfileResponse: {
+            message: string;
+            data: components["schemas"]["SpecialistProfile"];
+        };
+        UpdateSpecialistProfileRequest: {
+            displayName?: string;
+            headline?: string | null;
+            bio?: string | null;
+            category?: string | null;
+            city?: string | null;
+            isRemoteSupported?: boolean;
+            /** @enum {string} */
+            status?: "draft" | "published";
+        };
+        SpecialistProfileListResponse: {
+            message: string;
+            data: components["schemas"]["SpecialistProfile"][];
         };
     };
     responses: never;
@@ -1120,6 +1233,179 @@ export interface operations {
                 };
             };
             /** @description Member not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    createSpecialistProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSpecialistProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description Specialist profile created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpecialistProfileResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description This user already has a specialist profile */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getMySpecialistProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current user's specialist profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpecialistProfileResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description This user does not have a specialist profile yet */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    updateMySpecialistProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateSpecialistProfileRequest"];
+            };
+        };
+        responses: {
+            /** @description Specialist profile updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpecialistProfileResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description This user does not have a specialist profile yet */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getPublicSpecialists: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Published specialist profiles */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpecialistProfileListResponse"];
+                };
+            };
+        };
+    };
+    getSpecialistById: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                specialistId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Specialist profile found */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SpecialistProfileResponse"];
+                };
+            };
+            /** @description Specialist profile not found */
             404: {
                 headers: {
                     [name: string]: unknown;

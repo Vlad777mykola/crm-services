@@ -10,6 +10,7 @@ tags:
   - name: Users
   - name: Companies
   - name: Company Members
+  - name: Specialists
 components:
   securitySchemes:
     bearerAuth:
@@ -87,3 +88,11 @@ paths:
     $ref: './openapi/company-members/paths.yaml#/Invite'
   /companies/{companyId}/members/{memberId}:
     $ref: './openapi/company-members/paths.yaml#/ByMemberId'
+  /specialists/profile:
+    $ref: './openapi/specialists/paths.yaml#/Profile'
+  /specialists/me:
+    $ref: './openapi/specialists/paths.yaml#/Me'
+  /specialists/public:
+    $ref: './openapi/specialists/paths.yaml#/Public'
+  /specialists/{specialistId}:
+    $ref: './openapi/specialists/paths.yaml#/BySpecialistId'

@@ -37,6 +37,9 @@ export function AppHomePage() {
           <Link to="/app/profile">
             <Button>Edit profile</Button>
           </Link>
+          <Link to="/specialist/profile">
+            <Button>Specialist profile</Button>
+          </Link>
           <Button danger onClick={onLogout}>
             Log out
           </Button>

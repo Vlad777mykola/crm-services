@@ -10,6 +10,7 @@ import { authRouter } from './modules/auth/auth.routes.js';
 import { companiesRouter } from './modules/companies/companies.routes.js';
 import { companyMembersRouter } from './modules/company-members/company-members.routes.js';
 import { healthRouter } from './modules/health/health.routes.js';
+import { specialistsRouter } from './modules/specialists/specialists.routes.js';
 import { usersRouter } from './modules/users/users.routes.js';
 
 export function createApp(): Express {
@@ -25,6 +26,7 @@ export function createApp(): Express {
   app.use(usersRouter);
   app.use(companiesRouter);
   app.use(companyMembersRouter);
+  app.use(specialistsRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

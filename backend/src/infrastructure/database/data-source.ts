@@ -7,6 +7,7 @@ import { AuthIdentity } from '@/modules/auth/identities/auth-identity.entity.js'
 import { Session } from '@/modules/auth/sessions/session.entity.js';
 import { CompanyMember } from '@/modules/company-members/company-member.entity.js';
 import { Company } from '@/modules/companies/company.entity.js';
+import { SpecialistProfile } from '@/modules/specialists/specialist-profile.entity.js';
 import { User } from '@/modules/users/user.entity.js';
 
 const isProduction = env.NODE_ENV === 'production';
@@ -16,7 +17,7 @@ export const AppDataSource = new DataSource({
   url: env.DATABASE_URL,
   synchronize: env.NODE_ENV === 'development',
   logging: env.NODE_ENV === 'development',
-  entities: [User, AuthIdentity, Session, Company, CompanyMember],
+  entities: [User, AuthIdentity, Session, Company, CompanyMember, SpecialistProfile],
   migrations: [
     isProduction
       ? 'dist/infrastructure/database/migrations/*.js'
