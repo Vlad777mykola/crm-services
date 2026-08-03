@@ -1,9 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
-import { Button, Card, Descriptions, Empty, List, Space, Spin, Typography } from 'antd';
+import { Badge, Button, Card, Descriptions, Empty, List, Space, Spin, Typography } from 'antd';
 import { Link, useNavigate } from 'react-router';
 
 import { useAuth } from '@/features/auth/model/useAuth';
 import { fetchMyCompanies } from '@/features/companies/api/companiesApi';
+import { fetchUnreadNotificationCount } from '@/features/notifications/api/notificationsApi';
 
 export function AppHomePage() {
   const { user, logout } = useAuth();
@@ -16,6 +17,12 @@ export function AppHomePage() {
   } = useQuery({
     queryKey: ['companies', 'me'],
     queryFn: fetchMyCompanies,
+  });
+
+  const { data: unreadCount } = useQuery({
+    queryKey: ['notifications', 'me', 'unread-count'],
+    queryFn: fetchUnreadNotificationCount,
+    refetchInterval: 30_000,
   });
 
   const onLogout = async () => {
@@ -45,6 +52,11 @@ export function AppHomePage() {
           </Link>
           <Link to="/app/appointments">
             <Button>My appointments</Button>
+          </Link>
+          <Link to="/app/notifications">
+            <Badge count={unreadCount ?? 0} size="small" offset={[-4, 4]}>
+              <Button>Notifications</Button>
+            </Badge>
           </Link>
           <Button danger onClick={onLogout}>
             Log out

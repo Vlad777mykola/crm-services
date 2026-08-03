@@ -12,6 +12,7 @@ import { companiesRouter } from './modules/companies/companies.routes.js';
 import { companyMembersRouter } from './modules/company-members/company-members.routes.js';
 import { companySpecialistsRouter } from './modules/company-specialists/company-specialists.routes.js';
 import { healthRouter } from './modules/health/health.routes.js';
+import { notificationsRouter } from './modules/notifications/notifications.routes.js';
 import { serviceSpecialistsRouter } from './modules/services/service-specialists.routes.js';
 import { servicesRouter } from './modules/services/services.routes.js';
 import { specialistsRouter } from './modules/specialists/specialists.routes.js';
@@ -35,6 +36,7 @@ export function createApp(): Express {
   app.use(servicesRouter);
   app.use(serviceSpecialistsRouter);
   app.use(appointmentsRouter);
+  app.use(notificationsRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

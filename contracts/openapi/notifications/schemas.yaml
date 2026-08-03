@@ -1,0 +1,80 @@
+Notification:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    type:
+      type: string
+      enum:
+        - appointment.requested
+        - appointment.approved
+        - appointment.rejected
+        - appointment.cancelled
+    title:
+      type: string
+    body:
+      type: string
+      nullable: true
+    metadata:
+      type: object
+      nullable: true
+      additionalProperties: true
+    isRead:
+      type: boolean
+    readAt:
+      type: string
+      format: date-time
+      nullable: true
+    createdAt:
+      type: string
+      format: date-time
+  required:
+    - id
+    - type
+    - title
+    - body
+    - metadata
+    - isRead
+    - readAt
+    - createdAt
+
+NotificationListResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      type: array
+      items:
+        $ref: '#/Notification'
+  required:
+    - message
+    - data
+
+NotificationResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      $ref: '#/Notification'
+  required:
+    - message
+    - data
+
+UnreadCountResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      type: object
+      properties:
+        count:
+          type: integer
+      required:
+        - count
+  required:
+    - message
+    - data

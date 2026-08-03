@@ -1,0 +1,100 @@
+MyNotifications:
+  get:
+    operationId: listMyNotifications
+    tags:
+      - Notifications
+    summary: List the current user's notifications, most recent first
+    security:
+      - bearerAuth: []
+    responses:
+      '200':
+        description: Your notifications
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/NotificationListResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+
+UnreadCount:
+  get:
+    operationId: getUnreadNotificationCount
+    tags:
+      - Notifications
+    summary: Get the count of unread notifications for the current user
+    security:
+      - bearerAuth: []
+    responses:
+      '200':
+        description: Unread count
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/UnreadCountResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+
+MarkRead:
+  post:
+    operationId: markNotificationRead
+    tags:
+      - Notifications
+    summary: Mark a single notification as read
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: notificationId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: Notification marked as read
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/NotificationResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '404':
+        description: Notification not found
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+
+MarkAllRead:
+  post:
+    operationId: markAllNotificationsRead
+    tags:
+      - Notifications
+    summary: Mark all of the current user's notifications as read
+    security:
+      - bearerAuth: []
+    responses:
+      '200':
+        description: All notifications marked as read
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/NotificationListResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'

@@ -14,6 +14,7 @@ tags:
   - name: Company Specialists
   - name: Services
   - name: Appointments
+  - name: Notifications
 components:
   securitySchemes:
     bearerAuth:
@@ -135,3 +136,11 @@ paths:
     $ref: './openapi/appointments/paths.yaml#/MyAppointments'
   /appointments/{appointmentId}/cancel:
     $ref: './openapi/appointments/paths.yaml#/Cancel'
+  /notifications/me:
+    $ref: './openapi/notifications/paths.yaml#/MyNotifications'
+  /notifications/me/unread-count:
+    $ref: './openapi/notifications/paths.yaml#/UnreadCount'
+  /notifications/me/{notificationId}/read:
+    $ref: './openapi/notifications/paths.yaml#/MarkRead'
+  /notifications/me/read-all:
+    $ref: './openapi/notifications/paths.yaml#/MarkAllRead'

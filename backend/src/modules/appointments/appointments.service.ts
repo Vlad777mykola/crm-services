@@ -4,6 +4,8 @@ import { AppError } from '@/common/errors/AppError.js';
 import { requireCompanyRole } from '@/common/permissions/companyPermissions.js';
 import { AppDataSource } from '@/infrastructure/database/data-source.js';
 import { CompanyMemberRole } from '@/modules/company-members/company-member.entity.js';
+import { NotificationType } from '@/modules/notifications/notification.entity.js';
+import { createNotification, notifyCompanyManagers } from '@/modules/notifications/notifications.service.js';
 import { ServiceSpecialist } from '@/modules/services/service-specialist.entity.js';
 import { Service, ServiceStatus } from '@/modules/services/service.entity.js';
 
@@ -48,7 +50,17 @@ export async function createAppointment(
     }),
   );
 
-  return (await repository.findOne({ where: { id: appointment.id }, relations: APPOINTMENT_RELATIONS }))!;
+  const loaded = (await repository.findOne({ where: { id: appointment.id }, relations: APPOINTMENT_RELATIONS }))!;
+
+  await notifyCompanyManagers(
+    companyId,
+    NotificationType.APPOINTMENT_REQUESTED,
+    `New appointment request for ${loaded.service.name}`,
+    `${loaded.client.name} requested ${loaded.service.name} on ${loaded.requestedStartAt.toLocaleString()}`,
+    { appointmentId: loaded.id, companyId, serviceId: loaded.serviceId },
+  );
+
+  return loaded;
 }
 
 export async function listCompanyAppointments(companyId: string, requesterUserId: string): Promise<Appointment[]> {
@@ -91,7 +103,19 @@ export async function respondToAppointment(
 
   appointment.status = input.status === 'approved' ? AppointmentStatus.APPROVED : AppointmentStatus.REJECTED;
   appointment.respondedAt = new Date();
-  return repository.save(appointment);
+  const saved = await repository.save(appointment);
+
+  await createNotification(
+    saved.clientUserId,
+    saved.status === AppointmentStatus.APPROVED ? NotificationType.APPOINTMENT_APPROVED : NotificationType.APPOINTMENT_REJECTED,
+    saved.status === AppointmentStatus.APPROVED
+      ? `Your appointment for ${saved.service.name} was approved`
+      : `Your appointment for ${saved.service.name} was rejected`,
+    `${saved.company.name} · ${saved.requestedStartAt.toLocaleString()}`,
+    { appointmentId: saved.id, companyId: saved.companyId, serviceId: saved.serviceId },
+  );
+
+  return saved;
 }
 
 export async function cancelAppointment(appointmentId: string, clientUserId: string): Promise<Appointment> {
@@ -109,5 +133,15 @@ export async function cancelAppointment(appointmentId: string, clientUserId: str
   }
 
   appointment.status = AppointmentStatus.CANCELLED;
-  return repository.save(appointment);
+  const saved = await repository.save(appointment);
+
+  await notifyCompanyManagers(
+    saved.companyId,
+    NotificationType.APPOINTMENT_CANCELLED,
+    `Appointment for ${saved.service.name} was cancelled`,
+    `${saved.client.name} cancelled their request for ${saved.requestedStartAt.toLocaleString()}`,
+    { appointmentId: saved.id, companyId: saved.companyId, serviceId: saved.serviceId },
+  );
+
+  return saved;
 }

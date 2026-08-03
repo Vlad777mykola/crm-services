@@ -5,6 +5,7 @@ import { ProtectedRoute } from '@/features/auth/ui/ProtectedRoute';
 import { RegisterPage } from '@/features/auth/ui/RegisterPage';
 import { AppHomePage } from '@/pages/app/AppHomePage';
 import { MyAppointmentsPage } from '@/pages/app/MyAppointmentsPage';
+import { NotificationsPage } from '@/pages/app/NotificationsPage';
 import { ProfilePage } from '@/pages/app/ProfilePage';
 import { RequestAppointmentPage } from '@/pages/appointments/RequestAppointmentPage';
 import { CompaniesListPage } from '@/pages/companies/CompaniesListPage';
@@ -62,6 +63,14 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <MyAppointmentsPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/app/notifications',
+    element: (
+      <ProtectedRoute>
+        <NotificationsPage />
       </ProtectedRoute>
     ),
   },
