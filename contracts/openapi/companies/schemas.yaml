@@ -1,0 +1,175 @@
+CreateCompanyRequest:
+  type: object
+  properties:
+    name:
+      type: string
+      minLength: 1
+    description:
+      type: string
+      nullable: true
+    category:
+      type: string
+      nullable: true
+    website:
+      type: string
+      nullable: true
+    phone:
+      type: string
+      nullable: true
+    email:
+      type: string
+      nullable: true
+    isRemoteSupported:
+      type: boolean
+    city:
+      type: string
+      nullable: true
+    address:
+      type: string
+      nullable: true
+  required:
+    - name
+
+UpdateCompanyRequest:
+  type: object
+  properties:
+    name:
+      type: string
+      minLength: 1
+    description:
+      type: string
+      nullable: true
+    category:
+      type: string
+      nullable: true
+    website:
+      type: string
+      nullable: true
+    phone:
+      type: string
+      nullable: true
+    email:
+      type: string
+      nullable: true
+    isRemoteSupported:
+      type: boolean
+    city:
+      type: string
+      nullable: true
+    address:
+      type: string
+      nullable: true
+    status:
+      type: string
+      enum: [draft, published]
+
+Company:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    name:
+      type: string
+    slug:
+      type: string
+    description:
+      type: string
+      nullable: true
+    category:
+      type: string
+      nullable: true
+    website:
+      type: string
+      nullable: true
+    phone:
+      type: string
+      nullable: true
+    email:
+      type: string
+      nullable: true
+    status:
+      type: string
+      enum: [draft, published, suspended]
+    isRemoteSupported:
+      type: boolean
+    city:
+      type: string
+      nullable: true
+    address:
+      type: string
+      nullable: true
+    createdByUserId:
+      type: string
+      format: uuid
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+  required:
+    - id
+    - name
+    - slug
+    - description
+    - category
+    - website
+    - phone
+    - email
+    - status
+    - isRemoteSupported
+    - city
+    - address
+    - createdByUserId
+    - createdAt
+    - updatedAt
+
+CompanyResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      $ref: '#/Company'
+  required:
+    - message
+    - data
+
+CompanyListResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      type: array
+      items:
+        $ref: '#/Company'
+  required:
+    - message
+    - data
+
+CompanyMembership:
+  type: object
+  properties:
+    role:
+      type: string
+      enum: [owner, manager]
+    company:
+      $ref: '#/Company'
+  required:
+    - role
+    - company
+
+CompanyMembershipListResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      type: array
+      items:
+        $ref: '#/CompanyMembership'
+  required:
+    - message
+    - data

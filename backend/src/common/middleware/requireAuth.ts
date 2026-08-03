@@ -5,7 +5,7 @@ import type { NextFunction, Request, Response } from 'express';
 import { verifyAccessToken } from '@/common/auth/jwt.js';
 import { AppError } from '@/common/errors/AppError.js';
 
-function extractBearerToken(req: Request): string | undefined {
+export function extractBearerToken(req: Request): string | undefined {
   const header = req.headers.authorization;
   if (!header?.startsWith('Bearer ')) {
     return undefined;

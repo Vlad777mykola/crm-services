@@ -8,6 +8,7 @@ tags:
   - name: Health
   - name: Auth
   - name: Users
+  - name: Companies
 components:
   securitySchemes:
     bearerAuth:
@@ -71,3 +72,11 @@ paths:
     $ref: './openapi/users/paths.yaml#/Me'
   /users/{id}:
     $ref: './openapi/users/paths.yaml#/UserById'
+  /companies:
+    $ref: './openapi/companies/paths.yaml#/CompaniesCollection'
+  /companies/public:
+    $ref: './openapi/companies/paths.yaml#/Public'
+  /companies/me:
+    $ref: './openapi/companies/paths.yaml#/Me'
+  /companies/{companyId}:
+    $ref: './openapi/companies/paths.yaml#/CompanyById'
