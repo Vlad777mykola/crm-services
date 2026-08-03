@@ -113,6 +113,22 @@ ServiceListResponse:
     - message
     - data
 
+PublicServiceListResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      type: array
+      items:
+        $ref: '#/Service'
+    meta:
+      $ref: '../../openapi.yaml#/components/schemas/PaginationMeta'
+  required:
+    - message
+    - data
+    - meta
+
 AssignServiceSpecialistRequest:
   type: object
   properties:

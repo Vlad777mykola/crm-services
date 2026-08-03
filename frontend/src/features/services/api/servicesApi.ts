@@ -35,6 +35,25 @@ export interface UpdateServiceInput extends Partial<CreateServiceInput> {
   status?: 'draft' | 'published';
 }
 
+export interface PaginationMeta {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface PublicServicesQuery {
+  q?: string;
+  category?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface PublicServicesResult {
+  items: Service[];
+  meta: PaginationMeta;
+}
+
 async function parseJsonOrThrow<T>(response: Response): Promise<T> {
   const body = (await response.json().catch(() => undefined)) as { error?: { message?: string } } | T | undefined;
 
@@ -71,10 +90,17 @@ export async function updateService(companyId: string, serviceId: string, input:
   return body.data;
 }
 
-export async function fetchPublicServices(): Promise<Service[]> {
-  const response = await authorizedFetch('/services/public');
-  const body = await parseJsonOrThrow<{ data: Service[] }>(response);
-  return body.data;
+export async function fetchPublicServices(query: PublicServicesQuery = {}): Promise<PublicServicesResult> {
+  const params = new URLSearchParams();
+  if (query.q) params.set('q', query.q);
+  if (query.category) params.set('category', query.category);
+  if (query.page) params.set('page', String(query.page));
+  if (query.pageSize) params.set('pageSize', String(query.pageSize));
+
+  const queryString = params.toString();
+  const response = await authorizedFetch(`/services/public${queryString ? `?${queryString}` : ''}`);
+  const body = await parseJsonOrThrow<{ data: Service[]; meta: PaginationMeta }>(response);
+  return { items: body.data, meta: body.meta };
 }
 
 export async function fetchServiceById(serviceId: string): Promise<Service> {

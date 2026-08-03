@@ -6,9 +6,11 @@ import { validate } from '@/common/middleware/validate.js';
 
 import {
   createSpecialistProfileRequestSchema,
+  publicSpecialistsQuerySchema,
   specialistIdParamsSchema,
   updateSpecialistProfileRequestSchema,
   type CreateSpecialistProfileRequestInput,
+  type PublicSpecialistsQueryInput,
   type SpecialistIdParams,
   type UpdateSpecialistProfileRequestInput,
 } from './specialists.schemas.js';
@@ -60,14 +62,19 @@ specialistsRouter.patch(
   },
 );
 
-specialistsRouter.get('/specialists/public', async (_req, res, next) => {
-  try {
-    const profiles = await getPublicSpecialists();
-    res.status(200).json({ message: 'Published specialist profiles', data: profiles });
-  } catch (err) {
-    next(err);
-  }
-});
+specialistsRouter.get(
+  '/specialists/public',
+  validate(publicSpecialistsQuerySchema, 'query'),
+  async (req, res, next) => {
+    try {
+      const query = req.validatedQuery as unknown as PublicSpecialistsQueryInput;
+      const { items, meta } = await getPublicSpecialists(query);
+      res.status(200).json({ message: 'Published specialist profiles', data: items, meta });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
 specialistsRouter.get(
   '/specialists/:specialistId',

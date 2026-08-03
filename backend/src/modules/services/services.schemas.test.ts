@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   createServiceRequestSchema,
+  publicServicesQuerySchema,
   serviceIdParamsSchema,
   serviceOnlyIdParamsSchema,
   updateServiceRequestSchema,
@@ -93,6 +94,26 @@ describe('serviceOnlyIdParamsSchema', () => {
 
   it('rejects a non-uuid serviceId', () => {
     const result = serviceOnlyIdParamsSchema.safeParse({ serviceId: 'not-a-uuid' });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('publicServicesQuerySchema', () => {
+  it('accepts an empty query', () => {
+    const result = publicServicesQuerySchema.safeParse({});
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts search and filter params with coerced pagination', () => {
+    const result = publicServicesQuerySchema.safeParse({ q: 'haircut', category: 'hair', page: '2', pageSize: '10' });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toEqual({ q: 'haircut', category: 'hair', page: 2, pageSize: 10 });
+    }
+  });
+
+  it('rejects an empty q', () => {
+    const result = publicServicesQuerySchema.safeParse({ q: '' });
     expect(result.success).toBe(false);
   });
 });

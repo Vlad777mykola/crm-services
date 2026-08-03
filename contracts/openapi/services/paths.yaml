@@ -116,14 +116,35 @@ PublicList:
     operationId: listPublicServices
     tags:
       - Services
-    summary: Browse all published services across companies (public marketplace listing)
+    summary: Search and browse published services across companies (free-text search, category filter, pagination)
+    parameters:
+      - name: q
+        in: query
+        description: Free-text search across the service name and description
+        schema:
+          type: string
+      - name: category
+        in: query
+        schema:
+          type: string
+      - name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
     responses:
       '200':
         description: Published services
         content:
           application/json:
             schema:
-              $ref: './schemas.yaml#/ServiceListResponse'
+              $ref: './schemas.yaml#/PublicServiceListResponse'
 
 BySlugId:
   get:

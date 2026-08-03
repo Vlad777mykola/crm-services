@@ -7,10 +7,12 @@ import { companyIdParamsSchema, type CompanyIdParams } from '@/modules/companies
 
 import {
   createServiceRequestSchema,
+  publicServicesQuerySchema,
   serviceIdParamsSchema,
   serviceOnlyIdParamsSchema,
   updateServiceRequestSchema,
   type CreateServiceRequestInput,
+  type PublicServicesQueryInput,
   type ServiceIdParams,
   type ServiceOnlyIdParams,
   type UpdateServiceRequestInput,
@@ -67,14 +69,19 @@ servicesRouter.patch(
 );
 
 // Registered before `/services/:serviceId` so `public` is never captured as a `:serviceId` path param.
-servicesRouter.get('/services/public', async (_req, res, next) => {
-  try {
-    const services = await listPublicServices();
-    res.status(200).json({ message: 'Published services', data: services });
-  } catch (err) {
-    next(err);
-  }
-});
+servicesRouter.get(
+  '/services/public',
+  validate(publicServicesQuerySchema, 'query'),
+  async (req, res, next) => {
+    try {
+      const query = req.validatedQuery as unknown as PublicServicesQueryInput;
+      const { items, meta } = await listPublicServices(query);
+      res.status(200).json({ message: 'Published services', data: items, meta });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
 servicesRouter.get(
   '/services/:serviceId',

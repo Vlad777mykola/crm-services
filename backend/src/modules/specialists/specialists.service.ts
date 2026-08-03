@@ -1,10 +1,15 @@
 import type { Repository } from 'typeorm';
 
 import { AppError } from '@/common/errors/AppError.js';
+import { buildPaginationMeta, resolvePagination, type PaginationMeta } from '@/common/schemas/pagination.js';
 import { AppDataSource } from '@/infrastructure/database/data-source.js';
 
 import { SpecialistProfile, SpecialistProfileStatus } from './specialist-profile.entity.js';
-import type { CreateSpecialistProfileRequestInput, UpdateSpecialistProfileRequestInput } from './specialists.schemas.js';
+import type {
+  CreateSpecialistProfileRequestInput,
+  PublicSpecialistsQueryInput,
+  UpdateSpecialistProfileRequestInput,
+} from './specialists.schemas.js';
 
 function getSpecialistRepository(): Repository<SpecialistProfile> {
   return AppDataSource.getRepository(SpecialistProfile);
@@ -61,9 +66,39 @@ export async function updateMySpecialistProfile(
   return repository.save(profile);
 }
 
-export async function getPublicSpecialists(): Promise<SpecialistProfile[]> {
+export interface PublicSpecialistsResult {
+  items: SpecialistProfile[];
+  meta: PaginationMeta;
+}
+
+export async function getPublicSpecialists(query: PublicSpecialistsQueryInput): Promise<PublicSpecialistsResult> {
   const repository = getSpecialistRepository();
-  return repository.find({ where: { status: SpecialistProfileStatus.PUBLISHED }, order: { createdAt: 'DESC' } });
+  const { page, pageSize, skip, take } = resolvePagination(query);
+
+  const qb = repository
+    .createQueryBuilder('specialist')
+    .where('specialist.status = :status', { status: SpecialistProfileStatus.PUBLISHED });
+
+  if (query.q) {
+    qb.andWhere('(specialist.displayName ILIKE :q OR specialist.headline ILIKE :q OR specialist.bio ILIKE :q)', {
+      q: `%${query.q}%`,
+    });
+  }
+  if (query.category) {
+    qb.andWhere('specialist.category ILIKE :category', { category: `%${query.category}%` });
+  }
+  if (query.city) {
+    qb.andWhere('specialist.city ILIKE :city', { city: `%${query.city}%` });
+  }
+  if (query.remoteOnly) {
+    qb.andWhere('specialist.isRemoteSupported = true');
+  }
+
+  qb.orderBy('specialist.createdAt', 'DESC').skip(skip).take(take);
+
+  const [items, total] = await qb.getManyAndCount();
+
+  return { items, meta: buildPaginationMeta(page, pageSize, total) };
 }
 
 export async function getSpecialistById(

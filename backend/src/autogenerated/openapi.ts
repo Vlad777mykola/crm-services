@@ -182,7 +182,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List published companies */
+        /** Search and list published companies (free-text search, category/city filters, pagination) */
         get: operations["getPublicCompanies"];
         put?: never;
         post?: never;
@@ -321,7 +321,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List published specialist profiles */
+        /** Search and list published specialist profiles (free-text search, category/city/remote filters, pagination) */
         get: operations["getPublicSpecialists"];
         put?: never;
         post?: never;
@@ -509,7 +509,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Browse all published services across companies (public marketplace listing) */
+        /** Search and browse published services across companies (free-text search, category filter, pagination) */
         get: operations["listPublicServices"];
         put?: never;
         post?: never;
@@ -820,6 +820,12 @@ export interface components {
                 statusCode: number;
             };
         };
+        PaginationMeta: {
+            page: number;
+            pageSize: number;
+            total: number;
+            totalPages: number;
+        };
         RegisterRequest: {
             /** Format: email */
             email: string;
@@ -923,6 +929,7 @@ export interface components {
         CompanyListResponse: {
             message: string;
             data: components["schemas"]["Company"][];
+            meta: components["schemas"]["PaginationMeta"];
         };
         CompanyMembership: {
             /** @enum {string} */
@@ -1029,6 +1036,7 @@ export interface components {
         SpecialistProfileListResponse: {
             message: string;
             data: components["schemas"]["SpecialistProfile"][];
+            meta: components["schemas"]["PaginationMeta"];
         };
         SendSpecialistRequestRequest: {
             /** Format: uuid */
@@ -1143,6 +1151,11 @@ export interface components {
              * @enum {string}
              */
             status?: "draft" | "published";
+        };
+        PublicServiceListResponse: {
+            message: string;
+            data: components["schemas"]["Service"][];
+            meta: components["schemas"]["PaginationMeta"];
         };
         ServiceSummary: {
             /** Format: uuid */
@@ -1277,7 +1290,7 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** @enum {string} */
-            type: "appointment.requested" | "appointment.approved" | "appointment.rejected" | "appointment.cancelled";
+            type: "appointment.requested" | "appointment.approved" | "appointment.rejected" | "appointment.cancelled" | "appointment.completed" | "review.received";
             title: string;
             body: string | null;
             metadata: {
@@ -1641,7 +1654,14 @@ export interface operations {
     };
     getPublicCompanies: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Free-text search across the company name and description */
+                q?: string;
+                category?: string;
+                city?: string;
+                page?: number;
+                pageSize?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2102,7 +2122,16 @@ export interface operations {
     };
     getPublicSpecialists: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Free-text search across display name, headline, and bio */
+                q?: string;
+                category?: string;
+                city?: string;
+                /** @description Only return specialists that support remote work */
+                remoteOnly?: boolean;
+                page?: number;
+                pageSize?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2571,7 +2600,13 @@ export interface operations {
     };
     listPublicServices: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Free-text search across the service name and description */
+                q?: string;
+                category?: string;
+                page?: number;
+                pageSize?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -2584,7 +2619,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ServiceListResponse"];
+                    "application/json": components["schemas"]["PublicServiceListResponse"];
                 };
             };
         };

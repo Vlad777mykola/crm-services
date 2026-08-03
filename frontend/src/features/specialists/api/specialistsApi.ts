@@ -31,6 +31,27 @@ export interface UpdateSpecialistProfileInput extends Partial<CreateSpecialistPr
   status?: 'draft' | 'published';
 }
 
+export interface PaginationMeta {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface PublicSpecialistsQuery {
+  q?: string;
+  category?: string;
+  city?: string;
+  remoteOnly?: boolean;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface PublicSpecialistsResult {
+  items: SpecialistProfile[];
+  meta: PaginationMeta;
+}
+
 async function parseJsonOrThrow<T>(response: Response): Promise<T> {
   const body = (await response.json().catch(() => undefined)) as { error?: { message?: string } } | T | undefined;
 
@@ -70,10 +91,19 @@ export async function updateMySpecialistProfile(input: UpdateSpecialistProfileIn
   return body.data;
 }
 
-export async function fetchPublicSpecialists(): Promise<SpecialistProfile[]> {
-  const response = await authorizedFetch('/specialists/public');
-  const body = await parseJsonOrThrow<{ data: SpecialistProfile[] }>(response);
-  return body.data;
+export async function fetchPublicSpecialists(query: PublicSpecialistsQuery = {}): Promise<PublicSpecialistsResult> {
+  const params = new URLSearchParams();
+  if (query.q) params.set('q', query.q);
+  if (query.category) params.set('category', query.category);
+  if (query.city) params.set('city', query.city);
+  if (query.remoteOnly) params.set('remoteOnly', 'true');
+  if (query.page) params.set('page', String(query.page));
+  if (query.pageSize) params.set('pageSize', String(query.pageSize));
+
+  const queryString = params.toString();
+  const response = await authorizedFetch(`/specialists/public${queryString ? `?${queryString}` : ''}`);
+  const body = await parseJsonOrThrow<{ data: SpecialistProfile[]; meta: PaginationMeta }>(response);
+  return { items: body.data, meta: body.meta };
 }
 
 export async function fetchSpecialistById(specialistId: string): Promise<SpecialistProfile> {

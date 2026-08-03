@@ -112,6 +112,9 @@ SpecialistProfileListResponse:
       type: array
       items:
         $ref: '#/SpecialistProfile'
+    meta:
+      $ref: '../../openapi.yaml#/components/schemas/PaginationMeta'
   required:
     - message
     - data
+    - meta

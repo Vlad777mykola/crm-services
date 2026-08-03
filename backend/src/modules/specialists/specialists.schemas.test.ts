@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   createSpecialistProfileRequestSchema,
+  publicSpecialistsQuerySchema,
   specialistIdParamsSchema,
   updateSpecialistProfileRequestSchema,
 } from './specialists.schemas.js';
@@ -75,6 +76,56 @@ describe('specialistIdParamsSchema', () => {
 
   it('rejects a non-uuid specialistId', () => {
     const result = specialistIdParamsSchema.safeParse({ specialistId: 'not-a-uuid' });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('publicSpecialistsQuerySchema', () => {
+  it('accepts an empty query', () => {
+    const result = publicSpecialistsQuerySchema.safeParse({});
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts search and filter params with coerced pagination', () => {
+    const result = publicSpecialistsQuerySchema.safeParse({
+      q: 'jane',
+      category: 'hair salon',
+      city: 'Berlin',
+      remoteOnly: 'true',
+      page: '2',
+      pageSize: '10',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toEqual({
+        q: 'jane',
+        category: 'hair salon',
+        city: 'Berlin',
+        remoteOnly: true,
+        page: 2,
+        pageSize: 10,
+      });
+    }
+  });
+
+  it('coerces remoteOnly=false to false', () => {
+    const result = publicSpecialistsQuerySchema.safeParse({ remoteOnly: 'false' });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.remoteOnly).toBe(false);
+    }
+  });
+
+  it('leaves remoteOnly undefined when absent', () => {
+    const result = publicSpecialistsQuerySchema.safeParse({});
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.remoteOnly).toBeUndefined();
+    }
+  });
+
+  it('rejects an invalid remoteOnly value', () => {
+    const result = publicSpecialistsQuerySchema.safeParse({ remoteOnly: 'yes' });
     expect(result.success).toBe(false);
   });
 });

@@ -29,8 +29,9 @@ export function CompanySpecialistsPage() {
   });
 
   const { data: publicSpecialists } = useQuery({
-    queryKey: ['specialists', 'public'],
-    queryFn: fetchPublicSpecialists,
+    queryKey: ['specialists', 'public', 'invite-options'],
+    queryFn: () => fetchPublicSpecialists({ pageSize: 50 }),
+    select: (result) => result.items,
   });
 
   const {

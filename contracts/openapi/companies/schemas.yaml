@@ -145,9 +145,12 @@ CompanyListResponse:
       type: array
       items:
         $ref: '#/Company'
+    meta:
+      $ref: '../../openapi.yaml#/components/schemas/PaginationMeta'
   required:
     - message
     - data
+    - meta
 
 CompanyMembership:
   type: object

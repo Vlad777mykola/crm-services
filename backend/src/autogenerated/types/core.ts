@@ -26,3 +26,8 @@ export type OperationResponseByStatus<
 
 /** A named schema from `components.schemas`. */
 export type Schema<Name extends keyof components['schemas']> = components['schemas'][Name];
+
+/** Query string parameters of an operation (e.g. `OperationQuery<'getPublicCompanies'>`). */
+export type OperationQuery<OpId extends keyof operations> = NonNullable<
+  operations[OpId] extends { parameters: { query?: infer Q } } ? Q : never
+>;

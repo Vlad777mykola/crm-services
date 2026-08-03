@@ -2,11 +2,12 @@ import type { Repository } from 'typeorm';
 
 import { AppError } from '@/common/errors/AppError.js';
 import { requireCompanyRole } from '@/common/permissions/companyPermissions.js';
+import { buildPaginationMeta, resolvePagination, type PaginationMeta } from '@/common/schemas/pagination.js';
 import { AppDataSource } from '@/infrastructure/database/data-source.js';
 import { CompanyMember, CompanyMemberRole, CompanyMemberStatus } from '@/modules/company-members/company-member.entity.js';
 
 import { Company, CompanyStatus } from './company.entity.js';
-import type { CreateCompanyRequestInput, UpdateCompanyRequestInput } from './companies.schemas.js';
+import type { CreateCompanyRequestInput, PublicCompaniesQueryInput, UpdateCompanyRequestInput } from './companies.schemas.js';
 
 export interface CompanyMembership {
   role: CompanyMemberRole;
@@ -76,9 +77,34 @@ export async function createCompany(input: CreateCompanyRequestInput, creatorUse
   });
 }
 
-export async function getPublicCompanies(): Promise<Company[]> {
+export interface PublicCompaniesResult {
+  items: Company[];
+  meta: PaginationMeta;
+}
+
+export async function getPublicCompanies(query: PublicCompaniesQueryInput): Promise<PublicCompaniesResult> {
   const repository = getCompanyRepository();
-  return repository.find({ where: { status: CompanyStatus.PUBLISHED }, order: { createdAt: 'DESC' } });
+  const { page, pageSize, skip, take } = resolvePagination(query);
+
+  const qb = repository
+    .createQueryBuilder('company')
+    .where('company.status = :status', { status: CompanyStatus.PUBLISHED });
+
+  if (query.q) {
+    qb.andWhere('(company.name ILIKE :q OR company.description ILIKE :q)', { q: `%${query.q}%` });
+  }
+  if (query.category) {
+    qb.andWhere('company.category ILIKE :category', { category: `%${query.category}%` });
+  }
+  if (query.city) {
+    qb.andWhere('company.city ILIKE :city', { city: `%${query.city}%` });
+  }
+
+  qb.orderBy('company.createdAt', 'DESC').skip(skip).take(take);
+
+  const [items, total] = await qb.getManyAndCount();
+
+  return { items, meta: buildPaginationMeta(page, pageSize, total) };
 }
 
 export async function getMyCompanies(userId: string): Promise<CompanyMembership[]> {

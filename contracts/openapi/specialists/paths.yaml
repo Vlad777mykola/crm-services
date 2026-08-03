@@ -97,7 +97,37 @@ Public:
     operationId: getPublicSpecialists
     tags:
       - Specialists
-    summary: List published specialist profiles
+    summary: Search and list published specialist profiles (free-text search, category/city/remote filters, pagination)
+    parameters:
+      - name: q
+        in: query
+        description: Free-text search across display name, headline, and bio
+        schema:
+          type: string
+      - name: category
+        in: query
+        schema:
+          type: string
+      - name: city
+        in: query
+        schema:
+          type: string
+      - name: remoteOnly
+        in: query
+        description: Only return specialists that support remote work
+        schema:
+          type: boolean
+      - name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
     responses:
       '200':
         description: Published specialist profiles

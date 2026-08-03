@@ -44,6 +44,26 @@ export interface UpdateCompanyInput extends Partial<CreateCompanyInput> {
   status?: 'draft' | 'published';
 }
 
+export interface PaginationMeta {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface PublicCompaniesQuery {
+  q?: string;
+  category?: string;
+  city?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface PublicCompaniesResult {
+  items: Company[];
+  meta: PaginationMeta;
+}
+
 async function parseJsonOrThrow<T>(response: Response): Promise<T> {
   const body = (await response.json().catch(() => undefined)) as { error?: { message?: string } } | T | undefined;
 
@@ -65,10 +85,18 @@ export async function createCompany(input: CreateCompanyInput): Promise<Company>
   return body.data;
 }
 
-export async function fetchPublicCompanies(): Promise<Company[]> {
-  const response = await authorizedFetch('/companies/public');
-  const body = await parseJsonOrThrow<{ data: Company[] }>(response);
-  return body.data;
+export async function fetchPublicCompanies(query: PublicCompaniesQuery = {}): Promise<PublicCompaniesResult> {
+  const params = new URLSearchParams();
+  if (query.q) params.set('q', query.q);
+  if (query.category) params.set('category', query.category);
+  if (query.city) params.set('city', query.city);
+  if (query.page) params.set('page', String(query.page));
+  if (query.pageSize) params.set('pageSize', String(query.pageSize));
+
+  const queryString = params.toString();
+  const response = await authorizedFetch(`/companies/public${queryString ? `?${queryString}` : ''}`);
+  const body = await parseJsonOrThrow<{ data: Company[]; meta: PaginationMeta }>(response);
+  return { items: body.data, meta: body.meta };
 }
 
 export async function fetchMyCompanies(): Promise<CompanyMembership[]> {

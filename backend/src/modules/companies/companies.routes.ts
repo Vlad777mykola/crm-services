@@ -7,9 +7,11 @@ import { validate } from '@/common/middleware/validate.js';
 import {
   companyIdParamsSchema,
   createCompanyRequestSchema,
+  publicCompaniesQuerySchema,
   updateCompanyRequestSchema,
   type CompanyIdParams,
   type CreateCompanyRequestInput,
+  type PublicCompaniesQueryInput,
   type UpdateCompanyRequestInput,
 } from './companies.schemas.js';
 import { createCompany, getCompanyById, getMyCompanies, getPublicCompanies, updateCompany } from './companies.service.js';
@@ -26,14 +28,19 @@ companiesRouter.post('/companies', requireAuth, validate(createCompanyRequestSch
 });
 
 // Registered before `/companies/:companyId` so `public`/`me` are never captured as a `:companyId` path param.
-companiesRouter.get('/companies/public', async (_req, res, next) => {
-  try {
-    const companies = await getPublicCompanies();
-    res.status(200).json({ message: 'Published companies', data: companies });
-  } catch (err) {
-    next(err);
-  }
-});
+companiesRouter.get(
+  '/companies/public',
+  validate(publicCompaniesQuerySchema, 'query'),
+  async (req, res, next) => {
+    try {
+      const query = req.validatedQuery as unknown as PublicCompaniesQueryInput;
+      const { items, meta } = await getPublicCompanies(query);
+      res.status(200).json({ message: 'Published companies', data: items, meta });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
 companiesRouter.get('/companies/me', requireAuth, async (req, res, next) => {
   try {

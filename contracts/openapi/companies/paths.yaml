@@ -31,7 +31,32 @@ Public:
     operationId: getPublicCompanies
     tags:
       - Companies
-    summary: List published companies
+    summary: Search and list published companies (free-text search, category/city filters, pagination)
+    parameters:
+      - name: q
+        in: query
+        description: Free-text search across the company name and description
+        schema:
+          type: string
+      - name: category
+        in: query
+        schema:
+          type: string
+      - name: city
+        in: query
+        schema:
+          type: string
+      - name: page
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+      - name: pageSize
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 50
     responses:
       '200':
         description: Published companies

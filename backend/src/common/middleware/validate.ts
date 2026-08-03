@@ -15,7 +15,13 @@ export function validate(schema: ZodType, target: ValidationTarget = 'body') {
       return;
     }
 
-    (req as unknown as Record<ValidationTarget, unknown>)[target] = result.data;
+    if (target === 'query') {
+      // Express 5 exposes `req.query` as a getter-only property, so it can't be
+      // reassigned - stash the parsed/coerced value separately instead.
+      req.validatedQuery = result.data;
+    } else {
+      (req as unknown as Record<Exclude<ValidationTarget, 'query'>, unknown>)[target] = result.data;
+    }
     next();
   };
 }

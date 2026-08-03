@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { companyIdParamsSchema, createCompanyRequestSchema, updateCompanyRequestSchema } from './companies.schemas.js';
+import {
+  companyIdParamsSchema,
+  createCompanyRequestSchema,
+  publicCompaniesQuerySchema,
+  updateCompanyRequestSchema,
+} from './companies.schemas.js';
 
 describe('createCompanyRequestSchema', () => {
   it('accepts a payload with only the required name', () => {
@@ -77,6 +82,37 @@ describe('companyIdParamsSchema', () => {
 
   it('rejects a non-uuid companyId', () => {
     const result = companyIdParamsSchema.safeParse({ companyId: 'not-a-uuid' });
+    expect(result.success).toBe(false);
+  });
+});
+
+describe('publicCompaniesQuerySchema', () => {
+  it('accepts an empty query', () => {
+    const result = publicCompaniesQuerySchema.safeParse({});
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts search and filter params with coerced pagination', () => {
+    const result = publicCompaniesQuerySchema.safeParse({
+      q: 'dental',
+      category: 'health',
+      city: 'Berlin',
+      page: '2',
+      pageSize: '10',
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toEqual({ q: 'dental', category: 'health', city: 'Berlin', page: 2, pageSize: 10 });
+    }
+  });
+
+  it('rejects an empty q', () => {
+    const result = publicCompaniesQuerySchema.safeParse({ q: '' });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects a pageSize above the max', () => {
+    const result = publicCompaniesQuerySchema.safeParse({ pageSize: '100' });
     expect(result.success).toBe(false);
   });
 });

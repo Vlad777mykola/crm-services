@@ -2,11 +2,12 @@ import type { Repository } from 'typeorm';
 
 import { AppError } from '@/common/errors/AppError.js';
 import { findActiveCompanyMembership, requireCompanyRole } from '@/common/permissions/companyPermissions.js';
+import { buildPaginationMeta, resolvePagination, type PaginationMeta } from '@/common/schemas/pagination.js';
 import { AppDataSource } from '@/infrastructure/database/data-source.js';
 import { CompanyMemberRole } from '@/modules/company-members/company-member.entity.js';
 
 import { Service, ServiceStatus } from './service.entity.js';
-import type { CreateServiceRequestInput, UpdateServiceRequestInput } from './services.schemas.js';
+import type { CreateServiceRequestInput, PublicServicesQueryInput, UpdateServiceRequestInput } from './services.schemas.js';
 
 function getServiceRepository(): Repository<Service> {
   return AppDataSource.getRepository(Service);
@@ -45,13 +46,32 @@ export async function listCompanyServices(companyId: string, requesterUserId: st
   });
 }
 
-export async function listPublicServices(): Promise<Service[]> {
+export interface PublicServicesResult {
+  items: Service[];
+  meta: PaginationMeta;
+}
+
+export async function listPublicServices(query: PublicServicesQueryInput): Promise<PublicServicesResult> {
   const repository = getServiceRepository();
-  return repository.find({
-    where: { status: ServiceStatus.PUBLISHED },
-    relations: { company: true },
-    order: { createdAt: 'DESC' },
-  });
+  const { page, pageSize, skip, take } = resolvePagination(query);
+
+  const qb = repository
+    .createQueryBuilder('service')
+    .leftJoinAndSelect('service.company', 'company')
+    .where('service.status = :status', { status: ServiceStatus.PUBLISHED });
+
+  if (query.q) {
+    qb.andWhere('(service.name ILIKE :q OR service.description ILIKE :q)', { q: `%${query.q}%` });
+  }
+  if (query.category) {
+    qb.andWhere('service.category ILIKE :category', { category: `%${query.category}%` });
+  }
+
+  qb.orderBy('service.createdAt', 'DESC').skip(skip).take(take);
+
+  const [items, total] = await qb.getManyAndCount();
+
+  return { items, meta: buildPaginationMeta(page, pageSize, total) };
 }
 
 export async function getServiceById(serviceId: string, requesterUserId: string | undefined): Promise<Service> {

@@ -38,6 +38,22 @@ components:
             - statusCode
       required:
         - error
+    PaginationMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        total:
+          type: integer
+        totalPages:
+          type: integer
+      required:
+        - page
+        - pageSize
+        - total
+        - totalPages
 paths:
   /health:
     get:
