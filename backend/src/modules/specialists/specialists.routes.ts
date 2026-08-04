@@ -17,6 +17,7 @@ import {
 import {
   createMySpecialistProfile,
   getMySpecialistProfile,
+  getMySpecialistStatusHistory,
   getPublicSpecialists,
   getSpecialistById,
   updateMySpecialistProfile,
@@ -61,6 +62,15 @@ specialistsRouter.patch(
     }
   },
 );
+
+specialistsRouter.get('/specialists/me/status-history', requireAuth, async (req, res, next) => {
+  try {
+    const history = await getMySpecialistStatusHistory(req.auth!.userId);
+    res.status(200).json({ message: "Current user's specialist profile status history", data: history });
+  } catch (err) {
+    next(err);
+  }
+});
 
 specialistsRouter.get(
   '/specialists/public',

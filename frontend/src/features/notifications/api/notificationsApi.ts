@@ -6,7 +6,9 @@ export type NotificationType =
   | 'appointment.requested'
   | 'appointment.approved'
   | 'appointment.rejected'
-  | 'appointment.cancelled';
+  | 'appointment.cancelled'
+  | 'appointment.completed'
+  | 'review.received';
 
 export interface Notification {
   id: string;

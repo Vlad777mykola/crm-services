@@ -104,6 +104,8 @@ paths:
     $ref: './openapi/companies/paths.yaml#/Me'
   /companies/{companyId}:
     $ref: './openapi/companies/paths.yaml#/CompanyById'
+  /companies/{companyId}/status-history:
+    $ref: './openapi/companies/paths.yaml#/StatusHistory'
   /companies/{companyId}/members:
     $ref: './openapi/company-members/paths.yaml#/Collection'
   /companies/{companyId}/members/invite:
@@ -114,6 +116,8 @@ paths:
     $ref: './openapi/specialists/paths.yaml#/Profile'
   /specialists/me:
     $ref: './openapi/specialists/paths.yaml#/Me'
+  /specialists/me/status-history:
+    $ref: './openapi/specialists/paths.yaml#/MyStatusHistory'
   /specialists/public:
     $ref: './openapi/specialists/paths.yaml#/Public'
   /specialists/{specialistId}:
@@ -136,6 +140,8 @@ paths:
     $ref: './openapi/services/paths.yaml#/Collection'
   /companies/{companyId}/services/{serviceId}:
     $ref: './openapi/services/paths.yaml#/ByServiceId'
+  /companies/{companyId}/services/{serviceId}/status-history:
+    $ref: './openapi/services/paths.yaml#/StatusHistory'
   /services/public:
     $ref: './openapi/services/paths.yaml#/PublicList'
   /services/{serviceId}:
@@ -152,6 +158,8 @@ paths:
     $ref: './openapi/appointments/paths.yaml#/ByAppointmentId'
   /appointments/me:
     $ref: './openapi/appointments/paths.yaml#/MyAppointments'
+  /appointments/{appointmentId}/status-history:
+    $ref: './openapi/appointments/paths.yaml#/StatusHistory'
   /appointments/{appointmentId}/cancel:
     $ref: './openapi/appointments/paths.yaml#/Cancel'
   /companies/{companyId}/appointments/{appointmentId}/complete:

@@ -14,5 +14,7 @@ export type GetCompanyByIdNotFound = OperationResponseByStatus<'getCompanyById',
 export type UpdateCompanyRequest = OperationRequest<'updateCompany'>;
 export type UpdateCompanyResponse = OperationResponseByStatus<'updateCompany', 200>;
 
+export type GetCompanyStatusHistoryResponse = OperationResponseByStatus<'getCompanyStatusHistory', 200>;
+
 export type CompanySchema = Schema<'Company'>;
 export type CompanyMembershipSchema = Schema<'CompanyMembership'>;

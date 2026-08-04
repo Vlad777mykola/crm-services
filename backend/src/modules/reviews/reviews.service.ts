@@ -2,9 +2,8 @@ import type { Repository } from 'typeorm';
 
 import { AppError } from '@/common/errors/AppError.js';
 import { AppDataSource } from '@/infrastructure/database/data-source.js';
+import { eventBus } from '@/infrastructure/events/event-bus.js';
 import { Appointment, AppointmentStatus } from '@/modules/appointments/appointment.entity.js';
-import { NotificationType } from '@/modules/notifications/notification.entity.js';
-import { notifyCompanyManagers } from '@/modules/notifications/notifications.service.js';
 
 import { Review } from './review.entity.js';
 import type { CreateReviewInput } from './reviews.schemas.js';
@@ -51,13 +50,14 @@ export async function createReview(
 
   const loaded = (await repository.findOne({ where: { id: review.id }, relations: REVIEW_RELATIONS }))!;
 
-  await notifyCompanyManagers(
-    appointment.companyId,
-    NotificationType.REVIEW_RECEIVED,
-    `New ${loaded.rating}-star review for ${loaded.service.name}`,
-    loaded.comment ?? undefined,
-    { reviewId: loaded.id, companyId: appointment.companyId, serviceId: appointment.serviceId },
-  );
+  await eventBus.publish('review.received', {
+    reviewId: loaded.id,
+    companyId: appointment.companyId,
+    serviceId: appointment.serviceId,
+    serviceName: loaded.service.name,
+    rating: loaded.rating,
+    comment: loaded.comment,
+  });
 
   return loaded;
 }

@@ -1,3 +1,5 @@
+import { registerEventSubscribers } from '@/infrastructure/events/register-subscribers.js';
+
 import { createApp } from './app.js';
 import { env } from './env/env.js';
 import { AppDataSource } from './infrastructure/database/data-source.js';
@@ -6,6 +8,7 @@ import { logger } from './infrastructure/logger/logger.js';
 async function bootstrap(): Promise<void> {
   try {
     await AppDataSource.initialize();
+    registerEventSubscribers();
     logger.info('Database connection established');
   } catch (err) {
     logger.error({ err }, 'Failed to connect to the database');

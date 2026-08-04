@@ -8,6 +8,8 @@ export type GetMySpecialistProfileResponse = OperationResponseByStatus<'getMySpe
 export type UpdateSpecialistProfileRequest = OperationRequest<'updateMySpecialistProfile'>;
 export type UpdateMySpecialistProfileResponse = OperationResponseByStatus<'updateMySpecialistProfile', 200>;
 
+export type GetMySpecialistStatusHistoryResponse = OperationResponseByStatus<'getMySpecialistStatusHistory', 200>;
+
 export type GetPublicSpecialistsQuery = OperationQuery<'getPublicSpecialists'>;
 export type GetPublicSpecialistsResponse = OperationResponseByStatus<'getPublicSpecialists', 200>;
 

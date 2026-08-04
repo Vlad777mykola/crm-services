@@ -91,6 +91,40 @@ Me:
           application/json:
             schema:
               $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '409':
+        description: Invalid status transition (e.g. a suspended profile cannot be republished)
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+
+MyStatusHistory:
+  get:
+    operationId: getMySpecialistStatusHistory
+    tags:
+      - Specialists
+    summary: List the current user's specialist profile status transition history
+    security:
+      - bearerAuth: []
+    responses:
+      '200':
+        description: Current user's specialist profile status history
+        content:
+          application/json:
+            schema:
+              $ref: '../audit/schemas.yaml#/StatusHistoryListResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '404':
+        description: This user does not have a specialist profile yet
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
 
 Public:
   get:

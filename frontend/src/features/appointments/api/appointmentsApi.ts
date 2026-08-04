@@ -52,6 +52,17 @@ export interface CreateAppointmentInput {
   notes?: string | null;
 }
 
+export interface StatusHistoryEntry {
+  id: string;
+  entityType: 'appointment' | 'company' | 'service' | 'specialist_profile';
+  entityId: string;
+  fromStatus: string | null;
+  toStatus: string;
+  changedByUserId: string | null;
+  reason: string | null;
+  createdAt: string;
+}
+
 async function parseJsonOrThrow<T>(response: Response): Promise<T> {
   const body = (await response.json().catch(() => undefined)) as { error?: { message?: string } } | T | undefined;
 
@@ -111,5 +122,11 @@ export async function cancelAppointment(appointmentId: string): Promise<Appointm
     method: 'POST',
   });
   const body = await parseJsonOrThrow<{ data: Appointment }>(response);
+  return body.data;
+}
+
+export async function fetchAppointmentStatusHistory(appointmentId: string): Promise<StatusHistoryEntry[]> {
+  const response = await authorizedFetch(`/appointments/${appointmentId}/status-history`);
+  const body = await parseJsonOrThrow<{ data: StatusHistoryEntry[] }>(response);
   return body.data;
 }

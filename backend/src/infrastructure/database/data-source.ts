@@ -9,6 +9,7 @@ import { CompanyMember } from '@/modules/company-members/company-member.entity.j
 import { CompanySpecialist } from '@/modules/company-specialists/company-specialist.entity.js';
 import { CompanySpecialistRequest } from '@/modules/company-specialists/company-specialist-request.entity.js';
 import { Appointment } from '@/modules/appointments/appointment.entity.js';
+import { StatusHistoryEntry } from '@/modules/audit/status-history.entity.js';
 import { Company } from '@/modules/companies/company.entity.js';
 import { Notification } from '@/modules/notifications/notification.entity.js';
 import { Review } from '@/modules/reviews/review.entity.js';
@@ -38,6 +39,7 @@ export const AppDataSource = new DataSource({
     Appointment,
     Notification,
     Review,
+    StatusHistoryEntry,
   ],
   migrations: [
     isProduction

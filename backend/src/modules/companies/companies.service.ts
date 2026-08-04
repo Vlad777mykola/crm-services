@@ -4,6 +4,9 @@ import { AppError } from '@/common/errors/AppError.js';
 import { requireCompanyRole } from '@/common/permissions/companyPermissions.js';
 import { buildPaginationMeta, resolvePagination, type PaginationMeta } from '@/common/schemas/pagination.js';
 import { AppDataSource } from '@/infrastructure/database/data-source.js';
+import { AuditEntityType, type StatusHistoryEntry } from '@/modules/audit/status-history.entity.js';
+import { listStatusHistory, recordStatusChange } from '@/modules/audit/status-history.service.js';
+import { assertTransitionAllowed, PUBLISHABLE_STATUS_TRANSITIONS } from '@/modules/audit/status-transition.js';
 import { CompanyMember, CompanyMemberRole, CompanyMemberStatus } from '@/modules/company-members/company-member.entity.js';
 
 import { Company, CompanyStatus } from './company.entity.js';
@@ -72,6 +75,8 @@ export async function createCompany(input: CreateCompanyRequestInput, creatorUse
         status: CompanyMemberStatus.ACTIVE,
       }),
     );
+
+    await recordStatusChange(AuditEntityType.COMPANY, company.id, null, company.status, creatorUserId);
 
     return company;
   });
@@ -161,6 +166,29 @@ export async function updateCompany(
     throw new AppError('Company not found', 404);
   }
 
+  const fromStatus = company.status;
+  if (patch.status && patch.status !== fromStatus) {
+    assertTransitionAllowed(
+      PUBLISHABLE_STATUS_TRANSITIONS,
+      fromStatus,
+      patch.status,
+      fromStatus === CompanyStatus.SUSPENDED
+        ? 'This company has been suspended and cannot be republished'
+        : undefined,
+    );
+  }
+
   Object.assign(company, patch);
-  return repository.save(company);
+  const saved = await repository.save(company);
+
+  if (saved.status !== fromStatus) {
+    await recordStatusChange(AuditEntityType.COMPANY, saved.id, fromStatus, saved.status, requesterUserId);
+  }
+
+  return saved;
+}
+
+export async function getCompanyStatusHistory(companyId: string, requesterUserId: string): Promise<StatusHistoryEntry[]> {
+  await requireCompanyRole(companyId, requesterUserId, [CompanyMemberRole.OWNER, CompanyMemberRole.MANAGER]);
+  return listStatusHistory(AuditEntityType.COMPANY, companyId);
 }

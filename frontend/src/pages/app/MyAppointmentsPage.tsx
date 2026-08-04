@@ -9,6 +9,7 @@ import {
   type Appointment,
   type AppointmentStatus,
 } from '@/features/appointments/api/appointmentsApi';
+import { AppointmentStatusHistoryModal } from '@/features/appointments/ui/AppointmentStatusHistoryModal';
 import { createReview, type CreateReviewInput } from '@/features/reviews/api/reviewsApi';
 
 const STATUS_COLORS: Record<AppointmentStatus, string> = {
@@ -27,6 +28,7 @@ export function MyAppointmentsPage() {
   const queryClient = useQueryClient();
   const queryKey = ['appointments', 'me'];
   const [reviewingAppointment, setReviewingAppointment] = useState<Appointment | null>(null);
+  const [historyAppointmentId, setHistoryAppointmentId] = useState<string | null>(null);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
 
@@ -81,6 +83,9 @@ export function MyAppointmentsPage() {
           renderItem={(appointment) => (
             <List.Item
               actions={[
+                <Button key="history" size="small" onClick={() => setHistoryAppointmentId(appointment.id)}>
+                  History
+                </Button>,
                 ...(['pending', 'approved'].includes(appointment.status)
                   ? [
                       <Button
@@ -158,6 +163,8 @@ export function MyAppointmentsPage() {
           />
         </Space>
       </Modal>
+
+      <AppointmentStatusHistoryModal appointmentId={historyAppointmentId} onClose={() => setHistoryAppointmentId(null)} />
     </Card>
   );
 }

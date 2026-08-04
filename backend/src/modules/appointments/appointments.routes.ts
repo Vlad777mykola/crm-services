@@ -18,6 +18,7 @@ import {
   cancelAppointment,
   completeAppointment,
   createAppointment,
+  getAppointmentStatusHistory,
   listCompanyAppointments,
   listMyAppointments,
   respondToAppointment,
@@ -102,6 +103,21 @@ appointmentsRouter.get('/appointments/me', requireAuth, async (req, res, next) =
     next(err);
   }
 });
+
+appointmentsRouter.get(
+  '/appointments/:appointmentId/status-history',
+  requireAuth,
+  validate(appointmentOnlyIdParamsSchema, 'params'),
+  async (req, res, next) => {
+    try {
+      const { appointmentId } = req.params as unknown as AppointmentOnlyIdParams;
+      const history = await getAppointmentStatusHistory(appointmentId, req.auth!.userId);
+      res.status(200).json({ message: 'Appointment status history', data: history });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
 appointmentsRouter.post(
   '/appointments/:appointmentId/cancel',

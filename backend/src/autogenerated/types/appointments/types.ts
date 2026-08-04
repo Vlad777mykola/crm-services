@@ -12,4 +12,6 @@ export type ListMyAppointmentsResponse = OperationResponseByStatus<'listMyAppoin
 export type CancelAppointmentResponse = OperationResponseByStatus<'cancelAppointment', 200>;
 export type CompleteAppointmentResponse = OperationResponseByStatus<'completeAppointment', 200>;
 
+export type GetAppointmentStatusHistoryResponse = OperationResponseByStatus<'getAppointmentStatusHistory', 200>;
+
 export type AppointmentSchema = Schema<'Appointment'>;

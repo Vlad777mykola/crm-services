@@ -10,6 +10,7 @@ export type ListCompanyServicesResponse = OperationResponseByStatus<'listCompany
 export type ListPublicServicesQuery = OperationQuery<'listPublicServices'>;
 export type ListPublicServicesResponse = OperationResponseByStatus<'listPublicServices', 200>;
 export type GetServiceByIdResponse = OperationResponseByStatus<'getServiceById', 200>;
+export type GetServiceStatusHistoryResponse = OperationResponseByStatus<'getServiceStatusHistory', 200>;
 
 export type AssignServiceSpecialistRequest = OperationRequest<'assignServiceSpecialist'>;
 export type AssignServiceSpecialistResponse = OperationResponseByStatus<'assignServiceSpecialist', 201>;

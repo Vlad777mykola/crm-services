@@ -3,9 +3,11 @@ import { In, type Repository } from 'typeorm';
 import { AppError } from '@/common/errors/AppError.js';
 import { requireCompanyRole } from '@/common/permissions/companyPermissions.js';
 import { AppDataSource } from '@/infrastructure/database/data-source.js';
+import { eventBus } from '@/infrastructure/events/event-bus.js';
+import { AuditEntityType, type StatusHistoryEntry } from '@/modules/audit/status-history.entity.js';
+import { listStatusHistory, recordStatusChange } from '@/modules/audit/status-history.service.js';
+import { APPOINTMENT_STATUS_TRANSITIONS, assertTransitionAllowed } from '@/modules/audit/status-transition.js';
 import { CompanyMemberRole } from '@/modules/company-members/company-member.entity.js';
-import { NotificationType } from '@/modules/notifications/notification.entity.js';
-import { createNotification, notifyCompanyManagers } from '@/modules/notifications/notifications.service.js';
 import { Review } from '@/modules/reviews/review.entity.js';
 import { ServiceSpecialist } from '@/modules/services/service-specialist.entity.js';
 import { Service, ServiceStatus } from '@/modules/services/service.entity.js';
@@ -84,13 +86,16 @@ export async function createAppointment(
 
   const loaded = await loadAppointmentOrThrow({ id: appointment.id });
 
-  await notifyCompanyManagers(
+  await recordStatusChange(AuditEntityType.APPOINTMENT, loaded.id, null, AppointmentStatus.PENDING, clientUserId);
+
+  await eventBus.publish('appointment.requested', {
+    appointmentId: loaded.id,
     companyId,
-    NotificationType.APPOINTMENT_REQUESTED,
-    `New appointment request for ${loaded.service.name}`,
-    `${loaded.client.name} requested ${loaded.service.name} on ${loaded.requestedStartAt.toLocaleString()}`,
-    { appointmentId: loaded.id, companyId, serviceId: loaded.serviceId },
-  );
+    serviceId: loaded.serviceId,
+    serviceName: loaded.service.name,
+    clientName: loaded.client.name,
+    requestedStartAt: loaded.requestedStartAt.toISOString(),
+  });
 
   return loaded;
 }
@@ -131,23 +136,32 @@ export async function respondToAppointment(
     throw new AppError('Appointment not found', 404);
   }
 
-  if (appointment.status !== AppointmentStatus.PENDING) {
-    throw new AppError('This appointment has already been responded to', 409);
-  }
+  const fromStatus = appointment.status;
+  const nextStatus = input.status === 'approved' ? AppointmentStatus.APPROVED : AppointmentStatus.REJECTED;
+  assertTransitionAllowed(
+    APPOINTMENT_STATUS_TRANSITIONS,
+    fromStatus,
+    nextStatus,
+    'This appointment has already been responded to',
+  );
 
-  appointment.status = input.status === 'approved' ? AppointmentStatus.APPROVED : AppointmentStatus.REJECTED;
+  appointment.status = nextStatus;
   appointment.respondedAt = new Date();
   const saved = await repository.save(appointment);
 
-  await createNotification(
-    saved.clientUserId,
-    saved.status === AppointmentStatus.APPROVED ? NotificationType.APPOINTMENT_APPROVED : NotificationType.APPOINTMENT_REJECTED,
-    saved.status === AppointmentStatus.APPROVED
-      ? `Your appointment for ${saved.service.name} was approved`
-      : `Your appointment for ${saved.service.name} was rejected`,
-    `${saved.company.name} · ${saved.requestedStartAt.toLocaleString()}`,
-    { appointmentId: saved.id, companyId: saved.companyId, serviceId: saved.serviceId },
-  );
+  await recordStatusChange(AuditEntityType.APPOINTMENT, saved.id, fromStatus, saved.status, requesterUserId);
+
+  const responseEvent =
+    saved.status === AppointmentStatus.APPROVED ? 'appointment.approved' : 'appointment.rejected';
+  await eventBus.publish(responseEvent, {
+    appointmentId: saved.id,
+    companyId: saved.companyId,
+    serviceId: saved.serviceId,
+    clientUserId: saved.clientUserId,
+    companyName: saved.company.name,
+    serviceName: saved.service.name,
+    requestedStartAt: saved.requestedStartAt.toISOString(),
+  });
 
   saved.hasReview = false;
   return saved;
@@ -166,24 +180,47 @@ export async function completeAppointment(
     throw new AppError('Appointment not found', 404);
   }
 
-  if (appointment.status !== AppointmentStatus.APPROVED) {
-    throw new AppError('Only approved appointments can be marked as completed', 409);
-  }
+  const fromStatus = appointment.status;
+  assertTransitionAllowed(
+    APPOINTMENT_STATUS_TRANSITIONS,
+    fromStatus,
+    AppointmentStatus.COMPLETED,
+    'Only approved appointments can be marked as completed',
+  );
 
   appointment.status = AppointmentStatus.COMPLETED;
   appointment.completedAt = new Date();
   const saved = await repository.save(appointment);
 
-  await createNotification(
-    saved.clientUserId,
-    NotificationType.APPOINTMENT_COMPLETED,
-    `Your appointment for ${saved.service.name} is complete`,
-    `Let others know how it went - leave a review for ${saved.company.name}.`,
-    { appointmentId: saved.id, companyId: saved.companyId, serviceId: saved.serviceId },
-  );
+  await recordStatusChange(AuditEntityType.APPOINTMENT, saved.id, fromStatus, saved.status, requesterUserId);
+
+  await eventBus.publish('appointment.completed', {
+    appointmentId: saved.id,
+    companyId: saved.companyId,
+    serviceId: saved.serviceId,
+    clientUserId: saved.clientUserId,
+    companyName: saved.company.name,
+    serviceName: saved.service.name,
+  });
 
   saved.hasReview = false;
   return saved;
+}
+
+export async function getAppointmentStatusHistory(
+  appointmentId: string,
+  requesterUserId: string,
+): Promise<StatusHistoryEntry[]> {
+  const appointment = await getAppointmentRepository().findOne({ where: { id: appointmentId } });
+  if (!appointment) {
+    throw new AppError('Appointment not found', 404);
+  }
+
+  if (appointment.clientUserId !== requesterUserId) {
+    await requireCompanyRole(appointment.companyId, requesterUserId, [CompanyMemberRole.OWNER, CompanyMemberRole.MANAGER]);
+  }
+
+  return listStatusHistory(AuditEntityType.APPOINTMENT, appointmentId);
 }
 
 export async function cancelAppointment(appointmentId: string, clientUserId: string): Promise<Appointment> {
@@ -196,20 +233,27 @@ export async function cancelAppointment(appointmentId: string, clientUserId: str
     throw new AppError('Appointment not found', 404);
   }
 
-  if (![AppointmentStatus.PENDING, AppointmentStatus.APPROVED].includes(appointment.status)) {
-    throw new AppError('This appointment can no longer be cancelled', 409);
-  }
+  const fromStatus = appointment.status;
+  assertTransitionAllowed(
+    APPOINTMENT_STATUS_TRANSITIONS,
+    fromStatus,
+    AppointmentStatus.CANCELLED,
+    'This appointment can no longer be cancelled',
+  );
 
   appointment.status = AppointmentStatus.CANCELLED;
   const saved = await repository.save(appointment);
 
-  await notifyCompanyManagers(
-    saved.companyId,
-    NotificationType.APPOINTMENT_CANCELLED,
-    `Appointment for ${saved.service.name} was cancelled`,
-    `${saved.client.name} cancelled their request for ${saved.requestedStartAt.toLocaleString()}`,
-    { appointmentId: saved.id, companyId: saved.companyId, serviceId: saved.serviceId },
-  );
+  await recordStatusChange(AuditEntityType.APPOINTMENT, saved.id, fromStatus, saved.status, clientUserId);
+
+  await eventBus.publish('appointment.cancelled', {
+    appointmentId: saved.id,
+    companyId: saved.companyId,
+    serviceId: saved.serviceId,
+    serviceName: saved.service.name,
+    clientName: saved.client.name,
+    requestedStartAt: saved.requestedStartAt.toISOString(),
+  });
 
   saved.hasReview = false;
   return saved;

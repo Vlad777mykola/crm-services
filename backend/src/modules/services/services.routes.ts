@@ -17,7 +17,14 @@ import {
   type ServiceOnlyIdParams,
   type UpdateServiceRequestInput,
 } from './services.schemas.js';
-import { createService, getServiceById, listCompanyServices, listPublicServices, updateService } from './services.service.js';
+import {
+  createService,
+  getServiceById,
+  getServiceStatusHistory,
+  listCompanyServices,
+  listPublicServices,
+  updateService,
+} from './services.service.js';
 
 export const servicesRouter = Router();
 
@@ -62,6 +69,21 @@ servicesRouter.patch(
       const { companyId, serviceId } = req.params as unknown as ServiceIdParams;
       const service = await updateService(companyId, serviceId, req.auth!.userId, req.body as UpdateServiceRequestInput);
       res.status(200).json({ message: 'Service updated', data: service });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+servicesRouter.get(
+  '/companies/:companyId/services/:serviceId/status-history',
+  requireAuth,
+  validate(serviceIdParamsSchema, 'params'),
+  async (req, res, next) => {
+    try {
+      const { companyId, serviceId } = req.params as unknown as ServiceIdParams;
+      const history = await getServiceStatusHistory(companyId, serviceId, req.auth!.userId);
+      res.status(200).json({ message: 'Service status history', data: history });
     } catch (err) {
       next(err);
     }

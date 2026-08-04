@@ -4,6 +4,9 @@ import { AppError } from '@/common/errors/AppError.js';
 import { findActiveCompanyMembership, requireCompanyRole } from '@/common/permissions/companyPermissions.js';
 import { buildPaginationMeta, resolvePagination, type PaginationMeta } from '@/common/schemas/pagination.js';
 import { AppDataSource } from '@/infrastructure/database/data-source.js';
+import { AuditEntityType, type StatusHistoryEntry } from '@/modules/audit/status-history.entity.js';
+import { listStatusHistory, recordStatusChange } from '@/modules/audit/status-history.service.js';
+import { assertTransitionAllowed, PUBLISHABLE_STATUS_TRANSITIONS } from '@/modules/audit/status-transition.js';
 import { CompanyMemberRole } from '@/modules/company-members/company-member.entity.js';
 
 import { Service, ServiceStatus } from './service.entity.js';
@@ -21,7 +24,7 @@ export async function createService(
   await requireCompanyRole(companyId, requesterUserId, [CompanyMemberRole.OWNER, CompanyMemberRole.MANAGER]);
 
   const repository = getServiceRepository();
-  return repository.save(
+  const service = await repository.save(
     repository.create({
       companyId,
       name: input.name,
@@ -32,6 +35,10 @@ export async function createService(
       status: ServiceStatus.DRAFT,
     }),
   );
+
+  await recordStatusChange(AuditEntityType.SERVICE, service.id, null, service.status, requesterUserId);
+
+  return service;
 }
 
 export async function listCompanyServices(companyId: string, requesterUserId: string | undefined): Promise<Service[]> {
@@ -111,6 +118,37 @@ export async function updateService(
     throw new AppError('Service not found', 404);
   }
 
+  const fromStatus = service.status;
+  if (patch.status && patch.status !== fromStatus) {
+    assertTransitionAllowed(
+      PUBLISHABLE_STATUS_TRANSITIONS,
+      fromStatus,
+      patch.status,
+      fromStatus === ServiceStatus.SUSPENDED ? 'This service has been suspended and cannot be republished' : undefined,
+    );
+  }
+
   Object.assign(service, patch);
-  return repository.save(service);
+  const saved = await repository.save(service);
+
+  if (saved.status !== fromStatus) {
+    await recordStatusChange(AuditEntityType.SERVICE, saved.id, fromStatus, saved.status, requesterUserId);
+  }
+
+  return saved;
+}
+
+export async function getServiceStatusHistory(
+  companyId: string,
+  serviceId: string,
+  requesterUserId: string,
+): Promise<StatusHistoryEntry[]> {
+  await requireCompanyRole(companyId, requesterUserId, [CompanyMemberRole.OWNER, CompanyMemberRole.MANAGER]);
+
+  const service = await getServiceRepository().findOne({ where: { id: serviceId, companyId } });
+  if (!service) {
+    throw new AppError('Service not found', 404);
+  }
+
+  return listStatusHistory(AuditEntityType.SERVICE, serviceId);
 }

@@ -14,7 +14,14 @@ import {
   type PublicCompaniesQueryInput,
   type UpdateCompanyRequestInput,
 } from './companies.schemas.js';
-import { createCompany, getCompanyById, getMyCompanies, getPublicCompanies, updateCompany } from './companies.service.js';
+import {
+  createCompany,
+  getCompanyById,
+  getCompanyStatusHistory,
+  getMyCompanies,
+  getPublicCompanies,
+  updateCompany,
+} from './companies.service.js';
 
 export const companiesRouter = Router();
 
@@ -60,6 +67,21 @@ companiesRouter.get(
       const { companyId } = req.params as unknown as CompanyIdParams;
       const company = await getCompanyById(companyId, req.auth?.userId);
       res.status(200).json({ message: 'Company found', data: company });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+companiesRouter.get(
+  '/companies/:companyId/status-history',
+  requireAuth,
+  validate(companyIdParamsSchema, 'params'),
+  async (req, res, next) => {
+    try {
+      const { companyId } = req.params as unknown as CompanyIdParams;
+      const history = await getCompanyStatusHistory(companyId, req.auth!.userId);
+      res.status(200).json({ message: 'Company status history', data: history });
     } catch (err) {
       next(err);
     }

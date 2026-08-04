@@ -212,6 +212,47 @@ MyAppointments:
             schema:
               $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
 
+StatusHistory:
+  get:
+    operationId: getAppointmentStatusHistory
+    tags:
+      - Appointments
+    summary: List an appointment's status transition history (client owner or company owner/manager)
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: appointmentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: Appointment status history
+        content:
+          application/json:
+            schema:
+              $ref: '../audit/schemas.yaml#/StatusHistoryListResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '403':
+        description: Not the client or a company owner/manager
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '404':
+        description: Appointment not found
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+
 Cancel:
   post:
     operationId: cancelAppointment

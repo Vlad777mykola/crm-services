@@ -110,6 +110,59 @@ ByServiceId:
           application/json:
             schema:
               $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '409':
+        description: Invalid status transition (e.g. a suspended service cannot be republished)
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+
+StatusHistory:
+  get:
+    operationId: getServiceStatusHistory
+    tags:
+      - Services
+    summary: List a service's status transition history (owner/manager only)
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: serviceId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: Service status history
+        content:
+          application/json:
+            schema:
+              $ref: '../audit/schemas.yaml#/StatusHistoryListResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '403':
+        description: Not a company owner/manager
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '404':
+        description: Service not found
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
 
 PublicList:
   get:

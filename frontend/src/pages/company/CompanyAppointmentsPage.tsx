@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, Button, Card, Empty, List, Space, Spin, Tag } from 'antd';
 import { Link, useParams } from 'react-router';
@@ -8,6 +9,7 @@ import {
   respondToAppointment,
   type AppointmentStatus,
 } from '@/features/appointments/api/appointmentsApi';
+import { AppointmentStatusHistoryModal } from '@/features/appointments/ui/AppointmentStatusHistoryModal';
 
 const STATUS_COLORS: Record<AppointmentStatus, string> = {
   pending: 'gold',
@@ -25,6 +27,7 @@ export function CompanyAppointmentsPage() {
   const { companyId } = useParams<{ companyId: string }>();
   const queryClient = useQueryClient();
   const queryKey = ['company', companyId, 'appointments'];
+  const [historyAppointmentId, setHistoryAppointmentId] = useState<string | null>(null);
 
   const { data: appointments, isLoading, isError, error } = useQuery({
     queryKey,
@@ -64,6 +67,9 @@ export function CompanyAppointmentsPage() {
           renderItem={(appointment) => (
             <List.Item
               actions={[
+                <Button key="history" size="small" onClick={() => setHistoryAppointmentId(appointment.id)}>
+                  History
+                </Button>,
                 ...(appointment.status === 'pending'
                   ? [
                       <Button
@@ -120,6 +126,8 @@ export function CompanyAppointmentsPage() {
           )}
         />
       )}
+
+      <AppointmentStatusHistoryModal appointmentId={historyAppointmentId} onClose={() => setHistoryAppointmentId(null)} />
     </Card>
   );
 }

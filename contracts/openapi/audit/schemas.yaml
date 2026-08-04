@@ -1,0 +1,49 @@
+StatusHistoryEntry:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    entityType:
+      type: string
+      enum: [appointment, company, service, specialist_profile]
+    entityId:
+      type: string
+      format: uuid
+    fromStatus:
+      type: string
+      nullable: true
+    toStatus:
+      type: string
+    changedByUserId:
+      type: string
+      format: uuid
+      nullable: true
+    reason:
+      type: string
+      nullable: true
+    createdAt:
+      type: string
+      format: date-time
+  required:
+    - id
+    - entityType
+    - entityId
+    - fromStatus
+    - toStatus
+    - changedByUserId
+    - reason
+    - createdAt
+
+StatusHistoryListResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      type: array
+      items:
+        $ref: '#/StatusHistoryEntry'
+  required:
+    - message
+    - data

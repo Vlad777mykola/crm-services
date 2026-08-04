@@ -227,6 +227,23 @@ export interface paths {
         patch: operations["updateCompany"];
         trace?: never;
     };
+    "/companies/{companyId}/status-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List a company's status transition history (owner/manager only) */
+        get: operations["getCompanyStatusHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/companies/{companyId}/members": {
         parameters: {
             query?: never;
@@ -312,6 +329,23 @@ export interface paths {
         head?: never;
         /** Update the current user's specialist profile */
         patch: operations["updateMySpecialistProfile"];
+        trace?: never;
+    };
+    "/specialists/me/status-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List the current user's specialist profile status transition history */
+        get: operations["getMySpecialistStatusHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/specialists/public": {
@@ -502,6 +536,23 @@ export interface paths {
         patch: operations["updateService"];
         trace?: never;
     };
+    "/companies/{companyId}/services/{serviceId}/status-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List a service's status transition history (owner/manager only) */
+        get: operations["getServiceStatusHistory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/services/public": {
         parameters: {
             query?: never;
@@ -632,6 +683,23 @@ export interface paths {
         };
         /** List the current user's own appointment requests */
         get: operations["listMyAppointments"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/appointments/{appointmentId}/status-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List an appointment's status transition history (client owner or company owner/manager) */
+        get: operations["getAppointmentStatusHistory"];
         put?: never;
         post?: never;
         delete?: never;
@@ -986,6 +1054,25 @@ export interface components {
             address?: string | null;
             /** @enum {string} */
             status?: "draft" | "published";
+        };
+        StatusHistoryEntry: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            entityType: "appointment" | "company" | "service" | "specialist_profile";
+            /** Format: uuid */
+            entityId: string;
+            fromStatus: string | null;
+            toStatus: string;
+            /** Format: uuid */
+            changedByUserId: string | null;
+            reason: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        StatusHistoryListResponse: {
+            message: string;
+            data: components["schemas"]["StatusHistoryEntry"][];
         };
         CompanyMemberUser: {
             /** Format: uuid */
@@ -1879,6 +1966,55 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Invalid status transition (e.g. a suspended company cannot be republished) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getCompanyStatusHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Company status history */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatusHistoryListResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not a company owner/manager */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     listCompanyMembers: {
@@ -2187,6 +2323,53 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SpecialistProfileResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description This user does not have a specialist profile yet */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Invalid status transition (e.g. a suspended profile cannot be republished) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getMySpecialistStatusHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current user's specialist profile status history */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatusHistoryListResponse"];
                 };
             };
             /** @description Unauthorized */
@@ -2685,6 +2868,65 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            /** @description Invalid status transition (e.g. a suspended service cannot be republished) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getServiceStatusHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                companyId: string;
+                serviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Service status history */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatusHistoryListResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not a company owner/manager */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Service not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     listPublicServices: {
@@ -3101,6 +3343,55 @@ export interface operations {
             };
             /** @description Unauthorized */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    getAppointmentStatusHistory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                appointmentId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Appointment status history */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StatusHistoryListResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not the client or a company owner/manager */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Appointment not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

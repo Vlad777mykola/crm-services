@@ -3,6 +3,9 @@ import type { Repository } from 'typeorm';
 import { AppError } from '@/common/errors/AppError.js';
 import { buildPaginationMeta, resolvePagination, type PaginationMeta } from '@/common/schemas/pagination.js';
 import { AppDataSource } from '@/infrastructure/database/data-source.js';
+import { AuditEntityType, type StatusHistoryEntry } from '@/modules/audit/status-history.entity.js';
+import { listStatusHistory, recordStatusChange } from '@/modules/audit/status-history.service.js';
+import { assertTransitionAllowed, PUBLISHABLE_STATUS_TRANSITIONS } from '@/modules/audit/status-transition.js';
 
 import { SpecialistProfile, SpecialistProfileStatus } from './specialist-profile.entity.js';
 import type {
@@ -37,7 +40,10 @@ export async function createMySpecialistProfile(
     status: SpecialistProfileStatus.DRAFT,
   });
 
-  return repository.save(profile);
+  const saved = await repository.save(profile);
+  await recordStatusChange(AuditEntityType.SPECIALIST_PROFILE, saved.id, null, saved.status, userId);
+
+  return saved;
 }
 
 export async function getMySpecialistProfile(userId: string): Promise<SpecialistProfile> {
@@ -62,8 +68,35 @@ export async function updateMySpecialistProfile(
     throw new AppError('This user does not have a specialist profile yet', 404);
   }
 
+  const fromStatus = profile.status;
+  if (patch.status && patch.status !== fromStatus) {
+    assertTransitionAllowed(
+      PUBLISHABLE_STATUS_TRANSITIONS,
+      fromStatus,
+      patch.status,
+      fromStatus === SpecialistProfileStatus.SUSPENDED
+        ? 'This specialist profile has been suspended and cannot be republished'
+        : undefined,
+    );
+  }
+
   Object.assign(profile, patch);
-  return repository.save(profile);
+  const saved = await repository.save(profile);
+
+  if (saved.status !== fromStatus) {
+    await recordStatusChange(AuditEntityType.SPECIALIST_PROFILE, saved.id, fromStatus, saved.status, userId);
+  }
+
+  return saved;
+}
+
+export async function getMySpecialistStatusHistory(userId: string): Promise<StatusHistoryEntry[]> {
+  const profile = await getSpecialistRepository().findOne({ where: { userId } });
+  if (!profile) {
+    throw new AppError('This user does not have a specialist profile yet', 404);
+  }
+
+  return listStatusHistory(AuditEntityType.SPECIALIST_PROFILE, profile.id);
 }
 
 export interface PublicSpecialistsResult {
