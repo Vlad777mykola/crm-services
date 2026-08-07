@@ -1,0 +1,73 @@
+# Node.js consumer services (`node-workers` profile) - each is its own
+# top-level folder under services/, with its own Dockerfile, package.json,
+# and .env.example, so each can be deployed independently of the backend API
+# and of each other. All are one-way RabbitMQ consumers: they never call, and
+# are never called by, the API.
+#
+# Combine with docker-compose.yml + docker-compose.events.yml:
+#   docker compose -f docker/docker-compose.yml -f docker/docker-compose.events.yml -f docker/docker-compose.workers.yml \
+#     --profile events --profile node-workers up
+
+services:
+  # Consumes domain.events + analytics.events, writes emails (Postgres
+  # `email_logs`) and in-app notifications (`notifications`). Logical owner
+  # of both tables during the MVP phase - see docs/architecture/service-ownership.md.
+  notifications-service:
+    profiles: ['node-workers']
+    build:
+      context: ../services/notifications-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../services/notifications-service/.env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm
+      RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672
+    ports:
+      - '4300:4300'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # No Postgres dependency at all - watches every message on both exchanges
+  # and serves counts/latency at :4100/metrics (Prometheus text) and
+  # :4100/health (JSON). Has a like-for-like Python sibling in services/ai-service.
+  metrics-service:
+    profiles: ['node-workers']
+    build:
+      context: ../services/metrics-service
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672
+      METRICS_PORT: '4100'
+    ports:
+      - '4100:4100'
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  # Consumes ai.* result events published by services/ai-service and writes
+  # safe, denormalized projection rows into the main database - the only
+  # service besides the backend API allowed to write to main-postgres, and
+  # only into its own projection tables (never business tables).
+  backend-projection-service:
+    profiles: ['node-workers']
+    build:
+      context: ../services/backend-projection-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../services/backend-projection-service/.env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm
+      RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672
+    ports:
+      - '4400:4400'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy

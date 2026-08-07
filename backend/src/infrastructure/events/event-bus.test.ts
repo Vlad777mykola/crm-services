@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { InProcessEventBus } from './event-bus.js';
+import { GatedEventBus, InProcessEventBus } from './event-bus.js';
 
 const requestedPayload = {
   appointmentId: 'appointment-1',
@@ -61,5 +61,30 @@ describe('InProcessEventBus', () => {
     });
 
     await expect(bus.publish('appointment.requested', requestedPayload)).rejects.toThrow('notification write failed');
+  });
+});
+
+describe('GatedEventBus', () => {
+  it('delegates to the inner bus when enabled', async () => {
+    const inner = new InProcessEventBus();
+    const handler = vi.fn();
+    inner.subscribe('appointment.requested', handler);
+    const bus = new GatedEventBus(inner, true);
+
+    await bus.publish('appointment.requested', requestedPayload);
+
+    expect(handler).toHaveBeenCalledOnce();
+  });
+
+  it('never invokes subscribers when disabled, so the caller sees no side effect', async () => {
+    const inner = new InProcessEventBus();
+    const handler = vi.fn();
+    const bus = new GatedEventBus(inner, false);
+    bus.subscribe('appointment.requested', handler);
+
+    const event = await bus.publish('appointment.requested', requestedPayload);
+
+    expect(handler).not.toHaveBeenCalled();
+    expect(event.type).toBe('appointment.requested');
   });
 });

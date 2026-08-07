@@ -24,9 +24,13 @@ async function bootstrap(): Promise<void> {
   function shutdown(signal: string): void {
     logger.info(`Received ${signal}, shutting down gracefully`);
     server.close(() => {
-      AppDataSource.destroy()
-        .catch((err: unknown) => {
-          logger.error({ err }, 'Error closing database connection');
+      Promise.allSettled([AppDataSource.destroy()])
+        .then((results) => {
+          for (const result of results) {
+            if (result.status === 'rejected') {
+              logger.error({ err: result.reason }, 'Error during shutdown');
+            }
+          }
         })
         .finally(() => {
           process.exit(0);

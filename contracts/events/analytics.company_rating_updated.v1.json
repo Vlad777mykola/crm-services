@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://crm-services/contracts/events/analytics.company_rating_updated.v1.json",
+  "title": "analytics.company_rating_updated",
+  "description": "Published by services/ai-service after recomputing a company's running review average. Exchange: analytics.events. Routing key: analytics.company_rating_updated. Consumed by notifications-service.",
+  "type": "object",
+  "required": ["companyId", "averageRating", "reviewCount"],
+  "additionalProperties": false,
+  "properties": {
+    "companyId": { "type": "string", "format": "uuid" },
+    "averageRating": { "type": "number", "minimum": 0, "maximum": 5 },
+    "reviewCount": { "type": "integer", "minimum": 0 }
+  }
+}

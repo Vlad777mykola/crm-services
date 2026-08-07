@@ -1,40 +1,72 @@
 # CRM Services
 
-A single repository with **independently deployable** frontend and backend, connected only through a generated API contract (OpenAPI) — not through direct source imports.
+A single repository with **independently deployable** services — frontend, backend API, and a
+set of event-driven microservices — connected only through generated API contracts (OpenAPI)
+and versioned event schemas, never through direct source imports.
 
 ## Structure
 
 ```
 crm-services/
-├── frontend/          # React + TypeScript + Vite app (deploys to GitHub Pages, later S3/CloudFront)
-├── backend/           # Node.js + TypeScript + Express API (deploys as Docker service, later ECS/App Runner)
-├── contracts/         # Generated openapi.json — the contract between frontend and backend
-├── docker/            # docker-compose.yml and local dev infrastructure
-├── .github/workflows/ # CI/CD pipelines (frontend, backend, contract-check run independently)
-├── package.json       # Yarn workspaces root — orchestration only, no shared runtime code
+├── frontend/                         # React + TypeScript + Vite app (deploys to GitHub Pages, later S3/CloudFront)
+├── backend/                          # Node.js + TypeScript + Express API — HTTP only, no workers, no RabbitMQ consumers
+├── contracts/
+│   ├── openapi.json                  # generated contract between frontend and backend
+│   └── events/                       # shared event JSON schemas (envelope + one file per event type)
+├── services/
+│   ├── notifications-service/        # consumes domain/analytics events, sends emails + in-app notifications
+│   ├── metrics-service/              # observes RabbitMQ traffic, exposes /metrics + /health
+│   ├── outbox-publisher/             # publishes the backend's outbox_events to RabbitMQ
+│   ├── backend-projection-service/   # consumes ai.* events, writes safe projections to main DB
+│   └── ai-service/                   # Python AI/analytics microservice, owns postgres-ai
+├── docker/                           # docker-compose.yml (core) + events/workers/ai overlays
+├── docs/architecture/                # current/target architecture, ownership, event model
+├── .github/workflows/                # CI/CD pipelines — one per deploy unit, none depend on another
+├── package.json                      # Yarn workspaces root (frontend + backend only) — orchestration, no shared runtime code
 └── yarn.lock
 ```
 
+Everything under `services/` is deliberately **not** a Yarn workspace member: each has its own
+`package.json`/`pyproject.toml`, its own `Dockerfile`, its own `.env.example`, and its own
+build/test/lint scripts, and none of them import `backend/src/modules/*`. See
+[`docs/architecture/target-production-architecture.md`](docs/architecture/target-production-architecture.md)
+for the full picture and [`docs/architecture/service-ownership.md`](docs/architecture/service-ownership.md)
+for which service owns which table.
+
 ## Key rules
 
-- Frontend never imports backend source code. It only consumes the generated API client/types produced from `contracts/openapi.json` (see Step 7, Orval).
-- Backend Zod schemas are the single source of truth for request/response shapes; OpenAPI is generated from them (see Step 6).
-- OpenAPI/Swagger is a development/build-time concern only — it is never required for the backend to run in production.
-- Frontend and backend each have their own build, lint, typecheck, test, and deploy pipeline, and can be deployed independently of one another.
+- Frontend never imports backend source code. It only consumes the generated API client/types
+  produced from `contracts/openapi.json`.
+- Backend Zod schemas are the single source of truth for request/response shapes; OpenAPI is
+  generated from them.
+- The backend API is HTTP-only: it never consumes from RabbitMQ, and it never publishes to it
+  directly either — business writes and an `outbox_events` row commit in the same database
+  transaction, and `services/outbox-publisher` is the only process that turns those rows into
+  RabbitMQ messages. See [`docs/architecture/event-driven-model.md`](docs/architecture/event-driven-model.md).
+- Every service under `services/` types against `contracts/events/*.json` locally instead of
+  importing backend domain modules, so each stays independently deployable.
+- Frontend, backend, and every service each have their own build, lint, typecheck, test, and
+  deploy pipeline, and can be deployed independently of one another.
 
 ## Getting started
 
-This repo uses **Yarn Classic (v1) Workspaces** with a single root lockfile. Workspaces keep day-to-day dependency management simple while each of `frontend/` and `backend/` remains independently buildable and deployable (each has its own scripts, its own Dockerfile/deploy workflow, and neither imports the other's source).
+Requires **Node.js >= 22.13** and, if you want to run `services/ai-service`, **Python >= 3.12**.
 
-Install all dependencies (frontend + backend) in one step:
+The frontend and backend use **Yarn Classic (v1) Workspaces** with a single root lockfile.
+Everything under `services/` is intentionally standalone (its own dependency tree) so it can be
+built and deployed without the rest of the repository ever being checked out.
+
+Install frontend + backend dependencies in one step:
 
 ```bash
 yarn install
 ```
 
-> Note: there is intentionally no custom `install` script in `package.json`. `install` is a reserved lifecycle hook name in npm/Yarn; the built-in `yarn install` command already installs every workspace in a single pass.
+> Note: there is intentionally no custom `install` script in `package.json`. `install` is a
+> reserved lifecycle hook name in npm/Yarn; the built-in `yarn install` command already installs
+> every workspace in a single pass.
 
-Other root-level commands (delegate to the relevant workspace(s); these become fully functional as later steps add real scripts to `frontend`/`backend`):
+Other root-level commands (delegate to `frontend`/`backend`):
 
 ```bash
 yarn dev               # run frontend + backend dev servers together
@@ -42,10 +74,24 @@ yarn build              # build backend then frontend
 yarn lint               # lint backend then frontend
 yarn typecheck          # typecheck backend then frontend
 yarn test               # test backend then frontend
-yarn contract:generate  # regenerate contracts/openapi.json and the frontend API client
-yarn contract:check     # regenerate contracts, then fail if anything changed (used in CI)
+yarn openapi:generate-types  # regenerate backend's autogenerated OpenAPI types
+yarn openapi:check           # regenerate, then fail if anything changed (used in CI)
 ```
 
-## Status
+Each service under `services/` has the same `dev`/`build`/`lint`/`typecheck`/`test` scripts,
+run from that service's own folder, e.g. `cd services/notifications-service && yarn dev`.
 
-This repository is being built incrementally, one step at a time. Current state: **Step 1 — base repository structure** (folders, workspace wiring, root scripts). Frontend, backend, database, Docker, contracts, CI, and event-driven infrastructure are added in subsequent steps.
+## Running everything (local vs. Docker, with/without microservices)
+
+See [`docker/README.md`](docker/README.md) for the full breakdown, but in short:
+
+1. **Fully local** — run infra in Docker (`docker compose -f docker/docker-compose.yml -f docker/docker-compose.events.yml --profile events up postgres redis rabbitmq`), then run the app processes directly on the host (`yarn dev` for frontend + backend, `yarn dev` in each `services/*` folder, `python src/main.py` for `services/ai-service`).
+2. **Docker, core only** (the minimal deploy shape) — `docker compose -f docker/docker-compose.yml up`: Postgres, Redis, and the backend API. No RabbitMQ, no workers.
+3. **Docker, with event infrastructure and/or microservices** — layer in `docker-compose.events.yml` (`--profile events`), `docker-compose.workers.yml` (`--profile node-workers`), and/or `docker-compose.ai.yml` (`--profile python-workers`) as described in `docker/README.md`.
+
+## Architecture docs
+
+- [`docs/architecture/current-service-map.md`](docs/architecture/current-service-map.md) — every deploy unit and its known gaps.
+- [`docs/architecture/target-production-architecture.md`](docs/architecture/target-production-architecture.md) — target repository layout, runtime topology, and production deployment matrix.
+- [`docs/architecture/service-ownership.md`](docs/architecture/service-ownership.md) — which service owns which table, and how duplicate side effects are avoided during a migration.
+- [`docs/architecture/event-driven-model.md`](docs/architecture/event-driven-model.md) — envelope shape, outbox pattern, RabbitMQ topology/DLQs, and idempotent consumers.

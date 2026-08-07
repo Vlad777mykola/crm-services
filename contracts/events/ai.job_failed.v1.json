@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://crm-services/contracts/events/ai.job_failed.v1.json",
+  "title": "ai.job_failed",
+  "description": "Published by services/ai-service when an AI job fails permanently. Exchange: analytics.events. Routing key: ai.job_failed. Consumed by metrics-service for observability.",
+  "type": "object",
+  "required": ["jobId", "jobType", "reason"],
+  "additionalProperties": false,
+  "properties": {
+    "jobId": { "type": "string", "format": "uuid" },
+    "jobType": { "type": "string", "description": "e.g. 'appointment_recommendation', 'company_insight'." },
+    "relatedAggregateId": { "type": ["string", "null"], "format": "uuid" },
+    "reason": { "type": "string" }
+  }
+}

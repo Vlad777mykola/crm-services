@@ -1,0 +1,45 @@
+# Python AI/analytics microservice (`python-workers` profile) with its own
+# dedicated Postgres instance - never shares a database or credentials with
+# the main backend. Combine with docker-compose.yml + docker-compose.events.yml:
+#   docker compose -f docker/docker-compose.yml -f docker/docker-compose.events.yml -f docker/docker-compose.ai.yml \
+#     --profile events --profile python-workers up
+
+services:
+  postgres-ai:
+    profiles: ['python-workers']
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ai
+      POSTGRES_PASSWORD: ai_password
+      POSTGRES_DB: ai
+    ports:
+      - '5433:5432'
+    volumes:
+      - postgres-ai-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ai']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  ai-service:
+    profiles: ['python-workers']
+    build:
+      context: ../services/ai-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../services/ai-service/.env
+    environment:
+      AI_DATABASE_URL: postgres://ai:ai_password@postgres-ai:5432/ai
+      RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672
+      PYTHON_METRICS_PORT: '4200'
+    ports:
+      - '4200:4200'
+    depends_on:
+      postgres-ai:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+volumes:
+  postgres-ai-data:

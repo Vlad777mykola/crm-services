@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://crm-services/contracts/events/review.received.v1.json",
+  "title": "review.received",
+  "description": "Published when a client leaves a review for a completed appointment. Exchange: domain.events. Routing key: review.received.",
+  "type": "object",
+  "required": ["reviewId", "companyId", "serviceId", "serviceName", "rating"],
+  "additionalProperties": false,
+  "properties": {
+    "reviewId": { "type": "string", "format": "uuid" },
+    "companyId": { "type": "string", "format": "uuid" },
+    "serviceId": { "type": "string", "format": "uuid" },
+    "serviceName": { "type": "string" },
+    "rating": { "type": "integer", "minimum": 1, "maximum": 5 },
+    "comment": { "type": ["string", "null"] }
+  }
+}

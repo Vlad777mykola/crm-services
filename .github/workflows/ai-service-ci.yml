@@ -1,0 +1,68 @@
+# Independent pipeline for services/ai-service - builds only its own Docker
+# image, never the backend or any sibling service. No pytest suite exists yet
+# (see services/ai-service/README.md); `compileall` is a smoke check that
+# catches syntax/import errors until real tests are added.
+name: ai-service-ci
+
+on:
+  pull_request:
+    paths:
+      - 'services/ai-service/**'
+      - '.github/workflows/ai-service-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'services/ai-service/**'
+      - '.github/workflows/ai-service-ci.yml'
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/ai-service
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - run: pip install -r requirements.txt ruff
+
+      # E9/F only: syntax errors, undefined names, unused imports - not the
+      # full pyupgrade/style ruleset, to avoid unrelated churn in this pass.
+      - run: ruff check --select E9,F src
+      - run: python -m compileall -q src
+
+  docker:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - run: echo "IMAGE_NAME=$(echo 'ghcr.io/${{ github.repository }}/ai-service' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_ENV"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - if: github.event_name == 'push'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: services/ai-service
+          file: services/ai-service/Dockerfile
+          push: ${{ github.event_name == 'push' }}
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

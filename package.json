@@ -7,7 +7,7 @@
     "backend"
   ],
   "engines": {
-    "node": ">=20"
+    "node": ">=22.13.0"
   },
   "scripts": {
     "dev": "concurrently -n frontend,backend -c blue,green \"yarn workspace @crm/frontend dev\" \"yarn workspace @crm/backend dev\"",

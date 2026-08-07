@@ -11,6 +11,8 @@ import { CompanySpecialistRequest } from '@/modules/company-specialists/company-
 import { Appointment } from '@/modules/appointments/appointment.entity.js';
 import { StatusHistoryEntry } from '@/modules/audit/status-history.entity.js';
 import { Company } from '@/modules/companies/company.entity.js';
+import { OutboxEvent } from '@/infrastructure/outbox/outbox-event.entity.js';
+import { EmailLog } from '@/modules/emails/email-log.entity.js';
 import { Notification } from '@/modules/notifications/notification.entity.js';
 import { Review } from '@/modules/reviews/review.entity.js';
 import { ServiceSpecialist } from '@/modules/services/service-specialist.entity.js';
@@ -40,6 +42,8 @@ export const AppDataSource = new DataSource({
     Notification,
     Review,
     StatusHistoryEntry,
+    EmailLog,
+    OutboxEvent,
   ],
   migrations: [
     isProduction

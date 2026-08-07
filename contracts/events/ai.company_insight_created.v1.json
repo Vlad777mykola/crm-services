@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://crm-services/contracts/events/ai.company_insight_created.v1.json",
+  "title": "ai.company_insight_created",
+  "description": "Published by services/ai-service after computing a company-level insight (e.g. demand trend). Exchange: analytics.events. Routing key: ai.company_insight_created. Consumed by backend-projection-service.",
+  "type": "object",
+  "required": ["insightId", "companyId", "insightType", "summary"],
+  "additionalProperties": false,
+  "properties": {
+    "insightId": { "type": "string", "format": "uuid" },
+    "companyId": { "type": "string", "format": "uuid" },
+    "insightType": { "type": "string", "description": "e.g. 'demand_trend', 'peak_hours'." },
+    "summary": { "type": "string" }
+  }
+}

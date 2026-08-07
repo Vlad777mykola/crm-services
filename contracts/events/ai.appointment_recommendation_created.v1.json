@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://crm-services/contracts/events/ai.appointment_recommendation_created.v1.json",
+  "title": "ai.appointment_recommendation_created",
+  "description": "Published by services/ai-service after computing a recommendation for an appointment. Exchange: analytics.events. Routing key: ai.appointment_recommendation_created. Consumed by backend-projection-service.",
+  "type": "object",
+  "required": ["recommendationId", "appointmentId", "companyId", "summary", "confidence"],
+  "additionalProperties": false,
+  "properties": {
+    "recommendationId": { "type": "string", "format": "uuid" },
+    "appointmentId": { "type": "string", "format": "uuid" },
+    "companyId": { "type": "string", "format": "uuid" },
+    "summary": { "type": "string", "description": "Short, safe human-readable summary - never a full private record." },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+  }
+}

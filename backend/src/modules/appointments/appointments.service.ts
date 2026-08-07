@@ -4,6 +4,7 @@ import { AppError } from '@/common/errors/AppError.js';
 import { requireCompanyRole } from '@/common/permissions/companyPermissions.js';
 import { AppDataSource } from '@/infrastructure/database/data-source.js';
 import { eventBus } from '@/infrastructure/events/event-bus.js';
+import { recordOutboxEvent } from '@/infrastructure/outbox/outbox.service.js';
 import { AuditEntityType, type StatusHistoryEntry } from '@/modules/audit/status-history.entity.js';
 import { listStatusHistory, recordStatusChange } from '@/modules/audit/status-history.service.js';
 import { APPOINTMENT_STATUS_TRANSITIONS, assertTransitionAllowed } from '@/modules/audit/status-transition.js';
@@ -85,17 +86,37 @@ export async function createAppointment(
   );
 
   const loaded = await loadAppointmentOrThrow({ id: appointment.id });
-
-  await recordStatusChange(AuditEntityType.APPOINTMENT, loaded.id, null, AppointmentStatus.PENDING, clientUserId);
-
-  await eventBus.publish('appointment.requested', {
+  const payload = {
     appointmentId: loaded.id,
     companyId,
     serviceId: loaded.serviceId,
     serviceName: loaded.service.name,
     clientName: loaded.client.name,
     requestedStartAt: loaded.requestedStartAt.toISOString(),
+  };
+
+  // The business write (status history) and the outbox row commit together -
+  // if RabbitMQ is unreachable when services/outbox-publisher next polls,
+  // the event is still guaranteed to exist. See infrastructure/outbox.
+  await AppDataSource.transaction(async (manager) => {
+    await recordStatusChange(
+      AuditEntityType.APPOINTMENT,
+      loaded.id,
+      null,
+      AppointmentStatus.PENDING,
+      clientUserId,
+      null,
+      manager,
+    );
+    await recordOutboxEvent(manager, {
+      type: 'appointment.requested',
+      payload,
+      aggregateType: AuditEntityType.APPOINTMENT,
+      aggregateId: loaded.id,
+    });
   });
+
+  await eventBus.publish('appointment.requested', payload);
 
   return loaded;
 }
@@ -149,11 +170,9 @@ export async function respondToAppointment(
   appointment.respondedAt = new Date();
   const saved = await repository.save(appointment);
 
-  await recordStatusChange(AuditEntityType.APPOINTMENT, saved.id, fromStatus, saved.status, requesterUserId);
-
   const responseEvent =
     saved.status === AppointmentStatus.APPROVED ? 'appointment.approved' : 'appointment.rejected';
-  await eventBus.publish(responseEvent, {
+  const payload = {
     appointmentId: saved.id,
     companyId: saved.companyId,
     serviceId: saved.serviceId,
@@ -161,7 +180,19 @@ export async function respondToAppointment(
     companyName: saved.company.name,
     serviceName: saved.service.name,
     requestedStartAt: saved.requestedStartAt.toISOString(),
+  };
+
+  await AppDataSource.transaction(async (manager) => {
+    await recordStatusChange(AuditEntityType.APPOINTMENT, saved.id, fromStatus, saved.status, requesterUserId, null, manager);
+    await recordOutboxEvent(manager, {
+      type: responseEvent,
+      payload,
+      aggregateType: AuditEntityType.APPOINTMENT,
+      aggregateId: saved.id,
+    });
   });
+
+  await eventBus.publish(responseEvent, payload);
 
   saved.hasReview = false;
   return saved;
@@ -192,16 +223,26 @@ export async function completeAppointment(
   appointment.completedAt = new Date();
   const saved = await repository.save(appointment);
 
-  await recordStatusChange(AuditEntityType.APPOINTMENT, saved.id, fromStatus, saved.status, requesterUserId);
-
-  await eventBus.publish('appointment.completed', {
+  const payload = {
     appointmentId: saved.id,
     companyId: saved.companyId,
     serviceId: saved.serviceId,
     clientUserId: saved.clientUserId,
     companyName: saved.company.name,
     serviceName: saved.service.name,
+  };
+
+  await AppDataSource.transaction(async (manager) => {
+    await recordStatusChange(AuditEntityType.APPOINTMENT, saved.id, fromStatus, saved.status, requesterUserId, null, manager);
+    await recordOutboxEvent(manager, {
+      type: 'appointment.completed',
+      payload,
+      aggregateType: AuditEntityType.APPOINTMENT,
+      aggregateId: saved.id,
+    });
   });
+
+  await eventBus.publish('appointment.completed', payload);
 
   saved.hasReview = false;
   return saved;
@@ -244,16 +285,26 @@ export async function cancelAppointment(appointmentId: string, clientUserId: str
   appointment.status = AppointmentStatus.CANCELLED;
   const saved = await repository.save(appointment);
 
-  await recordStatusChange(AuditEntityType.APPOINTMENT, saved.id, fromStatus, saved.status, clientUserId);
-
-  await eventBus.publish('appointment.cancelled', {
+  const payload = {
     appointmentId: saved.id,
     companyId: saved.companyId,
     serviceId: saved.serviceId,
     serviceName: saved.service.name,
     clientName: saved.client.name,
     requestedStartAt: saved.requestedStartAt.toISOString(),
+  };
+
+  await AppDataSource.transaction(async (manager) => {
+    await recordStatusChange(AuditEntityType.APPOINTMENT, saved.id, fromStatus, saved.status, clientUserId, null, manager);
+    await recordOutboxEvent(manager, {
+      type: 'appointment.cancelled',
+      payload,
+      aggregateType: AuditEntityType.APPOINTMENT,
+      aggregateId: saved.id,
+    });
   });
+
+  await eventBus.publish('appointment.cancelled', payload);
 
   saved.hasReview = false;
   return saved;

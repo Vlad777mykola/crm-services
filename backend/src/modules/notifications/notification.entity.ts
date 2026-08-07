@@ -13,6 +13,10 @@ export enum NotificationType {
   APPOINTMENT_CANCELLED = 'appointment.cancelled',
   APPOINTMENT_COMPLETED = 'appointment.completed',
   REVIEW_RECEIVED = 'review.received',
+  // Produced by services/notifications-service after it consumes an
+  // `analytics.company_rating_updated` event - itself published by
+  // services/ai-service over RabbitMQ. Never a direct call.
+  COMPANY_RATING_UPDATED = 'company.rating_updated',
 }
 
 @Entity({ name: 'notifications' })

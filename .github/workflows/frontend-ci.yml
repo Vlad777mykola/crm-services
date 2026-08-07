@@ -1,0 +1,31 @@
+name: frontend-ci
+
+on:
+  pull_request:
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-ci.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: yarn
+          cache-dependency-path: yarn.lock
+
+      - run: yarn install --frozen-lockfile
+
+      - run: yarn workspace @crm/frontend lint
+      - run: yarn workspace @crm/frontend typecheck
+      - run: yarn workspace @crm/frontend test
+      - run: yarn workspace @crm/frontend build

@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://crm-services/contracts/events/appointment.completed.v1.json",
+  "title": "appointment.completed",
+  "description": "Published when a company marks an approved appointment as completed. Exchange: domain.events. Routing key: appointment.completed.",
+  "type": "object",
+  "required": ["appointmentId", "companyId", "serviceId", "clientUserId", "companyName", "serviceName"],
+  "additionalProperties": false,
+  "properties": {
+    "appointmentId": { "type": "string", "format": "uuid" },
+    "companyId": { "type": "string", "format": "uuid" },
+    "serviceId": { "type": "string", "format": "uuid" },
+    "clientUserId": { "type": "string", "format": "uuid" },
+    "companyName": { "type": "string" },
+    "serviceName": { "type": "string" }
+  }
+}

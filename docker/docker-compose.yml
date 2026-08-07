@@ -1,5 +1,14 @@
 name: crm-services
 
+# Core stack only: Postgres, Redis, and the backend API. This is the real
+# minimal production shape - no RabbitMQ, no workers, no AI service. Add the
+# other Compose files below to layer in event-driven infrastructure:
+#   docker compose -f docker/docker-compose.yml up
+#   docker compose -f docker/docker-compose.yml -f docker/docker-compose.events.yml --profile events up
+#   docker compose -f docker/docker-compose.yml -f docker/docker-compose.events.yml -f docker/docker-compose.workers.yml --profile events --profile node-workers up
+#   docker compose -f docker/docker-compose.yml -f docker/docker-compose.events.yml -f docker/docker-compose.ai.yml --profile events --profile python-workers up
+# See docker/README.md and docs/architecture/target-production-architecture.md.
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -17,6 +26,10 @@ services:
       timeout: 5s
       retries: 10
 
+  # Reserved infrastructure - not used by any application code yet. Kept in
+  # the core stack (rather than behind a profile) so it's always available
+  # once a real use case (rate limiting, cache, session blacklist,
+  # distributed locks) is added. Never treat Redis as a source of truth.
   redis:
     image: redis:7-alpine
     ports:
@@ -52,7 +65,7 @@ services:
 
   # Local-parity/tools container only - not part of the real deploy path
   # (frontend deploys to GitHub Pages / later S3+CloudFront). Run with:
-  #   docker compose --profile tools up frontend
+  #   docker compose -f docker/docker-compose.yml --profile tools up frontend
   frontend:
     profiles: ['tools']
     build:
@@ -60,13 +73,6 @@ services:
       dockerfile: frontend/Dockerfile
     ports:
       - '8080:80'
-
-  # Worker services (email/logs/notifications) are added under the `workers`
-  # profile once their entrypoints exist (Step 10). Example, once ready:
-  #   email-worker:
-  #     profiles: ['workers']
-  #     build: { context: .., dockerfile: backend/Dockerfile.worker }
-  #     command: ['node', 'dist/workers/email.worker.js']
 
 volumes:
   postgres-data:

@@ -15,6 +15,18 @@ const envSchema = z.object({
   JWT_ACCESS_TTL_MINUTES: z.coerce.number().int().positive().default(15),
   REFRESH_TOKEN_TTL_DAYS: z.coerce.number().int().positive().default(30),
   REFRESH_TOKEN_COOKIE_NAME: z.string().min(1).default('refreshToken'),
+  // Controls the in-process notification subscriber (see
+  // infrastructure/events/event-bus.ts GatedEventBus). The API never talks to
+  // RabbitMQ directly - domain events reach other services only through the
+  // outbox pattern (infrastructure/outbox) and services/outbox-publisher.
+  // Keep this true for a standalone backend (MVP: creates notifications
+  // in-process). Set to false once services/notifications-service is
+  // deployed, so notifications aren't created twice - see
+  // docs/architecture/service-ownership.md, "side-effect ownership".
+  IN_PROCESS_NOTIFICATIONS_ENABLED: z
+    .string()
+    .default('true')
+    .transform((value) => value === 'true'),
 });
 
 export type Env = z.infer<typeof envSchema>;

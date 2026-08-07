@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://crm-services/contracts/events/appointment.requested.v1.json",
+  "title": "appointment.requested",
+  "description": "Published when a client requests an appointment. Exchange: domain.events. Routing key: appointment.requested.",
+  "type": "object",
+  "required": ["appointmentId", "companyId", "serviceId", "serviceName", "clientName", "requestedStartAt"],
+  "additionalProperties": false,
+  "properties": {
+    "appointmentId": { "type": "string", "format": "uuid" },
+    "companyId": { "type": "string", "format": "uuid" },
+    "serviceId": { "type": "string", "format": "uuid" },
+    "serviceName": { "type": "string" },
+    "clientName": { "type": "string" },
+    "requestedStartAt": { "type": "string", "format": "date-time" }
+  }
+}

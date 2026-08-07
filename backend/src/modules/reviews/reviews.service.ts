@@ -3,6 +3,7 @@ import type { Repository } from 'typeorm';
 import { AppError } from '@/common/errors/AppError.js';
 import { AppDataSource } from '@/infrastructure/database/data-source.js';
 import { eventBus } from '@/infrastructure/events/event-bus.js';
+import { recordOutboxEvent } from '@/infrastructure/outbox/outbox.service.js';
 import { Appointment, AppointmentStatus } from '@/modules/appointments/appointment.entity.js';
 
 import { Review } from './review.entity.js';
@@ -49,15 +50,25 @@ export async function createReview(
   );
 
   const loaded = (await repository.findOne({ where: { id: review.id }, relations: REVIEW_RELATIONS }))!;
-
-  await eventBus.publish('review.received', {
+  const payload = {
     reviewId: loaded.id,
     companyId: appointment.companyId,
     serviceId: appointment.serviceId,
     serviceName: loaded.service.name,
     rating: loaded.rating,
     comment: loaded.comment,
+  };
+
+  await AppDataSource.transaction(async (manager) => {
+    await recordOutboxEvent(manager, {
+      type: 'review.received',
+      payload,
+      aggregateType: 'review',
+      aggregateId: loaded.id,
+    });
   });
+
+  await eventBus.publish('review.received', payload);
 
   return loaded;
 }
