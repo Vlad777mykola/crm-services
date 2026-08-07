@@ -72,11 +72,33 @@ You can also target individual services instead of a whole profile, e.g. add
 
 ## Fully local, no Docker for the app itself
 
-Only infra runs in containers; the backend, frontend, and any services run directly on
-the host with `yarn`/`python` for fast reload loops.
+Only infra (Postgres, Redis, RabbitMQ, and `postgres-ai`) runs in containers; the
+frontend, backend, and every service under `services/` run directly on the host with
+`yarn`/`python` for fast reload loops - this is the recommended day-to-day setup.
+
+First time only - each app/service reads its config from its own `.env`, never from
+Compose:
 
 ```bash
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.events.yml --profile events up postgres redis rabbitmq
+cp backend/.env.example backend/.env
+cp services/outbox-publisher/.env.example services/outbox-publisher/.env
+cp services/notifications-service/.env.example services/notifications-service/.env
+cp services/metrics-service/.env.example services/metrics-service/.env
+cp services/backend-projection-service/.env.example services/backend-projection-service/.env
+cp services/ai-service/.env.example services/ai-service/.env
+```
+
+Then, every time:
+
+```bash
+# Infra only - no backend, no services, nothing built from app code:
+docker compose \
+  -f docker/docker-compose.yml \
+  -f docker/docker-compose.events.yml \
+  -f docker/docker-compose.ai.yml \
+  --profile events --profile python-workers \
+  up postgres redis rabbitmq postgres-ai
+
 yarn dev                                                     # frontend + backend, on the host
 cd services/outbox-publisher && yarn dev
 cd services/notifications-service && yarn dev
@@ -84,6 +106,10 @@ cd services/metrics-service && yarn dev
 cd services/backend-projection-service && yarn dev
 cd services/ai-service && python src/main.py
 ```
+
+Skip `postgres-ai` (and the `services/ai-service` step) if you don't need the AI
+service running. All Postgres/RabbitMQ credentials in each `.env.example` already match
+what these Compose files provision, so no further edits are needed for local dev.
 
 ## Volumes
 

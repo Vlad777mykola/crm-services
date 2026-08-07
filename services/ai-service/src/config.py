@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 AI_DATABASE_URL = os.getenv("AI_DATABASE_URL", "postgres://ai:ai_password@localhost:5433/ai")
-RABBITMQ_URL = os.getenv("RABBITMQ_URL", "amqp://guest:guest@localhost:5672")
+RABBITMQ_URL = os.getenv("RABBITMQ_URL", "amqp://crm:crm_local_only@localhost:5672")
 HEALTH_PORT = int(os.getenv("AI_SERVICE_HEALTH_PORT", "4200"))
 
 DOMAIN_EVENTS_EXCHANGE = "domain.events"
