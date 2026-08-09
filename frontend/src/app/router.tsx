@@ -1,5 +1,6 @@
 import { createBrowserRouter } from 'react-router';
 
+import { AppShell } from '@/app/AppShell';
 import { LoginPage } from '@/features/auth/ui/LoginPage';
 import { ProtectedRoute } from '@/features/auth/ui/ProtectedRoute';
 import { RegisterPage } from '@/features/auth/ui/RegisterPage';
@@ -31,183 +32,188 @@ import { SpecialistsListPage } from '@/pages/specialists/SpecialistsListPage';
 
 export const router = createBrowserRouter([
   {
-    path: '/',
-    element: <HealthPage />,
-  },
-  {
-    path: '/login',
-    element: <LoginPage />,
-  },
-  {
-    path: '/register',
-    element: <RegisterPage />,
-  },
-  {
-    path: '/app',
-    element: (
-      <ProtectedRoute>
-        <AppHomePage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/app/profile',
-    element: (
-      <ProtectedRoute>
-        <ProfilePage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/app/appointments',
-    element: (
-      <ProtectedRoute>
-        <MyAppointmentsPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/app/notifications',
-    element: (
-      <ProtectedRoute>
-        <NotificationsPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/companies',
-    element: <CompaniesListPage />,
-  },
-  {
-    path: '/companies/:companyId',
-    element: <CompanyPublicPage />,
-  },
-  {
-    path: '/company/create',
-    element: (
-      <ProtectedRoute>
-        <CreateCompanyPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/company/:companyId/dashboard',
-    element: (
-      <ProtectedRoute>
-        <CompanyDashboardPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/company/:companyId/profile',
-    element: (
-      <ProtectedRoute>
-        <CompanyProfilePage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/company/:companyId/members',
-    element: (
-      <ProtectedRoute>
-        <CompanyMembersPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/company/:companyId/specialists',
-    element: (
-      <ProtectedRoute>
-        <CompanySpecialistsPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/company/:companyId/specialist-requests',
-    element: (
-      <ProtectedRoute>
-        <CompanySpecialistRequestsPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/company/:companyId/services',
-    element: (
-      <ProtectedRoute>
-        <CompanyServicesPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/company/:companyId/services/:serviceId/specialists',
-    element: (
-      <ProtectedRoute>
-        <ServiceSpecialistsPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/company/:companyId/appointments',
-    element: (
-      <ProtectedRoute>
-        <CompanyAppointmentsPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/services',
-    element: <ServicesListPage />,
-  },
-  {
-    path: '/services/:serviceId',
-    element: <ServicePublicPage />,
-  },
-  {
-    path: '/services/:serviceId/book',
-    element: (
-      <ProtectedRoute>
-        <RequestAppointmentPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/specialists',
-    element: <SpecialistsListPage />,
-  },
-  {
-    path: '/specialists/:specialistId',
-    element: <SpecialistPublicPage />,
-  },
-  {
-    path: '/specialist/profile',
-    element: (
-      <ProtectedRoute>
-        <SpecialistProfilePage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/specialist/company-requests',
-    element: (
-      <ProtectedRoute>
-        <SpecialistCompanyRequestsPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/specialist/companies',
-    element: (
-      <ProtectedRoute>
-        <SpecialistCompaniesPage />
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: '/specialist/services',
-    element: (
-      <ProtectedRoute>
-        <SpecialistServicesPage />
-      </ProtectedRoute>
-    ),
+    element: <AppShell />,
+    children: [
+      {
+        path: '/',
+        element: <HealthPage />,
+      },
+      {
+        path: '/login',
+        element: <LoginPage />,
+      },
+      {
+        path: '/register',
+        element: <RegisterPage />,
+      },
+      {
+        path: '/app',
+        element: (
+          <ProtectedRoute>
+            <AppHomePage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/app/profile',
+        element: (
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/app/appointments',
+        element: (
+          <ProtectedRoute>
+            <MyAppointmentsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/app/notifications',
+        element: (
+          <ProtectedRoute>
+            <NotificationsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/companies',
+        element: <CompaniesListPage />,
+      },
+      {
+        path: '/companies/:companyId',
+        element: <CompanyPublicPage />,
+      },
+      {
+        path: '/company/create',
+        element: (
+          <ProtectedRoute>
+            <CreateCompanyPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/company/:companyId/dashboard',
+        element: (
+          <ProtectedRoute>
+            <CompanyDashboardPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/company/:companyId/profile',
+        element: (
+          <ProtectedRoute>
+            <CompanyProfilePage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/company/:companyId/members',
+        element: (
+          <ProtectedRoute>
+            <CompanyMembersPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/company/:companyId/specialists',
+        element: (
+          <ProtectedRoute>
+            <CompanySpecialistsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/company/:companyId/specialist-requests',
+        element: (
+          <ProtectedRoute>
+            <CompanySpecialistRequestsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/company/:companyId/services',
+        element: (
+          <ProtectedRoute>
+            <CompanyServicesPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/company/:companyId/services/:serviceId/specialists',
+        element: (
+          <ProtectedRoute>
+            <ServiceSpecialistsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/company/:companyId/appointments',
+        element: (
+          <ProtectedRoute>
+            <CompanyAppointmentsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/services',
+        element: <ServicesListPage />,
+      },
+      {
+        path: '/services/:serviceId',
+        element: <ServicePublicPage />,
+      },
+      {
+        path: '/services/:serviceId/book',
+        element: (
+          <ProtectedRoute>
+            <RequestAppointmentPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/specialists',
+        element: <SpecialistsListPage />,
+      },
+      {
+        path: '/specialists/:specialistId',
+        element: <SpecialistPublicPage />,
+      },
+      {
+        path: '/specialist/profile',
+        element: (
+          <ProtectedRoute>
+            <SpecialistProfilePage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/specialist/company-requests',
+        element: (
+          <ProtectedRoute>
+            <SpecialistCompanyRequestsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/specialist/companies',
+        element: (
+          <ProtectedRoute>
+            <SpecialistCompaniesPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/specialist/services',
+        element: (
+          <ProtectedRoute>
+            <SpecialistServicesPage />
+          </ProtectedRoute>
+        ),
+      },
+    ],
   },
 ]);
