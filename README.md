@@ -1,5 +1,11 @@
 # CRM Services
 
+# First run
+
+1. docker compose -f docker/docker-compose.yml up (required to have docker)
+2. yarn install (crm-services, backend, frontend)
+3. yarn dev from crm-services
+
 A single repository with **independently deployable** services — frontend, backend API, and a
 set of event-driven microservices — connected only through generated API contracts (OpenAPI)
 and versioned event schemas, never through direct source imports.
