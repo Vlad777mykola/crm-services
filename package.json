@@ -16,9 +16,11 @@
     "typecheck": "yarn workspace @crm/backend typecheck && yarn workspace @crm/frontend typecheck",
     "test": "yarn workspace @crm/backend test && yarn workspace @crm/frontend test",
     "openapi:generate-types": "yarn workspace @crm/backend openapi:generate-types",
-    "openapi:check": "yarn workspace @crm/backend openapi:check"
+    "openapi:check": "yarn workspace @crm/backend openapi:check",
+    "prepare": "husky"
   },
   "devDependencies": {
-    "concurrently": "^9.0.0"
+    "concurrently": "^9.0.0",
+    "husky": "^9.1.7"
   }
 }
