@@ -1,0 +1,24 @@
+{
+  "name": "@crm/fill-dump-db",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Standalone seed script - fills the main database with realistic fake data covering every status/enum value across every table, plus a fixed set of test login credentials. Talks to Postgres directly over `pg`, not through the backend's TypeORM setup, so it has no dependency on the backend workspace and can run against any environment's DATABASE_URL.",
+  "scripts": {
+    "seed": "tsx src/index.ts",
+    "seed:reset": "tsx src/index.ts --reset",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^17.4.2",
+    "pg": "^8.22.0"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^26.1.2",
+    "@types/pg": "^8.11.6",
+    "tsx": "^4.23.1",
+    "typescript": "5.9.3"
+  }
+}

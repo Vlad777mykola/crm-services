@@ -21,6 +21,8 @@ crm-services/
 │   └── ai-service/                   # Python AI/analytics microservice, owns postgres-ai
 ├── docker/                           # docker-compose.yml (core) + events/workers/ai overlays
 ├── docs/architecture/                # current/target architecture, ownership, event model
+├── scripts/
+│   └── fill_dump_db/                 # seeds Postgres with fake data + test login credentials
 ├── .github/workflows/                # CI/CD pipelines — one per deploy unit, none depend on another
 ├── package.json                      # Yarn workspaces root (frontend + backend only) — orchestration, no shared runtime code
 └── yarn.lock
@@ -88,6 +90,21 @@ See [`docker/README.md`](docker/README.md) for the full breakdown, but in short:
 1. **Fully local** — run infra in Docker (`docker compose -f docker/docker-compose.yml -f docker/docker-compose.events.yml --profile events up postgres redis rabbitmq`), then run the app processes directly on the host (`yarn dev` for frontend + backend, `yarn dev` in each `services/*` folder, `python src/main.py` for `services/ai-service`).
 2. **Docker, core only** (the minimal deploy shape) — `docker compose -f docker/docker-compose.yml up`: Postgres, Redis, and the backend API. No RabbitMQ, no workers.
 3. **Docker, with event infrastructure and/or microservices** — layer in `docker-compose.events.yml` (`--profile events`), `docker-compose.workers.yml` (`--profile node-workers`), and/or `docker-compose.ai.yml` (`--profile python-workers`) as described in `docker/README.md`.
+
+## Test data
+
+Need fake data to click around with, or a set of accounts to log in with locally? See
+[`scripts/fill_dump_db/README.md`](scripts/fill_dump_db/README.md) — it seeds every table with
+data covering every status/enum value (draft/published/suspended companies, pending/approved/
+rejected/cancelled/completed appointments, etc.) and prints a fixed list of test accounts
+(same password for all) when it's done.
+
+```bash
+cd scripts/fill_dump_db
+yarn install
+cp .env.example .env
+yarn seed:reset
+```
 
 ## Architecture docs
 
