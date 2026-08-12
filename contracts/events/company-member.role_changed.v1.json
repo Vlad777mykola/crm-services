@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://crm-services/contracts/events/company-member.role_changed.v1.json",
+  "title": "company-member.role_changed",
+  "description": "Reserved for when a member's role changes. Exchange: domain.events. Routing key: company-member.role_changed. NOT currently published - no code path in company-members-service changes a member's role after creation (legacy parity: PATCH only ever changes status, never role).",
+  "type": "object",
+  "required": ["companyId", "userId", "fromRole", "toRole"],
+  "additionalProperties": false,
+  "properties": {
+    "companyId": { "type": "string", "format": "uuid" },
+    "userId": { "type": "string", "format": "uuid" },
+    "fromRole": { "type": "string", "enum": ["owner", "manager"] },
+    "toRole": { "type": "string", "enum": ["owner", "manager"] }
+  }
+}

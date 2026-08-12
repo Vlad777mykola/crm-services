@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Owns identity, sessions, and JWT issuance (auth_schema: auth_identities, auth_sessions, auth_membership_projection, processed_events, outbox_events). Publishes auth.user_registered via its own outbox. See docs/architecture/microservices-extraction-checklist.md Phase 2.",
+  "description": "Owns identity, sessions, and JWT issuance (auth_schema: auth_identities, auth_sessions, auth_membership_projection, processed_events, outbox_events). Publishes auth.user_registered via its own outbox. Consumes company-member.added/.removed into auth_membership_projection (Phase 5). See docs/architecture/microservices-extraction-checklist.md Phase 2/5.",
   "scripts": {
     "dev": "tsx watch src/main.ts",
     "build": "tsc",
@@ -13,6 +13,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "amqplib": "^0.10.9",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
@@ -26,6 +27,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/amqplib": "^0.10.7",
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",

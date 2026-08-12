@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Owns user profile data (users_schema: users, user_profiles, processed_events, outbox_events). Phase 2: consumer-only - creates a profile idempotently on auth.user_registered. No HTTP API until Phase 3. See docs/architecture/microservices-extraction-checklist.md Phase 2/3.",
+  "description": "Owns user profile data (users_schema: users, user_profiles, processed_events, outbox_events). Consumes auth.user_registered (Phase 2) and serves GET/PATCH /users/me, GET /users/:id (Phase 3). See docs/architecture/microservices-extraction-checklist.md Phase 2/3.",
   "scripts": {
     "dev": "tsx watch src/main.ts",
     "build": "tsc",
@@ -14,14 +14,21 @@
   },
   "dependencies": {
     "amqplib": "^0.10.9",
+    "cors": "^2.8.6",
     "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
     "pg": "^8.22.0",
     "pino": "^10.3.1",
+    "pino-http": "^11.0.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/amqplib": "^0.10.7",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.1.2",
     "@types/pg": "^8.11.6",
     "eslint": "^10.8.0",

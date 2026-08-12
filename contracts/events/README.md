@@ -20,6 +20,8 @@ Published by the backend via the outbox pattern (see [`docs/architecture/event-d
 - [`appointment.completed.v1.json`](appointment.completed.v1.json)
 - [`review.received.v1.json`](review.received.v1.json)
 - [`auth.user_registered.v1.json`](auth.user_registered.v1.json) - published by `services/auth-service`, consumed by `services/users-service`.
+- [`company.created.v1.json`](company.created.v1.json) - published by `services/companies-service`.
+- [`company.updated.v1.json`](company.updated.v1.json) - published by `services/companies-service`.
 
 ## Analytics / AI result events (exchange: `analytics.events`)
 

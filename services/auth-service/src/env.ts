@@ -11,6 +11,7 @@ const envSchema = z.object({
     .transform((value) => value.split(',').map((origin) => origin.trim())),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
   DATABASE_URL: z.string().default('postgres://postgres:postgres@localhost:5432/crm'),
+  RABBITMQ_URL: z.string().min(1),
   // Must match legacy-backend's JWT_ACCESS_SECRET so tokens issued by either
   // service verify against the other during the strangler transition (Phase 2
   // Task 2.6) - see .env.example.

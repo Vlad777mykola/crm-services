@@ -7,11 +7,13 @@ of Compose too - the files here are purely for local orchestration:
 
 - `compose.infra.yml` - Postgres, Redis (core, no profile needed), RabbitMQ (`events`
   profile), `postgres-ai` (`python-workers` profile). No app code, nothing built.
-- `compose.services.yml` - app/worker services, containerized, each behind the same
-  profile as its infra dependency (`events`, `node-workers`, `python-workers`).
-  Optional - the recommended day-to-day loop is running these with `yarn dev` /
+- `compose.services.yml` - app/worker services, containerized, each behind a
+  profile (`events`, `node-workers`, `python-workers`, `auth`). Optional - the
+  recommended day-to-day loop is running these with `yarn dev` /
   `python src/main.py` instead (see below); use this file to leave a service
-  running in Docker in the background.
+  running in Docker in the background. `auth-service`/`users-service`/
+  `outbox-publisher-auth` (Phase 2) have their own `auth` profile so you can
+  turn just those three on/off independently of the other worker services.
 - `compose.gateway.yml` - Traefik gateway only, routing to `host.docker.internal`
   (`traefik/dynamic.host.yml`) - use when legacy-backend/services run on the host.
 - `compose.legacy.yml` - Traefik gateway + legacy-backend, both containerized
@@ -58,15 +60,40 @@ cd services/ai-service && python src/main.py
 
 Since Phase 2, also start these if you're testing `/auth/*` end-to-end
 (register/login need the identity write to actually reach RabbitMQ, and
-users-service to create the profile):
+users-service to create the profile) - either the same way, on the host:
 
 ```bash
 cd services/auth-service && yarn dev
 cd services/users-service && yarn dev
 
-# Second outbox-publisher instance, pointed at auth_schema (Q8) - copy
-# services/outbox-publisher/.env into a second file first, see below.
+# Second outbox-publisher instance, pointed at auth_schema (Q8).
 cd services/outbox-publisher && DATABASE_URL="postgres://postgres:postgres@localhost:5432/crm?options=-c%20search_path%3Dauth_schema" HEALTH_PORT=4501 yarn dev
+```
+
+Since Phase 4, also start companies-service if you're testing `/companies/*`:
+
+```bash
+cd services/companies-service && yarn dev
+cd services/outbox-publisher && DATABASE_URL="postgres://postgres:postgres@localhost:5432/crm?options=-c%20search_path%3Dcompanies_schema" HEALTH_PORT=4503 yarn dev
+```
+
+or, containerized instead of `yarn dev`, using the dedicated `auth`/`companies`
+profiles in `compose.services.yml` (each turns its own group on/off together,
+independent of the other worker services):
+
+```bash
+docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.gateway.yml \
+  -f docker/dev/compose.services.yml --profile events --profile auth --profile companies up
+```
+
+(`--profile events` is required too, since `outbox-publisher-auth`,
+`outbox-publisher-companies`, and `users-service` all need RabbitMQ, which
+lives behind infra's `events` profile.) Stop just these with:
+
+```bash
+docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.gateway.yml \
+  -f docker/dev/compose.services.yml --profile events --profile auth --profile companies stop \
+  auth-service users-service outbox-publisher-auth companies-service outbox-publisher-companies
 ```
 
 First time only - each app/service reads its config from its own `.env`, never
@@ -81,6 +108,7 @@ cp services/backend-projection-service/.env.example services/backend-projection-
 cp services/ai-service/.env.example services/ai-service/.env
 cp services/auth-service/.env.example services/auth-service/.env
 cp services/users-service/.env.example services/users-service/.env
+cp services/companies-service/.env.example services/companies-service/.env
 ```
 
 `services/auth-service/.env`'s `JWT_ACCESS_SECRET` must match
@@ -109,9 +137,14 @@ docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.gateway.yml
   -f docker/dev/compose.services.yml --profile events --profile node-workers up
 ```
 
-Add `--profile python-workers` for `ai-service` too. You can also target
-individual services instead of a whole profile, e.g. add `metrics-service` to the
-end of the command above.
+Add `--profile python-workers` for `ai-service`, `--profile auth` for
+`auth-service`/`users-service`/`outbox-publisher-auth` (Phase 2/3), or
+`--profile companies` for `companies-service`/`outbox-publisher-companies`
+(Phase 4) - each kept in its own profile, separate from `node-workers`, so it
+can be turned on/off on its own. You can also target individual services instead of a whole profile,
+e.g. add `metrics-service` or `auth-service` to the end of the command above -
+Compose still needs `--profile <name>` passed for that service's profile to
+be recognized, even when you name it explicitly.
 
 ## Frontend config
 
@@ -129,10 +162,14 @@ curl -i http://localhost:8080/auth/me
 ```
 
 See [`docs/architecture/smoke-checklists/phase-1-traefik-gateway.md`](../../docs/architecture/smoke-checklists/phase-1-traefik-gateway.md)
-for the Phase 1 checklist and
+for the Phase 1 checklist,
 [`docs/architecture/smoke-checklists/phase-2-auth-service.md`](../../docs/architecture/smoke-checklists/phase-2-auth-service.md)
 for Phase 2 (`/auth/*` now served by auth-service; `auth.user_registered` ->
-users-service).
+users-service),
+[`docs/architecture/smoke-checklists/phase-3-users-service.md`](../../docs/architecture/smoke-checklists/phase-3-users-service.md)
+for Phase 3 (`/users/me`, `/users/:id`), and
+[`docs/architecture/smoke-checklists/phase-4-companies-service.md`](../../docs/architecture/smoke-checklists/phase-4-companies-service.md)
+for Phase 4 (`/companies/*` profile routes).
 
 ## Stop / clean up
 

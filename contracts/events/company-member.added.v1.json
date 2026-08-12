@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://crm-services/contracts/events/company-member.added.v1.json",
+  "title": "company-member.added",
+  "description": "Published when a member (owner via company.created, or manager via invite) is added to a company. Exchange: domain.events. Routing key: company-member.added.",
+  "type": "object",
+  "required": ["companyId", "userId", "role"],
+  "additionalProperties": false,
+  "properties": {
+    "companyId": { "type": "string", "format": "uuid" },
+    "userId": { "type": "string", "format": "uuid" },
+    "role": { "type": "string", "enum": ["owner", "manager"] }
+  }
+}

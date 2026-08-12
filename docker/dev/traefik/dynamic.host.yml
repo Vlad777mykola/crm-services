@@ -28,7 +28,17 @@ http:
       entryPoints: [web]
       priority: 10
 
-    legacy-users:
+    users-service-me: # users-service (Phase 3)
+      rule: "Path(`/users/me`)"
+      service: users-service
+      entryPoints: [web]
+      priority: 100
+    users-service-by-id: # users-service (Phase 3)
+      rule: "PathRegexp(`^/users/[^/]+$`)"
+      service: users-service
+      entryPoints: [web]
+      priority: 50
+    legacy-users: # POST /users stays on legacy per Q5
       rule: "PathPrefix(`/users`)"
       service: legacy-backend
       entryPoints: [web]
@@ -75,12 +85,22 @@ http:
       service: legacy-backend
       entryPoints: [web]
       priority: 79
-    legacy-company-status-history: # companies-service (Phase 4)
+    companies-service-status-history: # companies-service (Phase 4)
       rule: "PathRegexp(`^/companies/[^/]+/status-history$`)"
-      service: legacy-backend
+      service: companies-service
       entryPoints: [web]
       priority: 78
-    legacy-companies: # companies-service (Phase 4) - generic fallback (create, public, me, :id)
+    companies-service-by-id: # companies-service (Phase 4) - also matches /companies/public, /companies/me
+      rule: "PathRegexp(`^/companies/[^/]+$`)"
+      service: companies-service
+      entryPoints: [web]
+      priority: 77
+    companies-service-root: # companies-service (Phase 4) - POST /companies
+      rule: "Path(`/companies`)"
+      service: companies-service
+      entryPoints: [web]
+      priority: 77
+    legacy-companies: # generic fallback for anything under /companies not claimed above
       rule: "PathPrefix(`/companies`)"
       service: legacy-backend
       entryPoints: [web]
@@ -181,3 +201,13 @@ http:
       loadBalancer:
         servers:
           - url: "http://host.docker.internal:4001"
+
+    users-service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:4002"
+
+    companies-service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:4003"

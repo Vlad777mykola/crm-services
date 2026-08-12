@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://crm-services/contracts/events/company.created.v1.json",
+  "title": "company.created",
+  "description": "Published when a company is created via POST /companies. Exchange: domain.events. Routing key: company.created.",
+  "type": "object",
+  "required": ["companyId", "name", "slug", "createdByUserId"],
+  "additionalProperties": false,
+  "properties": {
+    "companyId": { "type": "string", "format": "uuid" },
+    "name": { "type": "string" },
+    "slug": { "type": "string" },
+    "createdByUserId": { "type": "string", "format": "uuid" }
+  }
+}

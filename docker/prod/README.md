@@ -25,6 +25,8 @@ cp services/backend-projection-service/.env.example services/backend-projection-
 cp services/ai-service/.env.example services/ai-service/.env.production
 cp services/auth-service/.env.example services/auth-service/.env.production
 cp services/users-service/.env.example services/users-service/.env.production
+cp services/companies-service/.env.example services/companies-service/.env.production
+cp services/outbox-publisher/.env.example services/outbox-publisher/.env.production.companies
 ```
 
 Then fill in real values in every file. The `DATABASE_URL`/`RABBITMQ_URL` values
@@ -41,7 +43,13 @@ and its `HEALTH_PORT` must be `4501` (the shared `outbox-publisher` keeps
 
 `services/auth-service/.env.production`'s `JWT_ACCESS_SECRET` must match
 `backend/.env.production`'s exactly, or tokens auth-service issues won't
-verify against not-yet-extracted legacy routes (Phase 2 Task 2.6).
+verify against not-yet-extracted legacy routes (Phase 2 Task 2.6). The same
+applies to `services/companies-service/.env.production`'s `JWT_ACCESS_SECRET`
+(Phase 4) — every service that verifies tokens must share this value.
+
+`services/outbox-publisher/.env.production.companies` is the same pattern as
+`.env.production.auth`, pointed at `companies_schema` (`?options=-c%20search_path%3Dcompanies_schema`)
+with `HEALTH_PORT=4503`.
 
 ## Start
 
@@ -52,8 +60,9 @@ docker compose -f docker/prod/compose.yml up -d --build
 Adds every service in the "Production deployment matrix"
 (`target-production-architecture.md`): `gateway`, `legacy-backend`,
 `outbox-publisher`, `notifications-service`, `metrics-service`,
-`backend-projection-service`, `ai-service`, plus, since Phase 2, `auth-service`,
-`outbox-publisher-auth`, `users-service` - and self-hosted `postgres`,
+`backend-projection-service`, `ai-service`, plus, since Phase 2/3, `auth-service`,
+`outbox-publisher-auth`, `users-service`, and since Phase 4, `companies-service`,
+`outbox-publisher-companies` - and self-hosted `postgres`,
 `redis`, `rabbitmq`, `postgres-ai`. Only `gateway` publishes a host port
 (`80`) - every other service uses `expose`, reachable only from other
 containers on this stack's network.

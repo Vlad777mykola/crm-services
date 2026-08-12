@@ -3,9 +3,17 @@ import 'dotenv/config';
 import { z } from 'zod';
 
 const envSchema = z.object({
+  NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
+  PORT: z.coerce.number().int().positive().default(4002),
+  CORS_ORIGINS: z
+    .string()
+    .default('http://localhost:5173')
+    .transform((value) => value.split(',').map((origin) => origin.trim())),
   DATABASE_URL: z.string().min(1),
   RABBITMQ_URL: z.string().min(1),
-  HEALTH_PORT: z.coerce.number().int().positive().default(4002),
+  // Must match auth-service's/legacy-backend's JWT_ACCESS_SECRET - this
+  // service only verifies tokens (GET/PATCH /users/me), it never issues them.
+  JWT_ACCESS_SECRET: z.string().min(1).default('dev-access-secret-change-me'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
 });
 

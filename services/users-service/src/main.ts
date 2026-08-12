@@ -1,11 +1,12 @@
+import { createApp } from './app.js';
 import { createPool } from './db/pool.js';
 import { ensureUsersSchema } from './db/schema.js';
 import { UserRepository } from './db/user-repository.js';
 import { env } from './env.js';
 import { handleAuthUserRegistered, type AuthUserRegisteredData } from './handlers/auth-user-registered.js';
-import { startHealthServer } from './http/health-server.js';
 import { ProcessedEventsRepository } from './idempotency/processed-events-repository.js';
 import { logger } from './logger.js';
+import { UsersService } from './modules/users/users.service.js';
 import { consumeFromRabbitMq } from './rabbitmq/consumer.js';
 import { DOMAIN_EVENTS_DLX, DOMAIN_EVENTS_EXCHANGE } from './rabbitmq/topology.js';
 
@@ -17,6 +18,7 @@ async function bootstrap(): Promise<void> {
 
   const processedEvents = new ProcessedEventsRepository(pool);
   const users = new UserRepository(pool);
+  const usersService = new UsersService(users);
 
   const consumer = await consumeFromRabbitMq({
     url: env.RABBITMQ_URL,
@@ -40,17 +42,18 @@ async function bootstrap(): Promise<void> {
     },
   });
 
-  const healthServer = startHealthServer(env.HEALTH_PORT, pool, consumer);
-
-  logger.info('[users-service] started - consuming auth.user_registered from domain.events (no HTTP API yet)');
+  const app = createApp(pool, consumer, usersService);
+  const server = app.listen(env.PORT, () => {
+    logger.info(`[users-service] listening on :${env.PORT} - consuming auth.user_registered from domain.events`);
+  });
 
   function shutdown(signal: string): void {
     logger.info(`[users-service] received ${signal}, shutting down`);
-    Promise.allSettled([consumer.close(), pool.end()])
-      .catch((err: unknown) => logger.error({ err }, '[users-service] error during shutdown'))
-      .finally(() => {
-        healthServer.close(() => process.exit(0));
-      });
+    server.close(() => {
+      Promise.allSettled([consumer.close(), pool.end()])
+        .catch((err: unknown) => logger.error({ err }, '[users-service] error during shutdown'))
+        .finally(() => process.exit(0));
+    });
   }
 
   process.on('SIGTERM', () => shutdown('SIGTERM'));

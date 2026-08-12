@@ -47,9 +47,9 @@ Notes:
 | Method | Path | Module | Handler | Target service | Phase | Status |
 |---|---|---|---|---|---|---|
 | POST | `/users` | users | `createUser()` | **undecided (Q5)** | 3 | legacy |
-| GET | `/users/me` | users | `getUserById()` | users-service | 3 | legacy |
-| PATCH | `/users/me` | users | `updateUserProfile()` | users-service | 3 | legacy |
-| GET | `/users/:id` | users | `getUserById()` | users-service | 3 | legacy |
+| GET | `/users/me` | users | `getUserById()` | users-service | 3 | **users-service** |
+| PATCH | `/users/me` | users | `updateUserProfile()` | users-service | 3 | **users-service** |
+| GET | `/users/:id` | users | `getUserById()` | users-service | 3 | **users-service** |
 
 Notes:
 - `POST /users` creates a user **without** a password/identity — distinct from
@@ -62,12 +62,12 @@ Notes:
 
 | Method | Path | Module | Handler | Target service | Phase | Status |
 |---|---|---|---|---|---|---|
-| POST | `/companies` | companies | `createCompany()` | companies-service | 4 | legacy |
-| GET | `/companies/public` | companies | `getPublicCompanies()` | companies-service | 4 | legacy |
-| GET | `/companies/me` | companies | `getMyCompanies()` | companies-service | 4 | legacy |
-| GET | `/companies/:companyId` | companies | `getCompanyById()` | companies-service | 4 | legacy |
-| GET | `/companies/:companyId/status-history` | companies | `getCompanyStatusHistory()` | companies-service | 4 (see Task 0.0b) | legacy |
-| PATCH | `/companies/:companyId` | companies | `updateCompany()` | companies-service | 4 | legacy |
+| POST | `/companies` | companies | `createCompany()` | companies-service | 4 | **companies-service** |
+| GET | `/companies/public` | companies | `getPublicCompanies()` | companies-service | 4 | **companies-service** |
+| GET | `/companies/me` | companies | `getMyCompanies()` | companies-service | 4 | **companies-service** |
+| GET | `/companies/:companyId` | companies | `getCompanyById()` | companies-service | 4 | **companies-service** |
+| GET | `/companies/:companyId/status-history` | companies | `getCompanyStatusHistory()` | companies-service | 4 (see Task 0.0b) | **companies-service** |
+| PATCH | `/companies/:companyId` | companies | `updateCompany()` | companies-service | 4 | **companies-service** |
 
 Note: `getCompanyStatusHistory()` reads from the **shared** `status_history_entries`
 table (`AuditEntityType.COMPANY`) — see `shared-polymorphic-table-audit.md`. There is

@@ -6,11 +6,18 @@
 #
 # Combine with compose.infra.yml:
 #   docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.services.yml \
-#     --profile events up outbox-publisher outbox-publisher-auth
+#     --profile events up outbox-publisher
 #   docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.services.yml \
 #     --profile events --profile node-workers up
 #   docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.services.yml \
 #     --profile events --profile python-workers up ai-service
+#
+# auth-service + users-service (Phase 2) have their own `auth` profile,
+# independent of `node-workers`, so you can turn just these two (+ their own
+# outbox-publisher instance) on/off without starting notifications-service/
+# metrics-service/backend-projection-service too:
+#   docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.services.yml \
+#     --profile events --profile auth up
 
 services:
   # Publishes the backend's own outbox_events to RabbitMQ. The backend API
@@ -35,8 +42,10 @@ services:
   # (Q8 - see docs/architecture/service-port-registry.md). The `search_path`
   # option is required because outbox-publisher queries the unqualified table
   # name `outbox_events`, and this instance's table lives in `auth_schema`.
+  # Own `auth` profile (not `events`) so it starts/stops together with
+  # auth-service/users-service, not with the unrelated legacy outbox-publisher.
   outbox-publisher-auth:
-    profiles: ['events']
+    profiles: ['auth']
     build:
       context: ../../services/outbox-publisher
       dockerfile: Dockerfile
@@ -55,8 +64,9 @@ services:
 
   # Owns identity/sessions/JWT issuance - see services/auth-service/README.md.
   # Only needs Postgres directly; publishing goes through outbox-publisher-auth.
+  # Own `auth` profile (not `node-workers`) - see the `auth` profile note above.
   auth-service:
-    profiles: ['node-workers']
+    profiles: ['auth']
     build:
       context: ../../services/auth-service
       dockerfile: Dockerfile
@@ -71,16 +81,18 @@ services:
       postgres:
         condition: service_healthy
 
-  # Consumer-only in Phase 2 - creates a profile from auth.user_registered.
-  # No HTTP API yet, no gateway route - see services/users-service/README.md.
+  # Consumes auth.user_registered (Phase 2) and serves GET/PATCH /users/me,
+  # GET /users/:id (Phase 3) - see services/users-service/README.md.
+  # Own `auth` profile (not `node-workers`) - see the `auth` profile note above.
   users-service:
-    profiles: ['node-workers']
+    profiles: ['auth']
     build:
       context: ../../services/users-service
       dockerfile: Dockerfile
     env_file:
       - ../../services/users-service/.env
     environment:
+      NODE_ENV: production
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm
       RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672
     ports:
@@ -89,6 +101,45 @@ services:
       postgres:
         condition: service_healthy
       rabbitmq:
+        condition: service_healthy
+
+  # Same outbox-publisher image, redeployed against companies-service's own
+  # schema (Q8). Own `companies` profile so it starts/stops with
+  # companies-service only.
+  outbox-publisher-companies:
+    profiles: ['companies']
+    build:
+      context: ../../services/outbox-publisher
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm?options=-c%20search_path%3Dcompanies_schema
+      RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672
+      HEALTH_PORT: '4503'
+    ports:
+      - '4503:4503'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # Owns company profile data - see services/companies-service/README.md.
+  # Own `companies` profile (not `auth`/`node-workers`).
+  companies-service:
+    profiles: ['companies']
+    build:
+      context: ../../services/companies-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/companies-service/.env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm
+    ports:
+      - '4003:4003'
+    depends_on:
+      postgres:
         condition: service_healthy
 
   # Consumes domain.events + analytics.events, writes emails (Postgres

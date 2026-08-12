@@ -47,6 +47,8 @@ services:
     depends_on:
       - legacy-backend
       - auth-service
+      - users-service
+      - companies-service
 
   legacy-backend:
     build:
@@ -104,9 +106,8 @@ services:
       rabbitmq:
         condition: service_healthy
 
-  # Phase 2 consumer-only - no gateway route yet (no /users/* HTTP API until
-  # Phase 3), included here so auth.user_registered has a real consumer in
-  # container-parity mode too.
+  # Extracted across Phase 2 (auth.user_registered consumer) and Phase 3
+  # (GET/PATCH /users/me, GET /users/:id) - see traefik/dynamic.container.yml.
   users-service:
     build:
       context: ../../services/users-service
@@ -114,10 +115,48 @@ services:
     env_file:
       - ../../services/users-service/.env
     environment:
+      NODE_ENV: production
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm
       RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672
     ports:
-      - '4002:4002'
+      - '4002:4002' # kept for local debugging - direct calls bypass the gateway
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # Extracted in Phase 4 - see traefik/dynamic.container.yml. Still reads/writes
+  # legacy's `public.company_members` directly for owner/manager checks and
+  # "my companies" until Phase 5 - see
+  # services/companies-service/src/db/legacy-company-members-bridge.ts.
+  companies-service:
+    build:
+      context: ../../services/companies-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/companies-service/.env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm
+    ports:
+      - '4003:4003' # kept for local debugging - direct calls bypass the gateway
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Publishes companies-service's outbox_events (Q8).
+  outbox-publisher-companies:
+    build:
+      context: ../../services/outbox-publisher
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm?options=-c%20search_path%3Dcompanies_schema
+      RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672
+      HEALTH_PORT: '4503'
+    ports:
+      - '4503:4503'
     depends_on:
       postgres:
         condition: service_healthy

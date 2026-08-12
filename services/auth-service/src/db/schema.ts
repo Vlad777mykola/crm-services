@@ -51,9 +51,10 @@ export async function ensureAuthSchema(pool: Pool): Promise<void> {
     CREATE INDEX IF NOT EXISTS "IDX_auth_sessions_userId" ON auth_schema.auth_sessions ("userId")
   `);
 
-  // Empty until Phase 5 (company-member.* consumer) - shape is a placeholder,
-  // not a confirmed contract; Phase 5 may ALTER it once the events it's built
-  // from are finalized. No data migration either way (no backfill policy).
+  // Fed by company-member.added/.removed since Phase 5 (Task 5.4) - permission
+  // checks read this table, never company-members-service's schema directly.
+  // No data migration (no backfill policy) - populated only from events
+  // published after Phase 5 goes live.
   await pool.query(`
     CREATE TABLE IF NOT EXISTS auth_schema.auth_membership_projection (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -61,7 +62,8 @@ export async function ensureAuthSchema(pool: Pool): Promise<void> {
       "companyId" uuid NOT NULL,
       "role" varchar(50) NOT NULL,
       "createdAt" timestamptz NOT NULL DEFAULT now(),
-      "updatedAt" timestamptz NOT NULL DEFAULT now()
+      "updatedAt" timestamptz NOT NULL DEFAULT now(),
+      CONSTRAINT "UQ_auth_membership_projection_company_user" UNIQUE ("companyId", "userId")
     )
   `);
 

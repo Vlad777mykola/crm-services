@@ -3,16 +3,19 @@
 ## Purpose
 
 Owns user profile data (name, phone, city, bio) — extracted from
-`backend/src/modules/users/` in Phase 2 of
-`docs/architecture/microservices-extraction-checklist.md`. **Phase 2 scope:
-consumer-only.** It creates a profile idempotently when auth-service
-publishes `auth.user_registered`; it has no HTTP API yet. `GET /users/me`,
-`PATCH /users/me`, `GET /users/:id` land in Phase 3.
+`backend/src/modules/users/` across Phase 2 (consumer) and Phase 3 (HTTP) of
+`docs/architecture/microservices-extraction-checklist.md`.
 
 ## Owned routes
 
-None yet — see "Current migration status" below. `/users/*` stays on
-legacy-backend until Phase 3.
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/users/me` | Requires `Authorization: Bearer <accessToken>` (issued by auth-service). |
+| PATCH | `/users/me` | Same. Body: `{ name?, phone?, city?, bio? }` (all optional, nullable except `name`). |
+| GET | `/users/:id` | No auth required (matches legacy). |
+
+`POST /users` is **not** implemented here — stays on legacy-backend per Q5
+(`table-ownership-matrix.md` "Undecided ownership").
 
 ## Owned tables / schema
 
@@ -21,9 +24,8 @@ schema namespace — see `docs/architecture/table-ownership-matrix.md`):
 
 - `users` — `id` (== auth-service's `auth_identities.id`), `email`, `status`.
 - `user_profiles` — `userId` (FK to `users.id`), `name`, `phone`, `city`, `bio`.
-- `processed_events` — idempotency ledger for this service's consumer.
-- `outbox_events` — reserved for Phase 3 (`user.profile_created`/`updated`,
-  if confirmed); not written to yet.
+- `processed_events` — idempotency ledger for the `auth.user_registered` consumer.
+- `outbox_events` — reserved for future publishing (not written to yet).
 
 ## Consumed events
 
@@ -39,9 +41,12 @@ None yet.
 
 | Variable | Purpose | Example/default |
 |---|---|---|
+| `NODE_ENV` | Runtime mode | `development` |
+| `PORT` | HTTP port | `4002` |
+| `CORS_ORIGINS` | Comma-separated allowed origins | `http://localhost:5173` |
 | `DATABASE_URL` | Postgres connection string | `postgres://postgres:postgres@localhost:5432/crm` |
 | `RABBITMQ_URL` | RabbitMQ connection string | `amqp://crm:crm_local_only@localhost:5672` |
-| `HEALTH_PORT` | Health-check HTTP port (this service has no other HTTP surface in Phase 2) | `4002` |
+| `JWT_ACCESS_SECRET` | **Must match auth-service's** — this service only verifies tokens, never issues them | `dev-access-secret-change-me` |
 | `LOG_LEVEL` | pino level | `info` |
 
 ## Local run
@@ -61,12 +66,10 @@ None yet.
 
 ## Current migration status
 
-Extracted in Phase 2 as a consumer only — no gateway route points here yet.
-`/users/*` keeps being served by legacy-backend until Phase 3 adds
-`GET /users/me`, `PATCH /users/me`, `GET /users/:id` and the gateway is
-updated to route them here. Rollback: nothing to roll back at the gateway
-level yet (no routes point here); if this service is stopped, the
-`auth.user_registered` events it missed sit in RabbitMQ (redelivered once it
-reconnects) or, if the queue itself is gone, are simply not reflected as
-profiles until the next registration — legacy-backend is unaffected either
-way since it has its own, separate `users` table.
+Extracted across Phase 2 (consumer) and Phase 3 (HTTP). `/users/me` and
+`/users/:id` are routed here from the gateway; `POST /users` stays on
+legacy-backend (Q5). Rollback: point the gateway's `/users/me`, `/users/:id`
+routers back at `legacy-backend` — legacy's own `/users/*` code is untouched.
+Any profiles created only in `users_schema` after cutover won't exist on
+legacy, per the "no backfill" data policy
+(`docs/architecture/table-ownership-matrix.md`).

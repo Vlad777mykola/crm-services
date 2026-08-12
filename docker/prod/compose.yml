@@ -30,6 +30,8 @@ services:
     depends_on:
       - legacy-backend
       - auth-service
+      - users-service
+      - companies-service
 
   postgres:
     image: postgres:16-alpine
@@ -223,8 +225,8 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  # Phase 2 consumer-only - no gateway route yet (no /users/* HTTP API until
-  # Phase 3).
+  # Extracted across Phase 2 (auth.user_registered consumer) and Phase 3
+  # (GET/PATCH /users/me, GET /users/:id).
   users-service:
     build:
       context: ../../services/users-service
@@ -238,6 +240,42 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Extracted in Phase 4. Still reads/writes legacy's `public.company_members`
+  # directly until Phase 5 - see
+  # services/companies-service/src/db/legacy-company-members-bridge.ts.
+  companies-service:
+    build:
+      context: ../../services/companies-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/companies-service/.env.production
+    environment:
+      NODE_ENV: production
+    expose:
+      - '4003'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Same outbox-publisher image, redeployed against companies-service's own
+  # schema (Q8).
+  outbox-publisher-companies:
+    build:
+      context: ../../services/outbox-publisher
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/outbox-publisher/.env.production.companies
+    environment:
+      NODE_ENV: production
+      HEALTH_PORT: '4503'
+    expose:
+      - '4503'
+    depends_on:
       rabbitmq:
         condition: service_healthy
     restart: unless-stopped

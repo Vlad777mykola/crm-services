@@ -23,6 +23,15 @@ cd services/outbox-publisher && DATABASE_URL="postgres://postgres:postgres@local
 
 (first time only: `cp` each service's `.env.example` to `.env` — see `docker/dev/README.md`)
 
+**Or, run auth-service/users-service/outbox-publisher-auth in Docker instead**
+(dedicated `auth` profile — turns all three on/off together, independent of
+`node-workers`):
+
+```bash
+docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.gateway.yml \
+  -f docker/dev/compose.services.yml --profile events --profile auth up
+```
+
 **Container-parity mode (everything containerized):**
 
 ```bash
