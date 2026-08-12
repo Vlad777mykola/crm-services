@@ -3,8 +3,26 @@ import { randomUUID } from 'node:crypto';
 import { query } from './db.js';
 
 /**
- * Generic single-row insert into a public-schema table - every legacy table this
- * script touches has a uuid `id` primary key.
+ * Insert a row without injecting an `id` column — for tables whose PK is not `id`
+ * (e.g. users_schema.user_profiles uses `userId`).
+ */
+export async function insertRow(
+  schema: string,
+  table: string,
+  values: Record<string, unknown>,
+): Promise<void> {
+  const columns = Object.keys(values);
+  const placeholders = columns.map((_, i) => `$${i + 1}`);
+  const qualified = `"${schema}"."${table}"`;
+
+  await query(
+    `INSERT INTO ${qualified} (${columns.map((c) => `"${c}"`).join(', ')}) VALUES (${placeholders.join(', ')})`,
+    Object.values(values),
+  );
+}
+
+/**
+ * Generic single-row insert into a microservice schema table with uuid `id` PK.
  */
 export async function insert(table: string, values: Record<string, unknown>): Promise<string> {
   return insertQualified('public', table, values);

@@ -1,24 +1,15 @@
 # docker/dev
 
-Local development only. Dockerfiles for each deployable service live inside that
-service's own folder (`backend/Dockerfile`, `frontend/Dockerfile`,
-`services/*/Dockerfile`) so each stays independently buildable/deployable outside
-of Compose too - the files here are purely for local orchestration:
+Local development only. Dockerfiles live inside each deployable unit
+(`frontend/Dockerfile`, `services/*/Dockerfile`) so each stays independently
+buildable outside Compose. Files here are for local orchestration:
 
-- `compose.infra.yml` - Postgres, Redis (core, no profile needed), RabbitMQ (`events`
-  profile), `postgres-ai` (`python-workers` profile). No app code, nothing built.
-- `compose.services.yml` - app/worker services, containerized, each behind a
-  profile (`events`, `node-workers`, `python-workers`, `auth`). Optional - the
-  recommended day-to-day loop is running these with `yarn dev` /
-  `python src/main.py` instead (see below); use this file to leave a service
-  running in Docker in the background. `auth-service`/`users-service`/
-  `outbox-publisher-auth` (Phase 2) have their own `auth` profile so you can
-  turn just those three on/off independently of the other worker services.
-- `compose.gateway.yml` - Traefik gateway only, routing to `host.docker.internal`
-  (`traefik/dynamic.host.yml`) - use when legacy-backend/services run on the host.
-- `compose.legacy.yml` - Traefik gateway + legacy-backend, both containerized
-  (`traefik/dynamic.container.yml`) - closer to the production shape
-  (`docker/prod/`), useful for container-parity testing.
+- `compose.infra.yml` - Postgres, Redis, RabbitMQ (`events` profile), `postgres-ai`
+  (`python-workers` profile).
+- `compose.services.yml` - optional containerized services (per-profile). Day-to-day
+  dev uses `yarn dev:*` on the host instead (see `scripts/dev/README.md`).
+- `compose.gateway.yml` - Traefik only, routes to `host.docker.internal` via
+  `traefik/dynamic.host.yml` when services run on the host.
 
 See [`docs/architecture/target-production-architecture.md`](../../docs/architecture/target-production-architecture.md)
 for the full service map this mirrors, and

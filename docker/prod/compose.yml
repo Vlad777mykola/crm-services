@@ -29,7 +29,6 @@ services:
       - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
     restart: unless-stopped
     depends_on:
-      - legacy-backend
       - auth-service
       - users-service
       - companies-service
@@ -39,6 +38,8 @@ services:
       - services-catalog-service
       - appointments-service
       - reviews-service
+      - notifications-service
+      - dashboard-service
 
   postgres:
     image: postgres:16-alpine
@@ -113,36 +114,6 @@ services:
       retries: 10
     restart: unless-stopped
 
-  legacy-backend:
-    build:
-      context: ../..
-      dockerfile: backend/Dockerfile
-    env_file:
-      - ../../backend/.env.production
-    environment:
-      NODE_ENV: production
-    expose:
-      - '4000'
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
-
-  outbox-publisher:
-    build:
-      context: ../../services/outbox-publisher
-      dockerfile: Dockerfile
-    env_file:
-      - ../../services/outbox-publisher/.env.production
-    environment:
-      NODE_ENV: production
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-    restart: unless-stopped
-
   notifications-service:
     build:
       context: ../../services/notifications-service
@@ -177,7 +148,7 @@ services:
     restart: unless-stopped
 
   # Extracted in Phase 2 - the gateway routes /auth/* here instead of
-  # legacy-backend. Owns auth_schema in the shared `postgres` above.
+  # Extracted in Phase 2. Owns auth_schema in the shared `postgres` above.
   auth-service:
     build:
       context: ../../services/auth-service
@@ -478,6 +449,22 @@ services:
       - '4509'
     depends_on:
       rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Phase 15 — read-only dashboard aggregation (/app/summary, /companies/:id/summary).
+  dashboard-service:
+    build:
+      context: ../../services/dashboard-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/dashboard-service/.env.production
+    environment:
+      NODE_ENV: production
+    expose:
+      - '4010'
+    depends_on:
+      postgres:
         condition: service_healthy
     restart: unless-stopped
 

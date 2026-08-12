@@ -17,6 +17,7 @@ export const SERVICES = {
   appointments: { dir: 'services/appointments-service', port: 4008, label: 'appointments-service' },
   reviews: { dir: 'services/reviews-service', port: 4009, label: 'reviews-service' },
   notifications: { dir: 'services/notifications-service', port: 4300, label: 'notifications-service' },
+  dashboard: { dir: 'services/dashboard-service', port: 4010, label: 'dashboard-service' },
 };
 
 /** @type {Record<string, OutboxDef>} */
@@ -62,6 +63,14 @@ export const BUNDLES = {
   'companies-members:app': {
     description: 'Frontend + companies-members bundle',
     keys: ['frontend', 'companies', 'company-members', 'outbox:companies'],
+  },
+  'dashboard:app': {
+    description: 'Frontend + auth + users + outbox-auth + dashboard (:4010) for /app/summary',
+    keys: ['frontend', 'auth', 'users', 'outbox:auth', 'dashboard'],
+  },
+  dashboard: {
+    description: 'GET /app/summary via dashboard-service :4010 (needs auth token)',
+    keys: ['auth', 'users', 'outbox:auth', 'dashboard'],
   },
 };
 

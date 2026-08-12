@@ -32,11 +32,11 @@ http:
         addVaryHeader: true
 
   routers:
-    legacy-health:
-      rule: "PathPrefix(`/health`)"
-      service: legacy-backend
+    auth-service-health-root:
+      rule: "Path(`/health`)"
+      service: auth-service
       entryPoints: [web]
-      priority: 10
+      priority: 15
 
     auth-service: # auth-service (Phase 2)
       rule: "PathPrefix(`/auth`)"
@@ -54,11 +54,6 @@ http:
       service: users-service
       entryPoints: [web]
       priority: 50
-    legacy-users: # POST /users stays on legacy per Q5
-      rule: "PathPrefix(`/users`)"
-      service: legacy-backend
-      entryPoints: [web]
-      priority: 10
 
     # ---- Companies: ordered by priority, most specific = highest number ----
     company-members-service:
@@ -96,9 +91,9 @@ http:
       service: reviews-service
       entryPoints: [web]
       priority: 80
-    legacy-company-summary:
+    dashboard-service-company-summary: # dashboard-service (Phase 15)
       rule: "PathRegexp(`^/companies/[^/]+/summary$`)"
-      service: legacy-backend
+      service: dashboard-service
       entryPoints: [web]
       priority: 79
     companies-service-status-history:
@@ -116,11 +111,6 @@ http:
       service: companies-service
       entryPoints: [web]
       priority: 77
-    legacy-companies:
-      rule: "PathPrefix(`/companies`)"
-      service: legacy-backend
-      entryPoints: [web]
-      priority: 10
 
     # ---- Specialists: ordered by priority, most specific = highest number ----
     specialists-service-profile-create:
@@ -168,11 +158,6 @@ http:
       service: specialists-service
       entryPoints: [web]
       priority: 84
-    legacy-specialists:
-      rule: "PathPrefix(`/specialists`)"
-      service: legacy-backend
-      entryPoints: [web]
-      priority: 10
 
     # ---- Services catalog ----
     reviews-service-service-reviews:
@@ -195,11 +180,6 @@ http:
       service: services-catalog-service
       entryPoints: [web]
       priority: 15
-    legacy-services:
-      rule: "PathPrefix(`/services`)"
-      service: legacy-backend
-      entryPoints: [web]
-      priority: 10
 
     # ---- Appointments ----
     reviews-service-appointment-review:
@@ -222,11 +202,6 @@ http:
       service: appointments-service
       entryPoints: [web]
       priority: 80
-    legacy-appointments:
-      rule: "PathPrefix(`/appointments`)"
-      service: legacy-backend
-      entryPoints: [web]
-      priority: 10
 
     # ---- Notifications (Phase 11: notifications-service HTTP API) ----
     notifications-service:
@@ -235,19 +210,14 @@ http:
       entryPoints: [web]
       priority: 10
 
-    # ---- Dashboard ----
-    legacy-dashboard:
+    # ---- Dashboard (Phase 15: dashboard-service) ----
+    dashboard-service-app-summary:
       rule: "Path(`/app/summary`)"
-      service: legacy-backend
+      service: dashboard-service
       entryPoints: [web]
       priority: 10
 
   services:
-    legacy-backend:
-      loadBalancer:
-        servers:
-          - url: "http://legacy-backend:4000"
-
     auth-service:
       loadBalancer:
         servers:
@@ -297,3 +267,8 @@ http:
       loadBalancer:
         servers:
           - url: "http://notifications-service:4300"
+
+    dashboard-service:
+      loadBalancer:
+        servers:
+          - url: "http://dashboard-service:4010"

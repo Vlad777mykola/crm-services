@@ -1,6 +1,5 @@
 # Local dev infrastructure only - no app code, nothing built from this repo.
-# Combine with compose.services.yml/compose.gateway.yml/compose.legacy.yml as
-# needed; see docker/dev/README.md.
+# Combine with compose.services.yml/compose.gateway.yml as needed; see docker/dev/README.md.
 #
 #   docker compose -f docker/dev/compose.infra.yml up
 #   docker compose -f docker/dev/compose.infra.yml --profile events up

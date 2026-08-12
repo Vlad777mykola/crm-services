@@ -1,21 +1,18 @@
-# Fast local dev loop: Traefik gateway only - no legacy-backend container, no
-# rebuild-on-every-change. Run legacy-backend (and, later, any extracted
-# service) on the host with `yarn dev` and this gateway routes to it via
-# host.docker.internal, per docker/dev/traefik/dynamic.host.yml.
+# Fast local dev loop: Traefik gateway only — no app containers, no
+# rebuild-on-every-change. Run microservices on the host via `yarn dev:*`
+# (see scripts/dev/README.md); Traefik routes to host.docker.internal per
+# docker/dev/traefik/dynamic.host.yml.
 #
 # Combine with the infra stack:
-#   docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.gateway.yml up
+#   yarn dev:infra
 #
-# Then, on the host:
-#   yarn dev            # frontend + legacy-backend, per package.json
+# Then, on the host (examples):
+#   yarn dev:auth:app
+#   yarn dev:companies
+#   yarn dev:dashboard:app
 #
-# Frontend then points VITE_API_URL at http://localhost:8080 - see
+# Frontend points VITE_API_URL at http://localhost:8080 — see
 # docs/architecture/url-convention.md and docs/architecture/gateway-routing.md.
-#
-# This is the recommended day-to-day setup once you also want to exercise the
-# gateway hop - for pure backend/frontend iteration with no gateway, skip this
-# file entirely and just run `yarn dev` against :4000 directly (see
-# docker/dev/README.md).
 
 services:
   gateway:
@@ -27,6 +24,7 @@ services:
       - '--entrypoints.web.http.middlewares=cors@file'
       - '--entrypoints.traefik.address=:8081'
       - '--api.dashboard=true'
+      # Dashboard is unauthenticated on :8081 — local dev only.
       - '--api.insecure=true'
     ports:
       - '8080:8080'
@@ -34,6 +32,4 @@ services:
     volumes:
       - ./traefik/dynamic.host.yml:/etc/traefik/dynamic.yml:ro
     extra_hosts:
-      # Docker Desktop on Mac/Windows provides this automatically; explicit on
-      # Linux hosts too so this file behaves the same everywhere.
       - 'host.docker.internal:host-gateway'

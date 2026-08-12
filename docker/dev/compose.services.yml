@@ -20,24 +20,6 @@
 #     --profile events --profile auth up
 
 services:
-  # Publishes the backend's own outbox_events to RabbitMQ. The backend API
-  # itself never joins this profile - it only ever writes rows into its own
-  # outbox_events table (see backend/src/infrastructure/outbox).
-  outbox-publisher:
-    profiles: ['events']
-    build:
-      context: ../../services/outbox-publisher
-      dockerfile: Dockerfile
-    env_file:
-      - ../../services/outbox-publisher/.env
-    environment:
-      NODE_ENV: production
-      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm
-      RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-
   # Same outbox-publisher image, redeployed against auth-service's own schema
   # (Q8 - see docs/architecture/service-port-registry.md). The `search_path`
   # option is required because outbox-publisher queries the unqualified table
@@ -378,6 +360,25 @@ services:
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm
     ports:
       - '4009:4009'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Read-only dashboard aggregation (Phase 15) — /app/summary, /companies/:id/summary.
+  dashboard-service:
+    profiles: ['dashboard']
+    build:
+      context: ../../services/dashboard-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/dashboard-service/.env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm
+      JWT_ACCESS_SECRET: dev-access-secret-change-me
+      CORS_ORIGINS: http://localhost:5173
+    ports:
+      - '4010:4010'
     depends_on:
       postgres:
         condition: service_healthy

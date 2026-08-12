@@ -1,37 +1,40 @@
 import bcrypt from 'bcryptjs';
 
 import { SHARED_TEST_PASSWORD, TEST_ACCOUNTS } from './data/credentials.js';
-import { daysFromNow, insert } from './insert.js';
-import { seedCompaniesSchema } from './seed-microservices.js';
+import { ensureAllMicroserviceSchemas } from './ensure-schemas.js';
+import { daysFromNow, insertQualified, insertRow } from './insert.js';
 
-// Same cost factor as backend/src/common/auth/password.ts, so these hashes are
-// interchangeable with ones the real API would generate.
+// Same cost factor as auth-service password hashing.
 const BCRYPT_SALT_ROUNDS = 10;
 
 export async function seedDatabase(): Promise<void> {
+  await ensureAllMicroserviceSchemas();
   const passwordHash = await bcrypt.hash(SHARED_TEST_PASSWORD, BCRYPT_SALT_ROUNDS);
 
   // ---------------------------------------------------------------------
-  // Users + password auth identities
+  // Auth identities + users-service profiles (shared userId = auth_identities.id)
   // ---------------------------------------------------------------------
   const userIdByEmail = new Map<string, string>();
   for (const account of TEST_ACCOUNTS) {
-    const userId = await insert('users', {
-      email: account.email,
-      name: account.name,
-      phone: account.phone,
-      city: account.city,
-      bio: account.bio,
-      status: account.status,
-    });
-    userIdByEmail.set(account.email, userId);
-
-    await insert('auth_identities', {
-      userId,
+    const userId = await insertQualified('auth_schema', 'auth_identities', {
       provider: 'password',
       providerUserId: account.email,
       email: account.email,
       passwordHash,
+    });
+    userIdByEmail.set(account.email, userId);
+
+    await insertQualified('users_schema', 'users', {
+      id: userId,
+      email: account.email,
+      status: account.status,
+    });
+    await insertRow('users_schema', 'user_profiles', {
+      userId,
+      name: account.name,
+      phone: account.phone,
+      city: account.city,
+      bio: account.bio,
     });
   }
   const uid = (email: string): string => {
@@ -44,7 +47,7 @@ export async function seedDatabase(): Promise<void> {
   // ---------------------------------------------------------------------
   // Companies - one of each CompanyStatus (draft/published/suspended)
   // ---------------------------------------------------------------------
-  const dentalId = await insert('companies', {
+  const dentalId = await insertQualified('companies_schema', 'companies', {
     name: 'Bright Smile Dental',
     slug: 'bright-smile-dental',
     description: 'Full-service dental clinic in the city center.',
@@ -59,7 +62,7 @@ export async function seedDatabase(): Promise<void> {
     createdByUserId: uid('owner.dental@example.com'),
   });
 
-  const beautyId = await insert('companies', {
+  const beautyId = await insertQualified('companies_schema', 'companies', {
     name: 'Glow Beauty Studio',
     slug: 'glow-beauty-studio',
     description: 'Hair, nails, and skincare - in-studio or at your place.',
@@ -74,7 +77,7 @@ export async function seedDatabase(): Promise<void> {
     createdByUserId: uid('owner.beauty@example.com'),
   });
 
-  const fitnessId = await insert('companies', {
+  const fitnessId = await insertQualified('companies_schema', 'companies', {
     name: 'Fresh Start Fitness',
     slug: 'fresh-start-fitness',
     description: 'Personal training studio - opening soon.',
@@ -89,7 +92,7 @@ export async function seedDatabase(): Promise<void> {
     createdByUserId: uid('owner.fitness@example.com'),
   });
 
-  const spaId = await insert('companies', {
+  const spaId = await insertQualified('companies_schema', 'companies', {
     name: 'Old Town Spa',
     slug: 'old-town-spa',
     description: 'Spa and massage salon.',
@@ -108,23 +111,51 @@ export async function seedDatabase(): Promise<void> {
   // ---------------------------------------------------------------------
   // Company members - OWNER + MANAGER roles, ACTIVE + REMOVED statuses
   // ---------------------------------------------------------------------
-  await insert('company_members', { companyId: dentalId, userId: uid('owner.dental@example.com'), role: 'owner', status: 'active' });
-  await insert('company_members', { companyId: dentalId, userId: uid('manager.dental@example.com'), role: 'manager', status: 'active' });
-  await insert('company_members', { companyId: beautyId, userId: uid('owner.beauty@example.com'), role: 'owner', status: 'active' });
-  await insert('company_members', {
+  await insertQualified('company_members_schema', 'company_members', { companyId: dentalId, userId: uid('owner.dental@example.com'), role: 'owner', status: 'active' });
+  await insertQualified('company_members_schema', 'company_members', { companyId: dentalId, userId: uid('manager.dental@example.com'), role: 'manager', status: 'active' });
+  await insertQualified('company_members_schema', 'company_members', { companyId: beautyId, userId: uid('owner.beauty@example.com'), role: 'owner', status: 'active' });
+  await insertQualified('company_members_schema', 'company_members', {
     companyId: beautyId,
     userId: uid('member.beauty.removed@example.com'),
     role: 'manager',
     status: 'removed',
   });
-  await insert('company_members', { companyId: fitnessId, userId: uid('owner.fitness@example.com'), role: 'owner', status: 'active' });
-  await insert('company_members', { companyId: spaId, userId: uid('owner.spa@example.com'), role: 'owner', status: 'active' });
+  await insertQualified('company_members_schema', 'company_members', { companyId: fitnessId, userId: uid('owner.fitness@example.com'), role: 'owner', status: 'active' });
+  await insertQualified('company_members_schema', 'company_members', { companyId: spaId, userId: uid('owner.spa@example.com'), role: 'owner', status: 'active' });
   console.log('[fill_dump_db] created 6 company members');
+
+  // auth-service membership projection (active company members only)
+  await insertQualified('auth_schema', 'auth_membership_projection', {
+    userId: uid('owner.dental@example.com'),
+    companyId: dentalId,
+    role: 'owner',
+  });
+  await insertQualified('auth_schema', 'auth_membership_projection', {
+    userId: uid('manager.dental@example.com'),
+    companyId: dentalId,
+    role: 'manager',
+  });
+  await insertQualified('auth_schema', 'auth_membership_projection', {
+    userId: uid('owner.beauty@example.com'),
+    companyId: beautyId,
+    role: 'owner',
+  });
+  await insertQualified('auth_schema', 'auth_membership_projection', {
+    userId: uid('owner.fitness@example.com'),
+    companyId: fitnessId,
+    role: 'owner',
+  });
+  await insertQualified('auth_schema', 'auth_membership_projection', {
+    userId: uid('owner.spa@example.com'),
+    companyId: spaId,
+    role: 'owner',
+  });
+  console.log('[fill_dump_db] created 5 auth membership projections');
 
   // ---------------------------------------------------------------------
   // Specialist profiles - one of each SpecialistProfileStatus
   // ---------------------------------------------------------------------
-  const olenaId = await insert('specialist_profiles', {
+  const olenaId = await insertQualified('specialists_schema', 'specialist_profiles', {
     userId: uid('specialist.olena@example.com'),
     displayName: 'Dr. Olena Kovalenko',
     headline: 'General & cosmetic dentistry',
@@ -134,7 +165,7 @@ export async function seedDatabase(): Promise<void> {
     isRemoteSupported: false,
     status: 'published',
   });
-  const ihorId = await insert('specialist_profiles', {
+  const ihorId = await insertQualified('specialists_schema', 'specialist_profiles', {
     userId: uid('specialist.ihor@example.com'),
     displayName: 'Dr. Ihor Sydorenko',
     headline: 'Orthodontist',
@@ -144,7 +175,7 @@ export async function seedDatabase(): Promise<void> {
     isRemoteSupported: false,
     status: 'published',
   });
-  const ninaId = await insert('specialist_profiles', {
+  const ninaId = await insertQualified('specialists_schema', 'specialist_profiles', {
     userId: uid('specialist.nina@example.com'),
     displayName: 'Nina Tkachenko',
     headline: 'Hair stylist & colorist',
@@ -154,7 +185,7 @@ export async function seedDatabase(): Promise<void> {
     isRemoteSupported: true,
     status: 'published',
   });
-  const pavloId = await insert('specialist_profiles', {
+  const pavloId = await insertQualified('specialists_schema', 'specialist_profiles', {
     userId: uid('specialist.pavlo@example.com'),
     displayName: 'Pavlo Rud',
     headline: 'Personal trainer',
@@ -164,7 +195,7 @@ export async function seedDatabase(): Promise<void> {
     isRemoteSupported: false,
     status: 'draft',
   });
-  const kateId = await insert('specialist_profiles', {
+  const kateId = await insertQualified('specialists_schema', 'specialist_profiles', {
     userId: uid('specialist.kate@example.com'),
     displayName: 'Kateryna Bila',
     headline: 'Massage therapist',
@@ -179,7 +210,7 @@ export async function seedDatabase(): Promise<void> {
   // ---------------------------------------------------------------------
   // Company <-> specialist requests - one of each CompanySpecialistRequestStatus
   // ---------------------------------------------------------------------
-  await insert('company_specialist_requests', {
+  await insertQualified('company_specialists_schema', 'company_specialist_requests', {
     companyId: dentalId,
     specialistProfileId: olenaId,
     requestedByUserId: uid('owner.dental@example.com'),
@@ -188,7 +219,7 @@ export async function seedDatabase(): Promise<void> {
     respondedAt: daysFromNow(-60),
     createdAt: daysFromNow(-62),
   });
-  await insert('company_specialist_requests', {
+  await insertQualified('company_specialists_schema', 'company_specialist_requests', {
     companyId: dentalId,
     specialistProfileId: ihorId,
     requestedByUserId: uid('owner.dental@example.com'),
@@ -196,7 +227,7 @@ export async function seedDatabase(): Promise<void> {
     message: 'We have an opening for an orthodontist.',
     respondedAt: null,
   });
-  await insert('company_specialist_requests', {
+  await insertQualified('company_specialists_schema', 'company_specialist_requests', {
     companyId: spaId,
     specialistProfileId: ihorId,
     requestedByUserId: uid('owner.spa@example.com'),
@@ -205,7 +236,7 @@ export async function seedDatabase(): Promise<void> {
     respondedAt: daysFromNow(-30),
     createdAt: daysFromNow(-33),
   });
-  await insert('company_specialist_requests', {
+  await insertQualified('company_specialists_schema', 'company_specialist_requests', {
     companyId: beautyId,
     specialistProfileId: ninaId,
     requestedByUserId: uid('owner.beauty@example.com'),
@@ -214,7 +245,7 @@ export async function seedDatabase(): Promise<void> {
     respondedAt: daysFromNow(-45),
     createdAt: daysFromNow(-47),
   });
-  await insert('company_specialist_requests', {
+  await insertQualified('company_specialists_schema', 'company_specialist_requests', {
     companyId: beautyId,
     specialistProfileId: kateId,
     requestedByUserId: uid('owner.beauty@example.com'),
@@ -223,7 +254,7 @@ export async function seedDatabase(): Promise<void> {
     respondedAt: daysFromNow(-90),
     createdAt: daysFromNow(-92),
   });
-  await insert('company_specialist_requests', {
+  await insertQualified('company_specialists_schema', 'company_specialist_requests', {
     companyId: dentalId,
     specialistProfileId: kateId,
     requestedByUserId: uid('owner.dental@example.com'),
@@ -232,7 +263,7 @@ export async function seedDatabase(): Promise<void> {
     respondedAt: daysFromNow(-120),
     createdAt: daysFromNow(-123),
   });
-  await insert('company_specialist_requests', {
+  await insertQualified('company_specialists_schema', 'company_specialist_requests', {
     companyId: fitnessId,
     specialistProfileId: pavloId,
     requestedByUserId: uid('owner.fitness@example.com'),
@@ -246,28 +277,28 @@ export async function seedDatabase(): Promise<void> {
   // ---------------------------------------------------------------------
   // Company <-> specialist relationships - one of each CompanySpecialistStatus
   // ---------------------------------------------------------------------
-  await insert('company_specialists', {
+  await insertQualified('company_specialists_schema', 'company_specialists', {
     companyId: dentalId,
     specialistProfileId: olenaId,
     status: 'active',
     startedAt: daysFromNow(-60),
     endedAt: null,
   });
-  await insert('company_specialists', {
+  await insertQualified('company_specialists_schema', 'company_specialists', {
     companyId: beautyId,
     specialistProfileId: ninaId,
     status: 'active',
     startedAt: daysFromNow(-45),
     endedAt: null,
   });
-  await insert('company_specialists', {
+  await insertQualified('company_specialists_schema', 'company_specialists', {
     companyId: beautyId,
     specialistProfileId: kateId,
     status: 'paused',
     startedAt: daysFromNow(-90),
     endedAt: null,
   });
-  await insert('company_specialists', {
+  await insertQualified('company_specialists_schema', 'company_specialists', {
     companyId: dentalId,
     specialistProfileId: kateId,
     status: 'removed',
@@ -279,7 +310,7 @@ export async function seedDatabase(): Promise<void> {
   // ---------------------------------------------------------------------
   // Services - one of each ServiceStatus
   // ---------------------------------------------------------------------
-  const teethCleaningId = await insert('services', {
+  const teethCleaningId = await insertQualified('services_schema', 'services', {
     companyId: dentalId,
     name: 'Teeth Cleaning',
     description: 'Professional dental cleaning.',
@@ -288,7 +319,7 @@ export async function seedDatabase(): Promise<void> {
     price: '25.00',
     status: 'published',
   });
-  const teethWhiteningId = await insert('services', {
+  const teethWhiteningId = await insertQualified('services_schema', 'services', {
     companyId: dentalId,
     name: 'Teeth Whitening',
     description: 'In-office whitening treatment.',
@@ -297,7 +328,7 @@ export async function seedDatabase(): Promise<void> {
     price: '80.00',
     status: 'published',
   });
-  await insert('services', {
+  await insertQualified('services_schema', 'services', {
     companyId: dentalId,
     name: 'Root Canal Treatment',
     description: 'Not yet published while we finalize pricing.',
@@ -306,7 +337,7 @@ export async function seedDatabase(): Promise<void> {
     price: '150.00',
     status: 'draft',
   });
-  const haircutId = await insert('services', {
+  const haircutId = await insertQualified('services_schema', 'services', {
     companyId: beautyId,
     name: 'Haircut & Styling',
     description: 'Wash, cut, and style.',
@@ -315,7 +346,7 @@ export async function seedDatabase(): Promise<void> {
     price: '20.00',
     status: 'published',
   });
-  const manicureId = await insert('services', {
+  const manicureId = await insertQualified('services_schema', 'services', {
     companyId: beautyId,
     name: 'Manicure',
     description: 'Classic manicure.',
@@ -324,7 +355,7 @@ export async function seedDatabase(): Promise<void> {
     price: '15.00',
     status: 'published',
   });
-  await insert('services', {
+  await insertQualified('services_schema', 'services', {
     companyId: beautyId,
     name: 'Relaxation Massage',
     description: 'Suspended while our massage therapist is on leave.',
@@ -333,7 +364,7 @@ export async function seedDatabase(): Promise<void> {
     price: '35.00',
     status: 'suspended',
   });
-  await insert('services', {
+  await insertQualified('services_schema', 'services', {
     companyId: fitnessId,
     name: 'Personal Training Session',
     description: 'One-on-one training - part of the draft catalog.',
@@ -347,16 +378,16 @@ export async function seedDatabase(): Promise<void> {
   // ---------------------------------------------------------------------
   // Service <-> specialist assignments
   // ---------------------------------------------------------------------
-  await insert('service_specialists', { serviceId: teethCleaningId, companyId: dentalId, specialistProfileId: olenaId });
-  await insert('service_specialists', { serviceId: teethWhiteningId, companyId: dentalId, specialistProfileId: olenaId });
-  await insert('service_specialists', { serviceId: haircutId, companyId: beautyId, specialistProfileId: ninaId });
-  await insert('service_specialists', { serviceId: manicureId, companyId: beautyId, specialistProfileId: ninaId });
+  await insertQualified('services_schema', 'service_specialists', { serviceId: teethCleaningId, companyId: dentalId, specialistProfileId: olenaId });
+  await insertQualified('services_schema', 'service_specialists', { serviceId: teethWhiteningId, companyId: dentalId, specialistProfileId: olenaId });
+  await insertQualified('services_schema', 'service_specialists', { serviceId: haircutId, companyId: beautyId, specialistProfileId: ninaId });
+  await insertQualified('services_schema', 'service_specialists', { serviceId: manicureId, companyId: beautyId, specialistProfileId: ninaId });
   console.log('[fill_dump_db] created 4 service specialist assignments');
 
   // ---------------------------------------------------------------------
   // Appointments - one of each AppointmentStatus (3x completed: 2 reviewed, 1 not)
   // ---------------------------------------------------------------------
-  const pendingAppointmentId = await insert('appointments', {
+  const pendingAppointmentId = await insertQualified('appointments_schema', 'appointments', {
     companyId: dentalId,
     serviceId: teethCleaningId,
     specialistProfileId: olenaId,
@@ -367,7 +398,7 @@ export async function seedDatabase(): Promise<void> {
     respondedAt: null,
     completedAt: null,
   });
-  const approvedAppointmentId = await insert('appointments', {
+  const approvedAppointmentId = await insertQualified('appointments_schema', 'appointments', {
     companyId: dentalId,
     serviceId: teethWhiteningId,
     specialistProfileId: olenaId,
@@ -378,7 +409,7 @@ export async function seedDatabase(): Promise<void> {
     respondedAt: daysFromNow(-1),
     completedAt: null,
   });
-  const rejectedAppointmentId = await insert('appointments', {
+  const rejectedAppointmentId = await insertQualified('appointments_schema', 'appointments', {
     companyId: beautyId,
     serviceId: haircutId,
     specialistProfileId: ninaId,
@@ -389,7 +420,7 @@ export async function seedDatabase(): Promise<void> {
     respondedAt: daysFromNow(-1),
     completedAt: null,
   });
-  const cancelledAppointmentId = await insert('appointments', {
+  const cancelledAppointmentId = await insertQualified('appointments_schema', 'appointments', {
     companyId: beautyId,
     serviceId: manicureId,
     specialistProfileId: ninaId,
@@ -400,7 +431,7 @@ export async function seedDatabase(): Promise<void> {
     respondedAt: null,
     completedAt: null,
   });
-  const completedReviewedAppointment1Id = await insert('appointments', {
+  const completedReviewedAppointment1Id = await insertQualified('appointments_schema', 'appointments', {
     companyId: dentalId,
     serviceId: teethCleaningId,
     specialistProfileId: olenaId,
@@ -412,7 +443,7 @@ export async function seedDatabase(): Promise<void> {
     completedAt: daysFromNow(-10),
     createdAt: daysFromNow(-12),
   });
-  const completedReviewedAppointment2Id = await insert('appointments', {
+  const completedReviewedAppointment2Id = await insertQualified('appointments_schema', 'appointments', {
     companyId: beautyId,
     serviceId: manicureId,
     specialistProfileId: ninaId,
@@ -424,7 +455,7 @@ export async function seedDatabase(): Promise<void> {
     completedAt: daysFromNow(-7),
     createdAt: daysFromNow(-9),
   });
-  const completedUnreviewedAppointmentId = await insert('appointments', {
+  const completedUnreviewedAppointmentId = await insertQualified('appointments_schema', 'appointments', {
     companyId: dentalId,
     serviceId: teethWhiteningId,
     specialistProfileId: olenaId,
@@ -439,102 +470,91 @@ export async function seedDatabase(): Promise<void> {
   console.log('[fill_dump_db] created 7 appointments (pending, approved, rejected, cancelled, completed x3)');
 
   // ---------------------------------------------------------------------
-  // Status history entries - one per AuditEntityType
+  // Per-domain status history (microservice schemas)
   // ---------------------------------------------------------------------
-  await insert('status_history_entries', {
-    entityType: 'appointment',
-    entityId: approvedAppointmentId,
+  await insertQualified('appointments_schema', 'appointment_status_history', {
+    appointmentId: approvedAppointmentId,
     fromStatus: 'pending',
     toStatus: 'approved',
     changedByUserId: uid('manager.dental@example.com'),
     reason: null,
   });
-  await insert('status_history_entries', {
-    entityType: 'appointment',
-    entityId: rejectedAppointmentId,
+  await insertQualified('appointments_schema', 'appointment_status_history', {
+    appointmentId: rejectedAppointmentId,
     fromStatus: 'pending',
     toStatus: 'rejected',
     changedByUserId: uid('owner.beauty@example.com'),
     reason: 'Fully booked that day.',
   });
-  await insert('status_history_entries', {
-    entityType: 'appointment',
-    entityId: cancelledAppointmentId,
+  await insertQualified('appointments_schema', 'appointment_status_history', {
+    appointmentId: cancelledAppointmentId,
     fromStatus: 'pending',
     toStatus: 'cancelled',
     changedByUserId: uid('client.andriy@example.com'),
     reason: 'Change of plans.',
   });
-  await insert('status_history_entries', {
-    entityType: 'appointment',
-    entityId: completedReviewedAppointment1Id,
+  await insertQualified('appointments_schema', 'appointment_status_history', {
+    appointmentId: completedReviewedAppointment1Id,
     fromStatus: 'approved',
     toStatus: 'completed',
     changedByUserId: uid('owner.dental@example.com'),
     reason: null,
   });
-  await insert('status_history_entries', {
-    entityType: 'appointment',
-    entityId: completedReviewedAppointment2Id,
+  await insertQualified('appointments_schema', 'appointment_status_history', {
+    appointmentId: completedReviewedAppointment2Id,
     fromStatus: 'approved',
     toStatus: 'completed',
     changedByUserId: uid('owner.beauty@example.com'),
     reason: null,
   });
-  await insert('status_history_entries', {
-    entityType: 'appointment',
-    entityId: completedUnreviewedAppointmentId,
+  await insertQualified('appointments_schema', 'appointment_status_history', {
+    appointmentId: completedUnreviewedAppointmentId,
     fromStatus: 'approved',
     toStatus: 'completed',
     changedByUserId: uid('owner.dental@example.com'),
     reason: null,
   });
-  await insert('status_history_entries', {
-    entityType: 'company',
-    entityId: dentalId,
+  await insertQualified('companies_schema', 'company_status_history', {
+    companyId: dentalId,
     fromStatus: 'draft',
     toStatus: 'published',
     changedByUserId: uid('owner.dental@example.com'),
     reason: null,
   });
-  await insert('status_history_entries', {
-    entityType: 'company',
-    entityId: spaId,
+  await insertQualified('companies_schema', 'company_status_history', {
+    companyId: spaId,
     fromStatus: 'published',
     toStatus: 'suspended',
     changedByUserId: null,
     reason: 'Policy violation - suspended pending review.',
   });
-  await insert('status_history_entries', {
-    entityType: 'specialist_profile',
-    entityId: olenaId,
+  await insertQualified('specialists_schema', 'specialist_status_history', {
+    specialistProfileId: olenaId,
     fromStatus: 'draft',
     toStatus: 'published',
     changedByUserId: uid('specialist.olena@example.com'),
     reason: null,
   });
-  await insert('status_history_entries', {
-    entityType: 'specialist_profile',
-    entityId: kateId,
+  await insertQualified('specialists_schema', 'specialist_status_history', {
+    specialistProfileId: kateId,
     fromStatus: 'published',
     toStatus: 'suspended',
     changedByUserId: null,
     reason: 'Suspended pending investigation.',
   });
-  await insert('status_history_entries', {
-    entityType: 'service',
-    entityId: manicureId,
+  await insertQualified('services_schema', 'service_status_history', {
+    serviceId: manicureId,
     fromStatus: 'draft',
     toStatus: 'published',
     changedByUserId: uid('owner.beauty@example.com'),
     reason: null,
   });
-  console.log('[fill_dump_db] created 11 status history entries (appointment, company, specialist_profile, service)');
+  console.log('[fill_dump_db] created 11 status history rows (appointment, company, specialist, service)');
 
   // ---------------------------------------------------------------------
   // Reviews - one per reviewed completed appointment
   // ---------------------------------------------------------------------
-  const review1Id = await insert('reviews', {
+  const review1Id = await insertQualified('reviews_schema', 'reviews', {
     appointmentId: completedReviewedAppointment1Id,
     companyId: dentalId,
     serviceId: teethCleaningId,
@@ -544,7 +564,7 @@ export async function seedDatabase(): Promise<void> {
     comment: 'Excellent service, very gentle and professional!',
     createdAt: daysFromNow(-9),
   });
-  await insert('reviews', {
+  await insertQualified('reviews_schema', 'reviews', {
     appointmentId: completedReviewedAppointment2Id,
     companyId: beautyId,
     serviceId: manicureId,
@@ -559,7 +579,7 @@ export async function seedDatabase(): Promise<void> {
   // ---------------------------------------------------------------------
   // Notifications - one per NotificationType
   // ---------------------------------------------------------------------
-  await insert('notifications', {
+  await insertQualified('notifications_schema', 'notifications', {
     userId: uid('owner.dental@example.com'),
     type: 'appointment.requested',
     title: 'New appointment request',
@@ -568,7 +588,7 @@ export async function seedDatabase(): Promise<void> {
     isRead: true,
     readAt: daysFromNow(-1),
   });
-  await insert('notifications', {
+  await insertQualified('notifications_schema', 'notifications', {
     userId: uid('client.iryna@example.com'),
     type: 'appointment.approved',
     title: 'Your appointment was approved',
@@ -577,7 +597,7 @@ export async function seedDatabase(): Promise<void> {
     isRead: true,
     readAt: daysFromNow(-1),
   });
-  await insert('notifications', {
+  await insertQualified('notifications_schema', 'notifications', {
     userId: uid('client.taras@example.com'),
     type: 'appointment.rejected',
     title: 'Your appointment was rejected',
@@ -586,7 +606,7 @@ export async function seedDatabase(): Promise<void> {
     isRead: false,
     readAt: null,
   });
-  await insert('notifications', {
+  await insertQualified('notifications_schema', 'notifications', {
     userId: uid('owner.beauty@example.com'),
     type: 'appointment.cancelled',
     title: 'An appointment was cancelled',
@@ -595,7 +615,7 @@ export async function seedDatabase(): Promise<void> {
     isRead: false,
     readAt: null,
   });
-  await insert('notifications', {
+  await insertQualified('notifications_schema', 'notifications', {
     userId: uid('client.andriy@example.com'),
     type: 'appointment.completed',
     title: 'Your appointment is complete',
@@ -604,7 +624,7 @@ export async function seedDatabase(): Promise<void> {
     isRead: false,
     readAt: null,
   });
-  await insert('notifications', {
+  await insertQualified('notifications_schema', 'notifications', {
     userId: uid('owner.dental@example.com'),
     type: 'review.received',
     title: 'You received a new review',
@@ -613,7 +633,7 @@ export async function seedDatabase(): Promise<void> {
     isRead: true,
     readAt: daysFromNow(-8),
   });
-  await insert('notifications', {
+  await insertQualified('notifications_schema', 'notifications', {
     userId: uid('owner.dental@example.com'),
     type: 'company.rating_updated',
     title: "Your company's rating was updated",
@@ -627,28 +647,28 @@ export async function seedDatabase(): Promise<void> {
   // ---------------------------------------------------------------------
   // Email logs - simulated sends matching a few of the notifications above
   // ---------------------------------------------------------------------
-  await insert('email_logs', {
+  await insertQualified('notifications_schema', 'email_logs', {
     toEmail: 'owner.dental@example.com',
     subject: 'New appointment request - Bright Smile Dental',
     body: 'Andriy Moroz requested Teeth Cleaning on ' + daysFromNow(3).toDateString() + '.',
     eventType: 'appointment.requested',
     eventId: pendingAppointmentId,
   });
-  await insert('email_logs', {
+  await insertQualified('notifications_schema', 'email_logs', {
     toEmail: 'client.iryna@example.com',
     subject: 'Your appointment was approved',
     body: 'Your Teeth Whitening appointment at Bright Smile Dental was approved.',
     eventType: 'appointment.approved',
     eventId: approvedAppointmentId,
   });
-  await insert('email_logs', {
+  await insertQualified('notifications_schema', 'email_logs', {
     toEmail: 'client.taras@example.com',
     subject: 'Your appointment was rejected',
     body: 'Your Haircut & Styling appointment at Glow Beauty Studio was rejected: Fully booked that day.',
     eventType: 'appointment.rejected',
     eventId: rejectedAppointmentId,
   });
-  await insert('email_logs', {
+  await insertQualified('notifications_schema', 'email_logs', {
     toEmail: 'owner.dental@example.com',
     subject: 'You received a new review',
     body: 'Iryna Vovk left a 5-star review for Teeth Cleaning: "Excellent service, very gentle and professional!"',
@@ -656,87 +676,4 @@ export async function seedDatabase(): Promise<void> {
     eventId: review1Id,
   });
   console.log('[fill_dump_db] created 4 email logs');
-
-  // ---------------------------------------------------------------------
-  // companies_schema (companies-service) - same company rows as legacy public.companies
-  // ---------------------------------------------------------------------
-  await seedCompaniesSchema(
-    [
-      {
-        id: dentalId,
-        name: 'Bright Smile Dental',
-        slug: 'bright-smile-dental',
-        description: 'Full-service dental clinic in the city center.',
-        category: 'Dental',
-        website: 'https://bright-smile-dental.example.com',
-        phone: '+380441234501',
-        email: 'contact@bright-smile-dental.example.com',
-        status: 'published',
-        isRemoteSupported: false,
-        city: 'Kyiv',
-        address: '12 Khreshchatyk St',
-        createdByUserId: uid('owner.dental@example.com'),
-      },
-      {
-        id: beautyId,
-        name: 'Glow Beauty Studio',
-        slug: 'glow-beauty-studio',
-        description: 'Hair, nails, and skincare - in-studio or at your place.',
-        category: 'Beauty',
-        website: 'https://glow-beauty-studio.example.com',
-        phone: '+380441234502',
-        email: 'contact@glow-beauty-studio.example.com',
-        status: 'published',
-        isRemoteSupported: true,
-        city: 'Lviv',
-        address: '5 Rynok Square',
-        createdByUserId: uid('owner.beauty@example.com'),
-      },
-      {
-        id: fitnessId,
-        name: 'Fresh Start Fitness',
-        slug: 'fresh-start-fitness',
-        description: 'Personal training studio - opening soon.',
-        category: 'Fitness',
-        website: null,
-        phone: null,
-        email: null,
-        status: 'draft',
-        isRemoteSupported: false,
-        city: 'Odesa',
-        address: null,
-        createdByUserId: uid('owner.fitness@example.com'),
-      },
-      {
-        id: spaId,
-        name: 'Old Town Spa',
-        slug: 'old-town-spa',
-        description: 'Spa and massage salon.',
-        category: 'Spa',
-        website: null,
-        phone: '+380441234504',
-        email: 'contact@old-town-spa.example.com',
-        status: 'suspended',
-        isRemoteSupported: false,
-        city: 'Kharkiv',
-        address: '3 Sumska St',
-        createdByUserId: uid('owner.spa@example.com'),
-      },
-    ],
-    [
-      {
-        companyId: dentalId,
-        fromStatus: 'draft',
-        toStatus: 'published',
-        changedByUserId: uid('owner.dental@example.com'),
-      },
-      {
-        companyId: spaId,
-        fromStatus: 'published',
-        toStatus: 'suspended',
-        changedByUserId: null,
-        reason: 'Policy violation - suspended pending review.',
-      },
-    ],
-  );
 }

@@ -1,11 +1,9 @@
 # Traefik file-provider config for docker/dev/compose.gateway.yml (fast local
-# dev loop: only infra + gateway run in Docker; legacy-backend and every
-# extracted service run on the host via `yarn dev` for instant reload).
+# dev loop: only infra + gateway run in Docker; microservices run on the host
+# via `yarn dev` for instant reload).
 #
-# Target is "http://host.docker.internal:4000" - Docker Desktop's special
-# DNS name for reaching the host machine from inside a container. Requires
-# legacy-backend to actually be running on the host at :4000 (`yarn dev` from
-# the repo root, or `yarn workspace @crm/backend dev`).
+# Target is "http://host.docker.internal:PORT" - Docker Desktop's special
+# DNS name for reaching the host machine from inside a container.
 #
 # This file must stay in sync with dynamic.container.yml: same routers, same
 # rules, same priorities - only the `services.*.loadBalancer.servers.url`
@@ -37,11 +35,11 @@ http:
         addVaryHeader: true
 
   routers:
-    legacy-health:
-      rule: "PathPrefix(`/health`)"
-      service: legacy-backend
+    auth-service-health-root:
+      rule: "Path(`/health`)"
+      service: auth-service
       entryPoints: [web]
-      priority: 10
+      priority: 15
 
     auth-service: # auth-service (Phase 2)
       rule: "PathPrefix(`/auth`)"
@@ -59,11 +57,6 @@ http:
       service: users-service
       entryPoints: [web]
       priority: 50
-    legacy-users: # POST /users stays on legacy per Q5
-      rule: "PathPrefix(`/users`)"
-      service: legacy-backend
-      entryPoints: [web]
-      priority: 10
 
     # ---- Companies: ordered by priority, most specific = highest number ----
     company-members-service: # company-members-service (Phase 5)
@@ -101,9 +94,9 @@ http:
       service: reviews-service
       entryPoints: [web]
       priority: 80
-    legacy-company-summary: # dashboard / future read-api (Phase 15)
+    dashboard-service-company-summary: # dashboard-service (Phase 15)
       rule: "PathRegexp(`^/companies/[^/]+/summary$`)"
-      service: legacy-backend
+      service: dashboard-service
       entryPoints: [web]
       priority: 79
     companies-service-status-history: # companies-service (Phase 4)
@@ -121,11 +114,6 @@ http:
       service: companies-service
       entryPoints: [web]
       priority: 77
-    legacy-companies: # generic fallback for anything under /companies not claimed above
-      rule: "PathPrefix(`/companies`)"
-      service: legacy-backend
-      entryPoints: [web]
-      priority: 10
 
     # ---- Specialists: ordered by priority, most specific = highest number ----
     specialists-service-profile-create: # specialists-service (Phase 6)
@@ -173,11 +161,6 @@ http:
       service: specialists-service
       entryPoints: [web]
       priority: 84
-    legacy-specialists: # generic fallback for anything under /specialists not claimed above
-      rule: "PathPrefix(`/specialists`)"
-      service: legacy-backend
-      entryPoints: [web]
-      priority: 10
 
     # ---- Services catalog (Phase 8: services-catalog-service) ----
     reviews-service-service-reviews: # reviews-service (Phase 10) takes priority over the generic fallback
@@ -200,11 +183,6 @@ http:
       service: services-catalog-service
       entryPoints: [web]
       priority: 15
-    legacy-services: # generic fallback for anything under /services not claimed above
-      rule: "PathPrefix(`/services`)"
-      service: legacy-backend
-      entryPoints: [web]
-      priority: 10
 
     # ---- Appointments (Phase 9; review sub-path -> Phase 10: reviews-service) ----
     reviews-service-appointment-review: # reviews-service (Phase 10) takes priority over appointments-service's fallback
@@ -227,11 +205,6 @@ http:
       service: appointments-service
       entryPoints: [web]
       priority: 80
-    legacy-appointments: # generic fallback for anything under /appointments not claimed above
-      rule: "PathPrefix(`/appointments`)"
-      service: legacy-backend
-      entryPoints: [web]
-      priority: 10
 
     # ---- Notifications (Phase 11: notifications-service HTTP API) ----
     notifications-service:
@@ -240,19 +213,14 @@ http:
       entryPoints: [web]
       priority: 10
 
-    # ---- Dashboard (Phase 15 decision: legacy or future read-api) ----
-    legacy-dashboard:
+    # ---- Dashboard (Phase 15: dashboard-service) ----
+    dashboard-service-app-summary:
       rule: "Path(`/app/summary`)"
-      service: legacy-backend
+      service: dashboard-service
       entryPoints: [web]
       priority: 10
 
   services:
-    legacy-backend:
-      loadBalancer:
-        servers:
-          - url: "http://host.docker.internal:4000"
-
     auth-service:
       loadBalancer:
         servers:
@@ -302,3 +270,8 @@ http:
       loadBalancer:
         servers:
           - url: "http://host.docker.internal:4300"
+
+    dashboard-service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:4010"

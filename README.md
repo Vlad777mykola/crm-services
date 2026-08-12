@@ -1,121 +1,69 @@
 # CRM Services
 
-# First run
-
-1. docker compose -f docker/dev/compose.infra.yml up (required to have docker)
-2. yarn install (crm-services, backend, frontend)
-3. yarn dev from crm-services
-
-A single repository with **independently deployable** services — frontend, backend API, and a
-set of event-driven microservices — connected only through generated API contracts (OpenAPI)
-and versioned event schemas, never through direct source imports.
+Monorepo with a **React frontend** and **independently deployable microservices**
+behind a Traefik gateway. Services communicate through versioned event schemas
+(`contracts/events/`) — never through direct source imports from other deploy
+units.
 
 ## Structure
 
 ```
 crm-services/
-├── frontend/                         # React + TypeScript + Vite app (deploys to GitHub Pages, later S3/CloudFront)
-├── backend/                          # Node.js + TypeScript + Express API — HTTP only, no workers, no RabbitMQ consumers
-├── contracts/
-│   ├── openapi.json                  # generated contract between frontend and backend
-│   └── events/                       # shared event JSON schemas (envelope + one file per event type)
-├── services/
-│   ├── notifications-service/        # consumes domain/analytics events, sends emails + in-app notifications
-│   ├── metrics-service/              # observes RabbitMQ traffic, exposes /metrics + /health
-│   ├── outbox-publisher/             # publishes the backend's outbox_events to RabbitMQ
-│   └── ai-service/                   # Python AI/analytics microservice, owns postgres-ai
-├── docker/                           # docker/dev (local development) + docker/prod (interim prod shape)
-├── docs/architecture/                # current/target architecture, ownership, event model
+├── frontend/              # React + Vite (Yarn workspace)
+├── contracts/events/      # shared event JSON schemas
+├── services/              # auth, users, companies, …, dashboard, ai, workers
+├── docker/                # local dev + interim prod Compose stacks
 ├── scripts/
-│   └── fill_dump_db/                 # seeds Postgres with fake data + test login credentials
-├── .github/workflows/                # CI/CD pipelines — one per deploy unit, none depend on another
-├── package.json                      # Yarn workspaces root (frontend + backend only) — orchestration, no shared runtime code
-└── yarn.lock
+│   ├── dev/               # `yarn dev:*` host runners (gateway bundles)
+│   └── fill_dump_db/      # Postgres seed for microservice schemas
+└── docs/architecture/     # extraction checklist, routing, ownership
 ```
 
-Everything under `services/` is deliberately **not** a Yarn workspace member: each has its own
-`package.json`/`pyproject.toml`, its own `Dockerfile`, its own `.env.example`, and its own
-build/test/lint scripts, and none of them import `backend/src/modules/*`. See
-[`docs/architecture/target-production-architecture.md`](docs/architecture/target-production-architecture.md)
-for the full picture and [`docs/architecture/service-ownership.md`](docs/architecture/service-ownership.md)
-for which service owns which table.
-
-## Key rules
-
-- Frontend never imports backend source code. It only consumes the generated API client/types
-  produced from `contracts/openapi.json`.
-- Backend Zod schemas are the single source of truth for request/response shapes; OpenAPI is
-  generated from them.
-- The backend API is HTTP-only: it never consumes from RabbitMQ, and it never publishes to it
-  directly either — business writes and an `outbox_events` row commit in the same database
-  transaction, and `services/outbox-publisher` is the only process that turns those rows into
-  RabbitMQ messages. See [`docs/architecture/event-driven-model.md`](docs/architecture/event-driven-model.md).
-- Every service under `services/` types against `contracts/events/*.json` locally instead of
-  importing backend domain modules, so each stays independently deployable.
-- Frontend, backend, and every service each have their own build, lint, typecheck, test, and
-  deploy pipeline, and can be deployed independently of one another.
+Each folder under `services/` has its own `package.json`, `Dockerfile`, and
+`.env.example` — not a Yarn workspace member.
 
 ## Getting started
 
-Requires **Node.js >= 22.13** and, if you want to run `services/ai-service`, **Python >= 3.12**.
-
-The frontend and backend use **Yarn Classic (v1) Workspaces** with a single root lockfile.
-Everything under `services/` is intentionally standalone (its own dependency tree) so it can be
-built and deployed without the rest of the repository ever being checked out.
-
-Install frontend + backend dependencies in one step:
+Requires **Node.js >= 22.13**.
 
 ```bash
-yarn install
+yarn install          # frontend workspace only
+yarn dev:infra        # Postgres, RabbitMQ, Traefik gateway (:8080)
 ```
 
-> Note: there is intentionally no custom `install` script in `package.json`. `install` is a
-> reserved lifecycle hook name in npm/Yarn; the built-in `yarn install` command already installs
-> every workspace in a single pass.
-
-Other root-level commands (delegate to `frontend`/`backend`):
+Pick a dev bundle (see `scripts/dev/README.md`):
 
 ```bash
-yarn dev               # run frontend + backend dev servers together
-yarn build              # build backend then frontend
-yarn lint               # lint backend then frontend
-yarn typecheck          # typecheck backend then frontend
-yarn test               # test backend then frontend
-yarn openapi:generate-types  # regenerate backend's autogenerated OpenAPI types
-yarn openapi:check           # regenerate, then fail if anything changed (used in CI)
+yarn dev:auth:app       # register/login + frontend
+yarn dev:companies      # public company list + frontend
+yarn dev:dashboard:app  # /app/summary + frontend
 ```
 
-Each service under `services/` has the same `dev`/`build`/`lint`/`typecheck`/`test` scripts,
-run from that service's own folder, e.g. `cd services/notifications-service && yarn dev`.
+Gateway: `http://localhost:8080` · Frontend: `http://localhost:5173`
 
-## Running everything (local dev vs. gateway vs. production shape)
-
-See [`docker/README.md`](docker/README.md) for the full breakdown (`docker/dev/`
-vs. `docker/prod/` — never mix files across them), but in short:
-
-1. **Fully local, no gateway** — run infra in Docker (`docker compose -f docker/dev/compose.infra.yml --profile events up postgres redis rabbitmq`), then run the app processes directly on the host (`yarn dev` for frontend + backend, `yarn dev` in each `services/*` folder, `python src/main.py` for `services/ai-service`).
-2. **Local + gateway** (recommended once you want to exercise the Traefik hop) — `docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.gateway.yml up`, then `yarn dev` on the host; point the frontend at `http://localhost:8080`.
-3. **Local, everything containerized** (container-parity testing) — `docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.legacy.yml -f docker/dev/compose.services.yml --profile events --profile node-workers --profile python-workers up --build`.
-4. **Interim production shape** (before Kubernetes/EKS) — `docker/prod/compose.yml`, see [`docker/prod/README.md`](docker/prod/README.md).
-
-## Test data
-
-Need fake data to click around with, or a set of accounts to log in with locally? See
-[`scripts/fill_dump_db/README.md`](scripts/fill_dump_db/README.md) — it seeds every table with
-data covering every status/enum value (draft/published/suspended companies, pending/approved/
-rejected/cancelled/completed appointments, etc.) and prints a fixed list of test accounts
-(same password for all) when it's done.
+### Seed test data
 
 ```bash
-cd scripts/fill_dump_db
-yarn install
-cp .env.example .env
-yarn seed:reset
+cd scripts/fill_dump_db && yarn install && cp .env.example .env
+yarn seed:reset         # from scripts/fill_dump_db
 ```
+
+See [`scripts/fill_dump_db/README.md`](scripts/fill_dump_db/README.md) for test
+accounts (`Passw0rd!123`).
+
+## Root scripts
+
+| Script | Purpose |
+|---|---|
+| `yarn dev:infra` | Infra + gateway |
+| `yarn dev:auth:app` | Auth + users + frontend |
+| `yarn dev:companies` | Companies + frontend |
+| `yarn dev:dashboard:app` | Dashboard + frontend |
+| `yarn dev:list` | All bundles / single services |
+| `yarn build/lint/test` | Frontend only |
 
 ## Architecture docs
 
-- [`docs/architecture/current-service-map.md`](docs/architecture/current-service-map.md) — every deploy unit and its known gaps.
-- [`docs/architecture/target-production-architecture.md`](docs/architecture/target-production-architecture.md) — target repository layout, runtime topology, and production deployment matrix.
-- [`docs/architecture/service-ownership.md`](docs/architecture/service-ownership.md) — which service owns which table, and how duplicate side effects are avoided during a migration.
-- [`docs/architecture/event-driven-model.md`](docs/architecture/event-driven-model.md) — envelope shape, outbox pattern, RabbitMQ topology/DLQs, and idempotent consumers.
+- [`docs/architecture/microservices-extraction-checklist.md`](docs/architecture/microservices-extraction-checklist.md)
+- [`docs/architecture/gateway-routing.md`](docs/architecture/gateway-routing.md)
+- [`docker/dev/README.md`](docker/dev/README.md)

@@ -3,8 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "workspaces": [
-    "frontend",
-    "backend"
+    "frontend"
   ],
   "engines": {
     "node": ">=22.13.0"
@@ -14,13 +13,14 @@
     "dev:list": "node scripts/dev/run.mjs list",
     "dev:run": "node scripts/dev/run.mjs",
     "dev:infra": "docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.gateway.yml --profile events up",
-    "dev:legacy": "concurrently -n frontend,backend -c blue,green \"yarn workspace @crm/frontend dev\" \"yarn workspace @crm/backend dev\"",
     "dev:auth": "node scripts/dev/run.mjs auth-users",
     "dev:auth:app": "node scripts/dev/run.mjs auth-users:app",
     "dev:companies": "node scripts/dev/run.mjs companies:app",
     "dev:companies:svc": "node scripts/dev/run.mjs companies",
     "dev:companies-members": "node scripts/dev/run.mjs companies-members",
     "dev:companies-members:app": "node scripts/dev/run.mjs companies-members:app",
+    "dev:dashboard": "node scripts/dev/run.mjs dashboard",
+    "dev:dashboard:app": "node scripts/dev/run.mjs dashboard:app",
     "dev:svc:auth": "node scripts/dev/run.mjs svc auth",
     "dev:svc:users": "node scripts/dev/run.mjs svc users",
     "dev:svc:companies": "node scripts/dev/run.mjs svc companies",
@@ -31,6 +31,7 @@
     "dev:svc:appointments": "node scripts/dev/run.mjs svc appointments",
     "dev:svc:reviews": "node scripts/dev/run.mjs svc reviews",
     "dev:svc:notifications": "node scripts/dev/run.mjs svc notifications",
+    "dev:svc:dashboard": "node scripts/dev/run.mjs svc dashboard",
     "dev:outbox:auth": "node scripts/dev/run.mjs outbox auth",
     "dev:outbox:users": "node scripts/dev/run.mjs outbox users",
     "dev:outbox:companies": "node scripts/dev/run.mjs outbox companies",
@@ -40,12 +41,10 @@
     "dev:outbox:services-catalog": "node scripts/dev/run.mjs outbox services-catalog",
     "dev:outbox:appointments": "node scripts/dev/run.mjs outbox appointments",
     "dev:outbox:reviews": "node scripts/dev/run.mjs outbox reviews",
-    "build": "yarn workspace @crm/backend build && yarn workspace @crm/frontend build",
-    "lint": "yarn workspace @crm/backend lint && yarn workspace @crm/frontend lint",
-    "typecheck": "yarn workspace @crm/backend typecheck && yarn workspace @crm/frontend typecheck",
-    "test": "yarn workspace @crm/backend test && yarn workspace @crm/frontend test",
-    "openapi:generate-types": "yarn workspace @crm/backend openapi:generate-types",
-    "openapi:check": "yarn workspace @crm/backend openapi:check",
+    "build": "yarn workspace @crm/frontend build",
+    "lint": "yarn workspace @crm/frontend lint",
+    "typecheck": "yarn workspace @crm/frontend typecheck",
+    "test": "yarn workspace @crm/frontend test",
     "prepare": "husky"
   },
   "devDependencies": {

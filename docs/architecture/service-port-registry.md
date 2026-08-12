@@ -17,12 +17,9 @@ assigns fresh ports to services that don't exist yet.
 
 | Service | Port | Source of truth |
 |---|---|---|
-| legacy-backend | 4000 | `backend/.env.example` → `PORT=4000` |
 | metrics-service | 4100 | `services/metrics-service/Dockerfile` → `EXPOSE 4100` |
 | ai-service | 4200 | `services/ai-service/Dockerfile` → `EXPOSE 4200` |
 | notifications-service | 4300 | `services/notifications-service/Dockerfile` → `EXPOSE 4300` |
-| ~~backend-projection-service~~ | ~~4400~~ | Retired in Phase 12 — port free. Its two consumers (`ai.appointment_recommendation_created`, `ai.company_insight_created`) moved into appointments-service (4008) and companies-service (4003) respectively. |
-| outbox-publisher (shared, backend's outbox) | 4500 | `services/outbox-publisher/src/env.ts` → `HEALTH_PORT` default `4500` |
 | postgres | 5432 | `docker/dev/compose.infra.yml` |
 | postgres-ai | 5433 (host) → 5432 (container) | `docker/dev/compose.infra.yml` |
 | redis | 6379 | `docker/dev/compose.infra.yml` (reserved, unused) |
@@ -36,10 +33,8 @@ assigns fresh ports to services that don't exist yet.
 
 ## New — domain services (Phases 2–10)
 
-Assigned in extraction order, in the `4001`–`4009` range — deliberately close to
-`4000` (legacy-backend) and clear of the `4100`–`4500` block already used by the
-existing worker services above, to avoid any visual confusion between "domain
-service" ports and "existing worker" ports.
+Assigned in extraction order, in the `4001`–`4010` range — clear of the `4100`–
+`4500` block used by worker services.
 
 | Service | Port | Phase |
 |---|---|---|
@@ -52,6 +47,7 @@ service" ports and "existing worker" ports.
 | services-catalog-service | 4007 | 8 |
 | appointments-service | 4008 | 9 |
 | reviews-service | 4009 | 10 |
+| dashboard-service | 4010 | 15 |
 
 ## New — per-service outbox-publisher instances (Q8)
 
@@ -62,7 +58,6 @@ port above.
 
 | Outbox-publisher instance | Health port | Points at |
 |---|---|---|
-| outbox-publisher (legacy/shared) | 4500 | backend's `outbox_events` (existing, unchanged) |
 | outbox-publisher (auth-service) | 4501 | `auth_schema.outbox_events` |
 | outbox-publisher (users-service) | 4502 | `users_schema.outbox_events` |
 | outbox-publisher (companies-service) | 4503 | `companies_schema.outbox_events` |

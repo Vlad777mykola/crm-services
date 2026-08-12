@@ -48,6 +48,7 @@ Browser (:5173)  →  Traefik gateway (:8080)  →  host.docker.internal
 | appointments-service | 4008 | `/appointments/*`, `/companies/:id/appointments*` |
 | reviews-service | 4009 | `/companies/:id/reviews`, … |
 | notifications-service | 4300 | `/notifications/*` |
+| dashboard-service | 4010 | `/app/summary`, `/companies/:id/summary` |
 
 Outbox publishers (publish domain events to RabbitMQ) use health ports `4501`–`4509`
 and `OUTBOX_SCHEMA` (e.g. `auth_schema`) — see `service-port-registry.md` and
@@ -61,6 +62,8 @@ and `OUTBOX_SCHEMA` (e.g. `auth_schema`) — see `service-port-registry.md` and
 | `yarn dev:auth:app` | + frontend | Login/register in browser |
 | `yarn dev:companies` | frontend + companies | `/companies` public list |
 | `yarn dev:companies:svc` | companies only | curl via gateway |
+| `yarn dev:dashboard:app` | frontend + auth + dashboard | `/app` (`GET /app/summary`) |
+| `yarn dev:dashboard` | auth + dashboard (no frontend) | curl `/app/summary` with token |
 | `yarn dev:companies-members` | companies + members + outbox-companies | create company + member projection |
 
 ## Outbox publishers

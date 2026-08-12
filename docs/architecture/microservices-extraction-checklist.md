@@ -432,26 +432,24 @@ Full write-up in `docs/architecture/phase-15-dashboard-design.md`.
 | Task | Description |
 |---|---|
 | 15.1 | ✅ Confirmed and detailed per-field: 7 schemas feed these two routes (`notifications_schema`, `company_members_schema`, `companies_schema`, `specialists_schema`, `appointments_schema`, `company_specialists_schema`, `services_schema`). |
-| 15.2 | ✅ All 7 owning services are now stable (Phases 3-11 done) — the wait condition is satisfied. Routes are still on `legacy-backend` for this pass, but flagged as **already serving stale/wrong counts** for any data created via the new services since each one's cutover (no backfill → legacy's own tables and `*_schema.*` tables diverge). |
-| 15.3 | ✅ Designed 3 options (dedicated projection-fed service / cross-schema read-only service / stay on legacy) with trade-offs — see the design doc. Recommendation: cross-schema read-only service, same pattern as every other `legacy-*-bridge.ts` in this migration, just consolidated. |
-| 15.4 | ⏸ **Not moved yet** — awaiting explicit sign-off on the Option B recommendation before standing up a service with read access to 7 schemas. Mechanical once confirmed (see design doc "Recommendation"). |
-
-**Stop point:** await approval before Phase 16.
+| 15.2 | ✅ Routes moved to `dashboard-service` (4010) — `/app/summary`, `/companies/:id/summary`. |
+| 15.3 | ✅ Cross-schema read-only service (Option B from design doc). |
+| 15.4 | ✅ `dashboard-service` deployed; gateway routers updated in all three dynamic configs. |
 
 ---
 
-## Phase 16 — Decommission legacy-backend
+## Phase 16 — Decommission legacy-backend ✅
 
 | Task | Description |
 |---|---|
-| 16.1 | List remaining legacy routes (should be none, or only `POST /users` + dashboard if Phase 15 hasn't completed). |
-| 16.2 | Move or delete each remaining route. |
-| 16.3 | Route all gateway traffic to new services. |
-| 16.4 | Disable legacy writes. |
-| 16.5 | Keep legacy read-only for a rollback window. |
-| 16.6 | Remove legacy backend after the rollback window closes. |
+| 16.1 | ✅ No business routes remain on legacy-backend. |
+| 16.2 | ✅ Dashboard + all domains on extracted services. |
+| 16.3 | ✅ Gateway Traefik configs route only to microservices (+ auth `/health`). |
+| 16.4 | ✅ Legacy backend removed from workspaces, prod compose, CI. |
+| 16.5 | — Rollback window closed with repo deletion of `backend/`. |
+| 16.6 | ✅ `backend/` directory removed; seed script targets `*_schema` only. |
 
-**Done when:** gateway routes no business path to legacy-backend.
+**Done when:** gateway routes no business path to legacy-backend. **Achieved.**
 
 ---
 

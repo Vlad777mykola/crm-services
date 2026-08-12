@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Standalone seed script - fills the main database with realistic fake data covering every status/enum value across every table, plus a fixed set of test login credentials. Talks to Postgres directly over `pg`, not through the backend's TypeORM setup, so it has no dependency on the backend workspace and can run against any environment's DATABASE_URL.",
+  "description": "Standalone seed script — fills microservice Postgres schemas with realistic fake data and fixed test login credentials. Uses `pg` directly; no backend dependency.",
   "scripts": {
     "seed": "tsx src/index.ts",
     "seed:reset": "tsx src/index.ts --reset",

@@ -1,109 +1,65 @@
 # fill_dump_db
 
-Seeds the main database (`backend`'s Postgres - the same one
-`docker/dev/compose.infra.yml` provisions) with realistic fake data that exercises
-every status/enum value on every table, plus a fixed set of test accounts you can
-log in with immediately.
+Seeds the main Postgres database (`docker/dev/compose.infra.yml` provisions the
+same `crm` database microservices use) with realistic fake data covering every
+status/enum value, plus fixed test accounts you can log in with immediately.
 
-Talks to Postgres directly over `pg` - it does **not** go through the backend's
-TypeORM setup or its `@/` path aliases, so it has no dependency on the backend
-workspace and will run against any environment's `DATABASE_URL` (local, CI, a
-throwaway container, etc).
+Talks to Postgres directly over `pg` — no dependency on any removed legacy
+backend. Creates microservice schemas if they do not exist, then inserts rows
+into `auth_schema`, `users_schema`, `companies_schema`, and the other
+`*_schema` tables services read at runtime.
 
 ## Setup (first time only)
 
 ```bash
 cd scripts/fill_dump_db
 yarn install
-cp .env.example .env   # defaults already match compose.infra.yml's local Postgres
+cp .env.example .env   # defaults match compose.infra.yml local Postgres
 ```
 
 ## Usage
 
-Make sure Postgres is running (`yarn dev:infra` from the repo root, or
-`docker compose -f docker/dev/compose.infra.yml up`).
+Make sure Postgres is running (`yarn dev:infra` from the repo root).
 
-**Microservices-only loop** (frontend + `companies-service`, no legacy backend):
+**Companies only** (quick `/companies/public` smoke test):
 
 ```bash
 yarn seed:companies        # 2 published companies in companies_schema
-yarn seed:companies:reset  # wipe + re-insert those 2 rows
+yarn seed:companies:reset  # wipe + re-insert
 ```
 
-`GET /companies/public` reads `companies_schema.companies` — not legacy
-`public.companies`. Use `seed:companies` when testing the extracted
-companies-service.
-
-**Full legacy + microservice mirror** (every table, test login accounts):
-
-Legacy tables must exist first (`yarn workspace @crm/backend migration:run`, or
-start legacy-backend once with `NODE_ENV=development` so TypeORM `synchronize`
-creates them). This script only inserts rows.
+**Full microservice seed** (every table, test login accounts):
 
 ```bash
-yarn seed          # insert fake data (fails if it collides with existing rows, e.g. same email)
-yarn seed:reset    # wipe every table this script touches, then insert fresh fake data
+yarn seed          # insert (fails on duplicate email/slug)
+yarn seed:reset    # truncate seeded tables, then insert fresh data
 ```
 
 `--reset` runs `TRUNCATE ... RESTART IDENTITY CASCADE` on every table listed in
-`src/reset.ts` first (legacy `public.*` plus `companies_schema.*`). **Never point
-this at a database you care about** - it deletes everything in those tables, no
-confirmation prompt.
+`src/reset.ts`. **Never point this at a database you care about.**
 
 ## Test accounts
 
-Every account below uses the same password:
-
-```
-Passw0rd!123
-```
-
-| Email | Role / company |
-|---|---|
-| `owner.dental@example.com` | Owner - Bright Smile Dental (published company) |
-| `manager.dental@example.com` | Manager - Bright Smile Dental |
-| `owner.beauty@example.com` | Owner - Glow Beauty Studio (published, remote-supported company) |
-| `member.beauty.removed@example.com` | Former manager (membership removed) - Glow Beauty Studio |
-| `owner.fitness@example.com` | Owner - Fresh Start Fitness (draft company, not published yet) |
-| `owner.spa@example.com` | Owner - Old Town Spa (suspended company) |
-| `specialist.olena@example.com` | Specialist - published profile, active at Bright Smile Dental |
-| `specialist.ihor@example.com` | Specialist - published profile; pending request to Bright Smile Dental, rejected by Old Town Spa |
-| `specialist.nina@example.com` | Specialist - published profile, active at Glow Beauty Studio |
-| `specialist.pavlo@example.com` | Specialist - draft profile (not published); cancelled own request to Fresh Start Fitness |
-| `specialist.kate@example.com` | Specialist - suspended profile; paused at Glow Beauty Studio, removed from Bright Smile Dental |
-| `client.andriy@example.com` | Client - pending, cancelled, and completed-but-unreviewed appointments |
-| `client.iryna@example.com` | Client - approved appointment + a completed & reviewed appointment |
-| `client.taras@example.com` | Client - rejected appointment + a completed & reviewed appointment |
-| `client.disabled@example.com` | Client - account status is `disabled`; login must be rejected (403) |
-
-This same table is also the single source of truth in code - see
-[`src/data/credentials.ts`](src/data/credentials.ts) - and gets reprinted to your
-terminal every time you run `yarn seed`.
+Every account uses password `Passw0rd!123` — see `src/data/credentials.ts` and
+the table printed after `yarn seed`.
 
 ## What gets created
 
-Everything below is wired together with real foreign keys (companies → members →
-specialists → services → appointments → reviews/notifications), so browsing any of the
-accounts above through the frontend hits real, connected data instead of empty states.
+Data is wired with real foreign keys across microservice schemas so browsing via
+the frontend hits connected data (companies → members → specialists → services →
+appointments → reviews/notifications).
 
-| Table | Rows | Covers |
-|---|---|---|
-| `users` / `auth_identities` | 15 | `active` + `disabled` user status |
-| `companies` | 4 | `draft`, `published` (x2, one remote-supported), `suspended` |
-| `companies_schema.companies` | 4 (full seed) or 2 (`seed:companies`) | same rows mirrored for **companies-service**; 2 published appear on `/companies/public` |
-| `companies_schema.company_status_history` | 2 | draft→published + published→suspended |
-| `company_members` | 6 | `owner` + `manager` roles; `active` + `removed` status |
-| `specialist_profiles` | 5 | `draft`, `published` (x3), `suspended` |
-| `company_specialist_requests` | 7 | `pending`, `accepted` (x4), `rejected`, `cancelled` |
-| `company_specialists` | 4 | `active` (x2), `paused`, `removed` |
-| `services` | 7 | `draft` (x2), `published` (x4), `suspended` |
-| `service_specialists` | 4 | links published services to their active specialist |
-| `appointments` | 7 | `pending`, `approved`, `rejected`, `cancelled`, `completed` (x3: 2 reviewed, 1 not) |
-| `status_history_entries` | 11 | all 4 `AuditEntityType` values (`appointment`, `company`, `service`, `specialist_profile`) |
-| `reviews` | 2 | one 5-star, one 4-star, each tied to a completed appointment |
-| `notifications` | 7 | all 7 `NotificationType` values, mix of read/unread |
-| `email_logs` | 4 | simulated sends matching a few of the notifications above |
+| Schema / table | Notes |
+|---|---|
+| `auth_schema.auth_identities` | password logins; `id` is JWT `sub` |
+| `users_schema.users` + `user_profiles` | same ids as auth identities |
+| `companies_schema.companies` | draft, published (×2), suspended |
+| `company_members_schema.company_members` | owner/manager; active + removed |
+| `specialists_schema.specialist_profiles` | draft, published, suspended |
+| `company_specialists_schema.*` | requests + active relationships |
+| `services_schema.*` | services, assignments, status history |
+| `appointments_schema.*` | all appointment statuses |
+| `reviews_schema.reviews` | two completed appointments reviewed |
+| `notifications_schema.*` | all notification types + sample email logs |
 
-Not seeded: `auth_sessions` (created by actually logging in), `outbox_events` /
-`migrations` (internal bookkeeping with no read path - seeding fake rows there would
-just confuse `services/outbox-publisher`).
+Not seeded: `auth_sessions` (created by logging in), `outbox_events` (internal).

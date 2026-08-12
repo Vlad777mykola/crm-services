@@ -20,12 +20,12 @@ export function HealthPage() {
   });
 
   return (
-    <Card title="Backend Health" style={{ maxWidth: 480, margin: '2rem auto' }}>
+    <Card title="API Health" style={{ maxWidth: 480, margin: '2rem auto' }}>
       {isLoading && <Spin />}
       {isError && (
         <Alert
           type="error"
-          message="Failed to reach backend"
+          message="Failed to reach API"
           description={error instanceof Error ? error.message : 'Unknown error'}
         />
       )}
