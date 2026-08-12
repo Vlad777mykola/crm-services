@@ -265,7 +265,9 @@ for Phase 9 (`/companies/:id/appointments*`, `/appointments/me`, `/appointments/
 [`docs/architecture/smoke-checklists/phase-10-reviews-service.md`](../../docs/architecture/smoke-checklists/phase-10-reviews-service.md)
 for Phase 10 (`/appointments/:id/review`, `/companies/:id/reviews`, `/services/:id/reviews`, `/specialists/:id/reviews`), and
 [`docs/architecture/smoke-checklists/phase-11-notifications-service.md`](../../docs/architecture/smoke-checklists/phase-11-notifications-service.md)
-for Phase 11 (`/notifications/me*`).
+for Phase 11 (`/notifications/me*`), and
+[`docs/architecture/smoke-checklists/phase-12-backend-projection-retirement.md`](../../docs/architecture/smoke-checklists/phase-12-backend-projection-retirement.md)
+for Phase 12 (backend-projection-service retirement).
 
 ## Stop / clean up
 

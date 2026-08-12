@@ -387,16 +387,18 @@ register -> login -> create company -> create specialist profile
 
 ---
 
-## Phase 13 — Observability baseline
+## Phase 13 — Observability baseline ✅ Done
+
+Full audit + fixes in `docs/architecture/observability-baseline.md`.
 
 | Task | Description |
 |---|---|
-| 13.1 | Every service reads `X-Request-Id` from the gateway. |
-| 13.2 | Every service writes structured (JSON) logs. |
-| 13.3 | Every event carries `correlationId` (envelope already has the field — ensure it's populated, not left blank). |
-| 13.4 | `metrics-service` counts events per type (already observes RabbitMQ traffic — confirm per-type counters exist). |
-| 13.5 | Every service has `/health/live` and `/health/ready`. |
-| 13.6 | Document basic alerts: service down, queue lag, DB connection failure. |
+| 13.1 | ✅ Confirmed — every HTTP-facing service reads/echoes `X-Request-Id` via its `request-logger.ts`. |
+| 13.2 | ✅ Confirmed for Node services (pino); **fixed a gap** — `ai-service` was using plain `print()`, now has a structured JSON `logger.py`. |
+| 13.3 | ✅ Populated (never blank — `outbox-publisher` assigns `randomUUID()`), but **not yet tied to the originating request** — documented as a tracked follow-up, not fixed (would need a schema change to every service's `outbox_events`). |
+| 13.4 | ✅ Confirmed — `metrics-service` already exposes `rabbitmq_messages_consumed_by_type_total`. |
+| 13.5 | ✅ Confirmed — every service (including `metrics-service`, `outbox-publisher`, `ai-service`) has both endpoints. |
+| 13.6 | ✅ Documented — see "Basic alerts" table in `observability-baseline.md`. Not wired to a paging tool yet (none provisioned). |
 
 No new tests. Can be pulled earlier (right after Phase 1) if debugging extracted services becomes difficult without it.
 

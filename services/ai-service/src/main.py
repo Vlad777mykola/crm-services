@@ -23,7 +23,6 @@ from __future__ import annotations
 
 import json
 import signal
-import sys
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Callable
@@ -32,6 +31,7 @@ import pika
 import psycopg2.extensions
 
 import config
+import logger
 from db import repository, schema
 from db.pool import get_connection
 from handlers import appointment_requested, review_received
@@ -84,7 +84,7 @@ def make_on_message(conn: psycopg2.extensions.connection, channel: "pika.adapter
             data = envelope.get("data", {}) or {}
 
             if event_id and not repository.mark_processed(conn, event_id, config.CONSUMER_NAME):
-                print(f"[ai-service] already processed '{event_id}' - skipping")
+                logger.info("already processed - skipping", event_id=event_id)
                 ch.basic_ack(delivery_tag=method.delivery_tag)
                 return
 
@@ -95,11 +95,11 @@ def make_on_message(conn: psycopg2.extensions.connection, channel: "pika.adapter
             elif event_type.startswith("appointment.") and data.get("companyId"):
                 repository.increment_event_count(conn, event_type, data["companyId"])
             else:
-                print(f"[ai-service] no handler for '{event_type}' - ignoring")
+                logger.info("no handler for this event type - ignoring", event_type=event_type)
 
             ch.basic_ack(delivery_tag=method.delivery_tag)
         except Exception as exc:  # noqa: BLE001 - log and dead-letter rather than crash the consume loop
-            print(f"[ai-service] failed to process message: {exc}", file=sys.stderr)
+            logger.error("failed to process message - routing to dead-letter queue", err=str(exc))
             ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 
     return on_message
@@ -118,16 +118,16 @@ def main() -> None:
     http_server = ThreadingHTTPServer(("0.0.0.0", config.HEALTH_PORT), make_health_handler(conn, lambda: channel))
     http_thread = threading.Thread(target=http_server.serve_forever, daemon=True)
     http_thread.start()
-    print(f"[ai-service] health server listening on :{config.HEALTH_PORT} (/health/live, /health/ready)")
+    logger.info("health server listening", port=config.HEALTH_PORT, routes=["/health/live", "/health/ready"])
 
     def shutdown(*_args: Any) -> None:
-        print("\n[ai-service] shutting down...")
+        logger.info("received shutdown signal")
         channel.stop_consuming()
 
     signal.signal(signal.SIGINT, shutdown)
     signal.signal(signal.SIGTERM, shutdown)
 
-    print(f"[ai-service] listening on '{config.QUEUE_NAME}' bound to 'appointment.*' + 'review.received' (Ctrl+C to stop)")
+    logger.info("listening for events", queue=config.QUEUE_NAME, bindings=["appointment.*", "review.received"])
     try:
         channel.start_consuming()
     finally:

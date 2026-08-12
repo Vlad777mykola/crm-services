@@ -12,6 +12,7 @@ from typing import Any
 
 import psycopg2.extensions
 
+import logger
 import rabbitmq.publisher as publisher
 from db import repository
 
@@ -28,11 +29,16 @@ def handle(conn: psycopg2.extensions.connection, channel: Any, data: dict[str, A
     appointment_id = data.get("appointmentId")
     company_id = data.get("companyId")
     if not appointment_id or not company_id:
-        print("[ai-service] ignoring appointment.requested - missing appointmentId/companyId")
+        logger.warn("ignoring appointment.requested - missing appointmentId/companyId")
         return
 
     repository.increment_event_count(conn, "appointment.requested", company_id)
     summary, confidence = _score(data)
     recommendation_id = repository.create_recommendation(conn, appointment_id, company_id, summary, confidence)
     publisher.publish_recommendation_created(channel, recommendation_id, appointment_id, company_id, summary, confidence)
-    print(f"[ai-service] recommendation={recommendation_id} appointment={appointment_id} confidence={confidence}")
+    logger.info(
+        "published ai.appointment_recommendation_created",
+        recommendation_id=recommendation_id,
+        appointment_id=appointment_id,
+        confidence=confidence,
+    )

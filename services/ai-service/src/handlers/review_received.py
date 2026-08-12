@@ -8,6 +8,7 @@ from typing import Any
 
 import psycopg2.extensions
 
+import logger
 import rabbitmq.publisher as publisher
 from db import repository
 
@@ -16,10 +17,15 @@ def handle(conn: psycopg2.extensions.connection, channel: Any, data: dict[str, A
     company_id = data.get("companyId")
     rating = data.get("rating")
     if not company_id or not isinstance(rating, (int, float)):
-        print("[ai-service] ignoring review.received - missing companyId/rating")
+        logger.warn("ignoring review.received - missing companyId/rating")
         return
 
     repository.increment_event_count(conn, "review.received", company_id)
     review_count, average_rating = repository.record_daily_review(conn, company_id, rating)
     publisher.publish_rating_updated(channel, company_id, average_rating, review_count)
-    print(f"[ai-service] company={company_id} reviews={review_count} avg_rating={average_rating}")
+    logger.info(
+        "published analytics.company_rating_updated",
+        company_id=company_id,
+        review_count=review_count,
+        average_rating=average_rating,
+    )
