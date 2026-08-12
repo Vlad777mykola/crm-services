@@ -61,9 +61,15 @@ applies to `services/companies-service/.env.production`'s `JWT_ACCESS_SECRET`
 (Phase 6), `services/company-specialists-service/.env.production`'s
 `JWT_ACCESS_SECRET` (Phase 7), `services/services-catalog-service/.env.production`'s
 `JWT_ACCESS_SECRET` (Phase 8), `services/appointments-service/.env.production`'s
-`JWT_ACCESS_SECRET` (Phase 9), and `services/reviews-service/.env.production`'s
-`JWT_ACCESS_SECRET` (Phase 10) — every service that verifies tokens must share
+`JWT_ACCESS_SECRET` (Phase 9), `services/reviews-service/.env.production`'s
+`JWT_ACCESS_SECRET` (Phase 10), and `services/notifications-service/.env.production`'s
+`JWT_ACCESS_SECRET` (Phase 11) — every service that verifies tokens must share
 this value.
+
+`backend/.env.production`'s `IN_PROCESS_NOTIFICATIONS_ENABLED` must be `false`
+since Phase 11 — notifications-service's HTTP + consumer fully replace
+legacy's in-process subscriber now, so leaving it `true` creates duplicate
+notifications/emails.
 
 `services/outbox-publisher/.env.production.companies` is the same pattern as
 `.env.production.auth`, pointed at `companies_schema` (`?options=-c%20search_path%3Dcompanies_schema`)

@@ -165,10 +165,10 @@ all four routes above** (including the specialist-facing `GET /specialists/me/se
 
 | Method | Path | Module | Handler | Target service | Phase | Status |
 |---|---|---|---|---|---|---|
-| POST | `/appointments/:appointmentId/review` | reviews | `createReview()` | reviews-service | 10 | legacy |
-| GET | `/companies/:companyId/reviews` | reviews | `listCompanyReviews()` | reviews-service | 10 | legacy |
-| GET | `/services/:serviceId/reviews` | reviews | `listServiceReviews()` | reviews-service | 10 | legacy |
-| GET | `/specialists/:specialistId/reviews` | reviews | `listSpecialistReviews()` | reviews-service | 10 | legacy |
+| POST | `/appointments/:appointmentId/review` | reviews | `createReview()` | **reviews-service** | 10 | **reviews-service** |
+| GET | `/companies/:companyId/reviews` | reviews | `listCompanyReviews()` | **reviews-service** | 10 | **reviews-service** |
+| GET | `/services/:serviceId/reviews` | reviews | `listServiceReviews()` | **reviews-service** | 10 | **reviews-service** |
+| GET | `/specialists/:specialistId/reviews` | reviews | `listSpecialistReviews()` | **reviews-service** | 10 | **reviews-service** |
 
 Note: reviews routes are scattered across three different path prefixes
 (`/appointments/*`, `/companies/*`, `/services/*`, `/specialists/*`). Gateway ordered
@@ -179,15 +179,15 @@ do not attempt a single `/reviews/*` prefix, it would match nothing real.
 
 | Method | Path | Module | Handler | Target service | Phase | Status |
 |---|---|---|---|---|---|---|
-| GET | `/notifications/me/unread-count` | notifications | `countUnreadNotifications()` | notifications-service | 11 | legacy (consumer-only today) |
-| POST | `/notifications/me/read-all` | notifications | `markAllNotificationsRead()` | notifications-service | 11 | legacy |
-| GET | `/notifications/me` | notifications | `listMyNotifications()` | notifications-service | 11 | legacy |
-| POST | `/notifications/me/:notificationId/read` | notifications | `markNotificationRead()` | notifications-service | 11 | legacy |
+| GET | `/notifications/me/unread-count` | notifications | `countUnreadNotifications()` | **notifications-service** | 11 | **notifications-service** |
+| POST | `/notifications/me/read-all` | notifications | `markAllNotificationsRead()` | **notifications-service** | 11 | **notifications-service** |
+| GET | `/notifications/me` | notifications | `listMyNotifications()` | **notifications-service** | 11 | **notifications-service** |
+| POST | `/notifications/me/:notificationId/read` | notifications | `markNotificationRead()` | **notifications-service** | 11 | **notifications-service** |
 
-**`notifications-service` currently has no HTTP layer at all** — it is a RabbitMQ
-consumer that writes to the main DB. All four routes above are served exclusively by
-`backend`. Building the HTTP API in `notifications-service` (Task 11.1) must happen
-**before** any gateway routing of `/notifications/*` to it.
+`notifications-service` now has an HTTP layer (Task 11.1) alongside its
+existing RabbitMQ consumer role; `notifications`/`email_logs` moved into
+`notifications_schema` (Task 11.2); `backend`'s `IN_PROCESS_NOTIFICATIONS_ENABLED`
+is now `false` (Task 11.3) so notifications/emails aren't created twice.
 
 ## Dashboard
 

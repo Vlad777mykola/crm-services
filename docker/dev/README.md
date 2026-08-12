@@ -177,7 +177,12 @@ cp services/reviews-service/.env.example services/reviews-service/.env
 `services/auth-service/.env`'s `JWT_ACCESS_SECRET` must match
 `backend/.env`'s exactly (both default to `dev-access-secret-change-me`, so
 this "just works" with the example files as-is) - see Phase 2 Task 2.6 in
-`docs/architecture/microservices-extraction-checklist.md`.
+`docs/architecture/microservices-extraction-checklist.md`. Since Phase 11,
+`services/notifications-service/.env`'s `JWT_ACCESS_SECRET` needs the same
+value too (it now verifies tokens for its new HTTP API), and `backend/.env`'s
+`IN_PROCESS_NOTIFICATIONS_ENABLED` should be `false` (default in
+`backend/.env.example` as of this phase) so notifications-service's consumer
+is the only thing creating notifications/emails.
 
 All Postgres/RabbitMQ credentials in each `.env.example` already match what
 `compose.infra.yml` provisions, so no further edits are needed for local dev.
@@ -253,7 +258,9 @@ for Phase 8 (`/companies/:id/services*`, `/services/*`, `/specialists/me/service
 [`docs/architecture/smoke-checklists/phase-9-appointments-service.md`](../../docs/architecture/smoke-checklists/phase-9-appointments-service.md)
 for Phase 9 (`/companies/:id/appointments*`, `/appointments/me`, `/appointments/:id/status-history`, `/appointments/:id/cancel`), and
 [`docs/architecture/smoke-checklists/phase-10-reviews-service.md`](../../docs/architecture/smoke-checklists/phase-10-reviews-service.md)
-for Phase 10 (`/appointments/:id/review`, `/companies/:id/reviews`, `/services/:id/reviews`, `/specialists/:id/reviews`).
+for Phase 10 (`/appointments/:id/review`, `/companies/:id/reviews`, `/services/:id/reviews`, `/specialists/:id/reviews`), and
+[`docs/architecture/smoke-checklists/phase-11-notifications-service.md`](../../docs/architecture/smoke-checklists/phase-11-notifications-service.md)
+for Phase 11 (`/notifications/me*`).
 
 ## Stop / clean up
 
@@ -286,7 +293,7 @@ Every deploy unit exposes `GET /health/live` (process alive) and `GET /health/re
 |---|---|---|
 | `backend` | 4000 | `/health`, `/health/live`, `/health/ready` |
 | `outbox-publisher` | 4500 | `/health/live`, `/health/ready` |
-| `notifications-service` | 4300 | `/health/live`, `/health/ready` |
+| `notifications-service` | 4300 | `/health/live`, `/health/ready`, `/notifications/me*` |
 | `metrics-service` | 4100 | `/metrics`, `/health/live`, `/health/ready` |
 | `backend-projection-service` | 4400 | `/health/live`, `/health/ready` |
 | `ai-service` | 4200 | `/health/live`, `/health/ready` |

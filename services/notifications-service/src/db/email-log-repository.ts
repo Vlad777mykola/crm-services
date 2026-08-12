@@ -16,7 +16,7 @@ export class EmailLogRepository {
 
   async record(input: EmailLogInput): Promise<void> {
     await this.pool.query(
-      `INSERT INTO "email_logs" ("toEmail", "subject", "body", "eventType", "eventId")
+      `INSERT INTO notifications_schema.email_logs ("toEmail", "subject", "body", "eventType", "eventId")
        VALUES ($1, $2, $3, $4, $5)`,
       [input.toEmail, input.subject, input.body, input.eventType, input.eventId],
     );

@@ -207,10 +207,10 @@ http:
       entryPoints: [web]
       priority: 10
 
-    # ---- Notifications ----
-    legacy-notifications:
+    # ---- Notifications (Phase 11: notifications-service HTTP API) ----
+    notifications-service:
       rule: "PathPrefix(`/notifications`)"
-      service: legacy-backend
+      service: notifications-service
       entryPoints: [web]
       priority: 10
 
@@ -271,3 +271,8 @@ http:
       loadBalancer:
         servers:
           - url: "http://reviews-service:4009"
+
+    notifications-service:
+      loadBalancer:
+        servers:
+          - url: "http://notifications-service:4300"

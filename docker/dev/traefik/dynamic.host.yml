@@ -212,10 +212,10 @@ http:
       entryPoints: [web]
       priority: 10
 
-    # ---- Notifications (Phase 11 target: notifications-service HTTP API, if any) ----
-    legacy-notifications:
+    # ---- Notifications (Phase 11: notifications-service HTTP API) ----
+    notifications-service:
       rule: "PathPrefix(`/notifications`)"
-      service: legacy-backend
+      service: notifications-service
       entryPoints: [web]
       priority: 10
 
@@ -276,3 +276,8 @@ http:
       loadBalancer:
         servers:
           - url: "http://host.docker.internal:4009"
+
+    notifications-service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:4300"
