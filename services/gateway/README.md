@@ -2,18 +2,26 @@
 
 ## Purpose
 
-Transparent, path-preserving reverse proxy in front of legacy-backend (and, as each
-domain is extracted, in front of the new services). The frontend and all external
-clients talk only to the gateway; nothing else is public. See
-`docs/architecture/url-convention.md` for the routing/ordering rules this config
-implements.
+Traefik-based reverse proxy in front of legacy-backend (and, as each domain is
+extracted, in front of the new services). The frontend and all external clients talk
+only to the gateway; nothing else is public. See
+`docs/architecture/gateway-routing.md` for the routing/priority rules and
+`docs/architecture/url-convention.md` for the no-`/api`-prefix rule.
+
+**No custom image.** The gateway runs the official `traefik:v3.0` image directly —
+there is nothing to build in this folder. Static configuration lives in each
+compose file's `command:` block (`docker/dev/compose.gateway.yml`,
+`docker/dev/compose.legacy.yml`, `docker/prod/compose.yml`); dynamic routing rules
+live in Traefik's file provider (`docker/dev/traefik/*.yml`,
+`docker/prod/traefik/dynamic.yml`), not Docker labels — see
+`docs/architecture/gateway-routing.md` for why.
 
 ## Owned routes
 
 None — the gateway routes every path in `docs/architecture/route-inventory.md`, it
 does not own any of them. As of Phase 1, every route points at `legacy-backend`.
-Each later phase changes only the `proxy_pass` target for that domain's paths, not
-the path list itself.
+Each later phase changes only the `service=`/port labels for that domain's routers,
+not the path list or priority values.
 
 ## Owned tables / schema
 
@@ -25,43 +33,43 @@ None. The gateway is HTTP-only.
 
 ## Required environment variables
 
-None today — `nginx.conf` hardcodes the `legacy-backend:4000` upstream for Phase 1.
-Once services are extracted, new `upstream` blocks are added directly to
-`nginx.conf` (nginx does not read `.env` files; upstream hosts are Compose/Kubernetes
-service names).
+None. Traefik's static config is passed via `command:` args in each compose file;
+dynamic routing comes from the file provider (`--providers.file.filename=...`),
+not environment variables and not Docker socket access.
 
 ## Local run
 
-Requires `legacy-backend` (the existing `backend/`) running and reachable at
-`legacy-backend:4000` from wherever the gateway runs — see
-`docker/docker-compose.microservices-core.yml`, which wires the hostname correctly.
-Running nginx directly against the host-run backend (`yarn dev` on `:4000`) also
-works if you point the upstream at `host.docker.internal:4000` for local testing
-outside Compose.
+```bash
+# fast day-to-day loop - gateway only, backend on the host via `yarn dev`
+docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.gateway.yml up
+
+# or, container-parity mode - everything containerized
+docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.legacy.yml up --build
+```
+
+No Docker socket access required for either mode - see
+`docs/architecture/gateway-routing.md` for why (file provider, not Docker
+provider).
 
 ## Docker run
 
-```bash
-docker build -f services/gateway/Dockerfile -t crm-gateway services/gateway
-docker run -p 8080:8080 --network crm-services_default crm-gateway
-```
-
-Prefer `docker compose -f docker/docker-compose.microservices-core.yml up` — it wires
-the network and the `legacy-backend` service together.
+Not applicable as a standalone build — see "Local run" above. The image is pulled,
+not built.
 
 ## Health endpoints
 
-The gateway itself has no `/health/live` or `/health/ready` — health checks are
-per-backend (`GET /health`, `/health/live`, `/health/ready` all proxy through to
-whichever service currently owns that path, per `nginx.conf`). Nginx's own liveness
-can be checked with `docker inspect` or a raw TCP check on `:8080` if needed later.
+The gateway itself has no `/health/live`/`/health/ready` of its own — health checks
+are per-backend (`GET /health`, `/health/live`, `/health/ready` all route through to
+whichever service currently owns that path). The Traefik dashboard at `:8081` (local
+dev only, see `gateway-routing.md`) shows live router/service status if needed.
 
 ## Current migration status
 
-**Phase 1.** Every route proxies to `legacy-backend:4000`. No service extraction has
-happened yet — this phase only inserts the proxy hop and adds `X-Request-Id`
-propagation + centralizes where routing rules live going forward.
+**Phase 1.** Every route routes to `legacy-backend:4000` via Traefik, using explicit
+per-router `priority` values (not rule order) so `/companies/*` and `/specialists/*`
+sub-paths already resolve correctly ahead of their generic fallbacks — see
+`docker/dev/traefik/` and `docs/architecture/gateway-routing.md`.
 
-Rollback: there is nothing to roll back to yet — removing the gateway entirely and
-pointing the frontend back at `legacy-backend:4000` directly is the "undo" for this
-phase, since no route has been reassigned to a new service.
+Rollback: point `VITE_API_URL` back at `http://localhost:4000` to bypass the gateway
+entirely — no route has been reassigned to a new service yet, so there is nothing
+else to undo.

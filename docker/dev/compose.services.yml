@@ -1,0 +1,116 @@
+# Local dev app/worker services, containerized. Everything here is optional -
+# the recommended day-to-day loop is `yarn dev` / `python src/main.py` per
+# service instead (see docker/dev/README.md); use this file when you
+# specifically want a service running in Docker (e.g. to leave it running in
+# the background while you focus on a different one).
+#
+# Combine with compose.infra.yml:
+#   docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.services.yml \
+#     --profile events up outbox-publisher
+#   docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.services.yml \
+#     --profile events --profile node-workers up
+#   docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.services.yml \
+#     --profile events --profile python-workers up ai-service
+
+services:
+  # Publishes the backend's own outbox_events to RabbitMQ. The backend API
+  # itself never joins this profile - it only ever writes rows into its own
+  # outbox_events table (see backend/src/infrastructure/outbox).
+  outbox-publisher:
+    profiles: ['events']
+    build:
+      context: ../../services/outbox-publisher
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/outbox-publisher/.env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm
+      RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  # Consumes domain.events + analytics.events, writes emails (Postgres
+  # `email_logs`) and in-app notifications (`notifications`). Logical owner
+  # of both tables during the MVP phase - see docs/architecture/service-ownership.md.
+  notifications-service:
+    profiles: ['node-workers']
+    build:
+      context: ../../services/notifications-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/notifications-service/.env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm
+      RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672
+    ports:
+      - '4300:4300'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # No Postgres dependency at all - watches every message on both exchanges
+  # and serves counts/latency at :4100/metrics (Prometheus text) and
+  # :4100/health (JSON). Has a like-for-like Python sibling in services/ai-service.
+  metrics-service:
+    profiles: ['node-workers']
+    build:
+      context: ../../services/metrics-service
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672
+      METRICS_PORT: '4100'
+    ports:
+      - '4100:4100'
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  # Consumes ai.* result events published by services/ai-service and writes
+  # safe, denormalized projection rows into the main database - the only
+  # service besides the backend API allowed to write to main-postgres, and
+  # only into its own projection tables (never business tables).
+  backend-projection-service:
+    profiles: ['node-workers']
+    build:
+      context: ../../services/backend-projection-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/backend-projection-service/.env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm
+      RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672
+    ports:
+      - '4400:4400'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # Python AI/analytics microservice, owns its own postgres-ai instance -
+  # never shares a database or credentials with the main backend.
+  ai-service:
+    profiles: ['python-workers']
+    build:
+      context: ../../services/ai-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/ai-service/.env
+    environment:
+      AI_DATABASE_URL: postgres://ai:ai_password@postgres-ai:5432/ai
+      RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672
+      PYTHON_METRICS_PORT: '4200'
+    ports:
+      - '4200:4200'
+    depends_on:
+      postgres-ai:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy

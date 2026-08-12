@@ -1,0 +1,64 @@
+# Phase 1 of docs/architecture/microservices-extraction-checklist.md: Traefik
+# gateway + legacy-backend, BOTH containerized - closer to the production
+# shape (docker/prod/compose.yml), useful for container-parity testing.
+# No domain service has been extracted yet - this file only adds the gateway hop.
+#
+# Gateway is Traefik (not nginx) - see docs/architecture/gateway-routing.md for why.
+#
+# Uses Traefik's FILE provider, not the Docker provider: routing rules live in
+# docker/dev/traefik/dynamic.container.yml, not in labels on legacy-backend
+# below. This avoids depending on Docker socket access entirely (the Docker
+# provider needs to talk to the Docker daemon over /var/run/docker.sock,
+# which fails on some Windows/Docker Desktop setups with "Failed to retrieve
+# information of the docker client and server host") - Traefik just proxies
+# to "http://legacy-backend:4000" over the Compose network like a normal
+# reverse proxy, no daemon access needed.
+#
+# For a lighter/faster loop where legacy-backend runs on the host via `yarn dev`
+# instead of a container, use compose.gateway.yml instead - see docker/dev/README.md.
+#
+# Run:
+#   docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.legacy.yml up --build
+#
+# Frontend then points VITE_API_URL at the gateway (http://localhost:8080) instead
+# of the backend directly (http://localhost:4000) - see
+# docs/architecture/url-convention.md.
+
+services:
+  gateway:
+    image: traefik:v3.0
+    command:
+      - '--providers.file.filename=/etc/traefik/dynamic.yml'
+      - '--providers.file.watch=true'
+      - '--entrypoints.web.address=:8080'
+      - '--entrypoints.traefik.address=:8081'
+      - '--api.dashboard=true'
+      # Dashboard is unauthenticated on the dedicated :8081 entrypoint - fine for
+      # local dev, must be removed/protected before any shared or production
+      # environment (see docs/architecture/gateway-routing.md).
+      - '--api.insecure=true'
+    ports:
+      - '8080:8080' # app traffic - frontend -> gateway -> whichever service owns the path
+      - '8081:8081' # Traefik dashboard - local dev only, never publish this in a shared environment
+    volumes:
+      - ./traefik/dynamic.container.yml:/etc/traefik/dynamic.yml:ro
+    depends_on:
+      - legacy-backend
+
+  legacy-backend:
+    build:
+      context: ../..
+      dockerfile: backend/Dockerfile
+    env_file:
+      - ../../backend/.env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm
+      REDIS_URL: redis://redis:6379
+    ports:
+      - '4000:4000' # kept for local debugging - direct calls bypass the gateway
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy

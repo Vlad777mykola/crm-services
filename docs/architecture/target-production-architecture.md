@@ -16,10 +16,13 @@ crm-services/
 │   ├── backend-projection-service/   # consumes ai.* events, writes safe projections to main DB
 │   └── ai-service/                   # Python AI/analytics microservice, owns postgres-ai
 ├── docker/
-│   ├── docker-compose.yml            # core: postgres, redis, backend
-│   ├── docker-compose.events.yml     # rabbitmq + outbox-publisher (profile: events)
-│   ├── docker-compose.workers.yml    # node worker services (profile: node-workers)
-│   └── docker-compose.ai.yml         # postgres-ai + ai-service (profile: python-workers)
+│   ├── dev/                          # local development - see docker/dev/README.md
+│   │   ├── compose.infra.yml         # postgres, redis, rabbitmq (events), postgres-ai (python-workers)
+│   │   ├── compose.services.yml      # app/worker services, containerized (optional - yarn dev is the default)
+│   │   ├── compose.gateway.yml       # Traefik only, routes to host.docker.internal
+│   │   └── compose.legacy.yml        # Traefik + containerized legacy-backend (container-parity mode)
+│   └── prod/                         # interim production shape, before Kubernetes - see docker/prod/README.md
+│       └── compose.yml               # every real deploy unit as a container, gateway is the only public port
 └── docs/architecture/                # this folder
 ```
 
@@ -74,26 +77,29 @@ flowchart LR
 
 ## Local Compose modes
 
+See `docker/dev/README.md` for the full breakdown. In short:
+
 ```bash
-# Core only — no events, no workers
-docker compose -f docker/docker-compose.yml up
+# Infra + gateway, app services on the host via `yarn dev` (recommended day-to-day)
+docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.gateway.yml up
 
-# + RabbitMQ + outbox-publisher
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.events.yml --profile events up
-
-# + Node worker services
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.events.yml -f docker/docker-compose.workers.yml \
-  --profile events --profile node-workers up
-
-# + Python AI service (own Postgres)
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.events.yml -f docker/docker-compose.ai.yml \
+# + RabbitMQ + postgres-ai, if you need events/AI running too
+docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.gateway.yml \
   --profile events --profile python-workers up
+
+# Everything containerized instead (container-parity testing)
+docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.legacy.yml \
+  -f docker/dev/compose.services.yml --profile events --profile node-workers --profile python-workers up --build
 ```
 
 ## Production deployment matrix
 
+Interim shape (`docker/prod/compose.yml`, see `docker/prod/README.md`) before the
+move to Kubernetes/AWS EKS:
+
 | Deploy unit | Artifact | Command | Database | RabbitMQ role |
 |---|---|---|---|---|
+| gateway | `traefik:v3.0` (no custom image) | — | none | none |
 | frontend | `frontend/dist` | static hosting (GitHub Pages, later S3+CloudFront) | none | none |
 | backend-api | `backend/Dockerfile` | `node dist/main.js` | main-postgres | none (HTTP only) |
 | outbox-publisher | `services/outbox-publisher/Dockerfile` | `node dist/main.js` | outbox_events only | publisher |

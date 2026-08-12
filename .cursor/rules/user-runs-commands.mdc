@@ -1,0 +1,38 @@
+---
+description: Never execute shell/terminal commands directly - give the user exact commands to run themselves
+alwaysApply: true
+---
+
+# The user runs all commands, not the agent
+
+This machine's sandbox is unreliable for this project (Docker Desktop/Windows
+socket access, network flakiness, corrupted caches - see the yarn/Traefik
+incidents in chat history). Do not run shell commands yourself, even with
+elevated permissions. Instead:
+
+1. Give the user the **exact, copy-pasteable command(s)** in a fenced code
+   block (`powershell` or `bash` as appropriate for their shell).
+2. Explain briefly what each command does and what output/result to expect.
+3. Ask the user to run it and paste back the output (or describe what
+   happened) before you continue.
+4. Do not call the `Shell` tool to execute app/infra commands (`yarn`,
+   `docker`, `git` push/commit-affecting commands, service start/stop, etc.)
+   on the user's behalf.
+
+## Exceptions (still fine to run yourself)
+
+- Read-only inspection that doesn't depend on a working sandbox and isn't the
+  thing being debugged: `Read`, `Grep`, `Glob`, and read-only `git status` /
+  `git diff` / `git log` (no `-i`, no mutating flags) when you need repo state
+  to write a plan or docs - not when the user is actively trying to reproduce
+  or fix a runtime/build issue themselves.
+- If the user explicitly asks you to run something yourself in a given
+  message, you may do so for that request only; this rule resumes
+  immediately after.
+
+## Why
+
+The user wants to be the one executing `docker compose`, `yarn`, and similar
+commands on their own machine so they can see real output directly, control
+timing, and avoid this sandbox's Docker/network limitations producing
+misleading results.

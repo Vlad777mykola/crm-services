@@ -1,0 +1,173 @@
+# Traefik file-provider config for docker/prod/compose.yml. Same router/rule/
+# priority set as docker/dev/traefik/dynamic.container.yml, targeting the
+# same Compose service DNS names (this stack's internal network) - only the
+# entrypoint differs (:80, not :8080/:8081; no dashboard exposed at all here).
+#
+# Extracting a domain in production = add that service below (Docker image +
+# `expose` port from service-port-registry.md) and repoint its router's
+# `service:` target here, in this file only. Keep this file's routers in sync
+# with docker/dev/traefik/dynamic.container.yml (same rule/priority, only the
+# backend host differs between dev and prod).
+
+http:
+  routers:
+    legacy-health:
+      rule: "PathPrefix(`/health`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 10
+
+    legacy-auth:
+      rule: "PathPrefix(`/auth`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 10
+
+    legacy-users:
+      rule: "PathPrefix(`/users`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 10
+
+    # ---- Companies: ordered by priority, most specific = highest number ----
+    legacy-company-members:
+      rule: "PathRegexp(`^/companies/[^/]+/members`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 100
+    legacy-company-services:
+      rule: "PathRegexp(`^/companies/[^/]+/services`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 95
+    legacy-company-appointments:
+      rule: "PathRegexp(`^/companies/[^/]+/appointments`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 90
+    legacy-company-specialist-requests-create:
+      rule: "PathRegexp(`^/companies/[^/]+/specialists/requests$`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 89
+    legacy-company-specialist-requests-list:
+      rule: "PathRegexp(`^/companies/[^/]+/specialist-requests$`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 88
+    legacy-company-specialists:
+      rule: "PathRegexp(`^/companies/[^/]+/specialists$`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 87
+    legacy-company-reviews:
+      rule: "PathRegexp(`^/companies/[^/]+/reviews$`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 80
+    legacy-company-summary:
+      rule: "PathRegexp(`^/companies/[^/]+/summary$`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 79
+    legacy-company-status-history:
+      rule: "PathRegexp(`^/companies/[^/]+/status-history$`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 78
+    legacy-companies:
+      rule: "PathPrefix(`/companies`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 10
+
+    # ---- Specialists: ordered by priority, most specific = highest number ----
+    legacy-specialist-profile-create:
+      rule: "Path(`/specialists/profile`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 100
+    legacy-specialist-status-history:
+      rule: "Path(`/specialists/me/status-history`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 99
+    legacy-specialist-me-services:
+      rule: "Path(`/specialists/me/services`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 98
+    legacy-specialist-company-requests:
+      rule: "PathRegexp(`^/specialists/me/company-requests`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 97
+    legacy-specialist-companies:
+      rule: "Path(`/specialists/me/companies`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 96
+    legacy-specialist-me:
+      rule: "Path(`/specialists/me`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 95
+    legacy-specialist-public:
+      rule: "Path(`/specialists/public`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 94
+    legacy-specialist-reviews:
+      rule: "PathRegexp(`^/specialists/[^/]+/reviews$`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 85
+    legacy-specialists:
+      rule: "PathPrefix(`/specialists`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 10
+
+    # ---- Services catalog ----
+    legacy-service-reviews:
+      rule: "PathRegexp(`^/services/[^/]+/reviews$`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 85
+    legacy-services:
+      rule: "PathPrefix(`/services`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 10
+
+    # ---- Appointments ----
+    legacy-appointment-review:
+      rule: "PathRegexp(`^/appointments/[^/]+/review$`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 85
+    legacy-appointments:
+      rule: "PathPrefix(`/appointments`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 10
+
+    # ---- Notifications ----
+    legacy-notifications:
+      rule: "PathPrefix(`/notifications`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 10
+
+    # ---- Dashboard ----
+    legacy-dashboard:
+      rule: "Path(`/app/summary`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 10
+
+  services:
+    legacy-backend:
+      loadBalancer:
+        servers:
+          - url: "http://legacy-backend:4000"

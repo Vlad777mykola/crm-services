@@ -2,7 +2,7 @@
 
 # First run
 
-1. docker compose -f docker/docker-compose.yml up (required to have docker)
+1. docker compose -f docker/dev/compose.infra.yml up (required to have docker)
 2. yarn install (crm-services, backend, frontend)
 3. yarn dev from crm-services
 
@@ -25,7 +25,7 @@ crm-services/
 │   ├── outbox-publisher/             # publishes the backend's outbox_events to RabbitMQ
 │   ├── backend-projection-service/   # consumes ai.* events, writes safe projections to main DB
 │   └── ai-service/                   # Python AI/analytics microservice, owns postgres-ai
-├── docker/                           # docker-compose.yml (core) + events/workers/ai overlays
+├── docker/                           # docker/dev (local development) + docker/prod (interim prod shape)
 ├── docs/architecture/                # current/target architecture, ownership, event model
 ├── scripts/
 │   └── fill_dump_db/                 # seeds Postgres with fake data + test login credentials
@@ -89,13 +89,15 @@ yarn openapi:check           # regenerate, then fail if anything changed (used i
 Each service under `services/` has the same `dev`/`build`/`lint`/`typecheck`/`test` scripts,
 run from that service's own folder, e.g. `cd services/notifications-service && yarn dev`.
 
-## Running everything (local vs. Docker, with/without microservices)
+## Running everything (local dev vs. gateway vs. production shape)
 
-See [`docker/README.md`](docker/README.md) for the full breakdown, but in short:
+See [`docker/README.md`](docker/README.md) for the full breakdown (`docker/dev/`
+vs. `docker/prod/` — never mix files across them), but in short:
 
-1. **Fully local** — run infra in Docker (`docker compose -f docker/docker-compose.yml -f docker/docker-compose.events.yml --profile events up postgres redis rabbitmq`), then run the app processes directly on the host (`yarn dev` for frontend + backend, `yarn dev` in each `services/*` folder, `python src/main.py` for `services/ai-service`).
-2. **Docker, core only** (the minimal deploy shape) — `docker compose -f docker/docker-compose.yml up`: Postgres, Redis, and the backend API. No RabbitMQ, no workers.
-3. **Docker, with event infrastructure and/or microservices** — layer in `docker-compose.events.yml` (`--profile events`), `docker-compose.workers.yml` (`--profile node-workers`), and/or `docker-compose.ai.yml` (`--profile python-workers`) as described in `docker/README.md`.
+1. **Fully local, no gateway** — run infra in Docker (`docker compose -f docker/dev/compose.infra.yml --profile events up postgres redis rabbitmq`), then run the app processes directly on the host (`yarn dev` for frontend + backend, `yarn dev` in each `services/*` folder, `python src/main.py` for `services/ai-service`).
+2. **Local + gateway** (recommended once you want to exercise the Traefik hop) — `docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.gateway.yml up`, then `yarn dev` on the host; point the frontend at `http://localhost:8080`.
+3. **Local, everything containerized** (container-parity testing) — `docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.legacy.yml -f docker/dev/compose.services.yml --profile events --profile node-workers --profile python-workers up --build`.
+4. **Interim production shape** (before Kubernetes/EKS) — `docker/prod/compose.yml`, see [`docker/prod/README.md`](docker/prod/README.md).
 
 ## Test data
 

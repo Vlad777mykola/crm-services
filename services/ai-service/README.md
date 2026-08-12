@@ -41,7 +41,7 @@ migration file).
 ## Running it locally
 
 Requires RabbitMQ and `postgres-ai` running (e.g.
-`docker compose -f docker/docker-compose.yml -f docker/docker-compose.events.yml -f docker/docker-compose.ai.yml --profile events --profile python-workers up rabbitmq postgres-ai`
+`docker compose -f docker/dev/compose.infra.yml --profile events --profile python-workers up rabbitmq postgres-ai`
 from the repo root) and the backend + `outbox-publisher` running so there's something to
 consume.
 
@@ -58,9 +58,9 @@ python src/main.py
 ## Running it in Docker
 
 ```bash
-docker compose -f docker/docker-compose.yml -f docker/docker-compose.events.yml -f docker/docker-compose.ai.yml \
-  --profile events --profile python-workers up
+docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.services.yml \
+  --profile events --profile python-workers up ai-service
 ```
 
-See [`docker/README.md`](../../docker/README.md) for how this combines with the Node.js
+See [`docker/dev/README.md`](../../docker/dev/README.md) for how this combines with the Node.js
 services.

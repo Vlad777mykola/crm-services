@@ -97,6 +97,15 @@ CMD ["node", "dist/main.js"]
   development or for the strangler migration itself. Track as a Phase 13
   (observability/hardening) follow-up, not a Phase 2–11 blocker.
 
+## Exception: the gateway
+
+The gateway (`services/gateway/`) does not have a Dockerfile at all — it runs the
+official `traefik:v3.0` image directly, in `docker/dev/compose.gateway.yml`,
+`docker/dev/compose.legacy.yml`, and `docker/prod/compose.yml`, with static config
+passed via `command:` args and dynamic routing via Traefik's file provider. There
+is nothing to build. See `docs/architecture/gateway-routing.md`. Every other
+service in this migration still follows the multi-stage build above.
+
 ## Done when
 
 Every new service's Dockerfile matches the template above exactly except for the

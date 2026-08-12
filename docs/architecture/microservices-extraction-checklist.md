@@ -8,6 +8,7 @@ Route-parity-first strangler extraction. Read alongside:
 - `table-ownership-matrix.md` — every table's future owner.
 - `shared-polymorphic-table-audit.md` — `status_history_entries` split plan.
 - `event-catalog.md` — implemented vs. planned events, contract-first gate.
+- `gateway-routing.md` — Traefik routing/priority rules (gateway is Traefik, not nginx).
 - `service-skeleton-standard.md` — one folder structure, middleware baseline, and README template for every new service.
 - `dockerfile-standard.md` — one multi-stage Docker build pattern for every new service.
 - `service-port-registry.md` — the only source of truth for ports; never invent one.
@@ -93,20 +94,36 @@ All of the following are already produced. Listed here for completeness/traceabi
 
 **Goal:** introduce a gateway in front of legacy-backend with zero behavior change.
 
+**Gateway is Traefik, not nginx** (revised — see `docs/architecture/gateway-routing.md`
+for why: same rule/priority model carries into Kubernetes Ingress or AWS Load
+Balancer Controller later, no separate config-file syntax to maintain).
+
+**Routing rules live in Traefik's file provider, not Docker-provider labels**
+(revised after the first real run — the Docker provider needs
+`/var/run/docker.sock` access, which failed outright on a real Windows/Docker
+Desktop setup; see `gateway-routing.md`).
+
+**`docker/` is split into `docker/dev/` and `docker/prod/`** (revised — see
+`docker/README.md`): local development never shares compose files with
+production. Three dynamic-config YAML files hold the routes, kept identical
+except for the backend host:
+`docker/dev/traefik/dynamic.container.yml`,
+`docker/dev/traefik/dynamic.host.yml`, `docker/prod/traefik/dynamic.yml`.
+
 | Task | Description |
 |---|---|
-| 1.1 | Create `services/gateway/` (nginx config first, unless Traefik requested). Route **every** path from `route-inventory.md` to legacy-backend — not just `/auth`, `/users`, `/companies`; also `/specialists`, `/services`, `/appointments`, `/notifications`, `/health*`, `/app/summary`, `/companies/:id/reviews`, `/services/:id/reviews`, `/specialists/:id/reviews`, `/appointments/:id/review`. |
-| 1.2 | Document + implement ordered routing rules per `url-convention.md` (most-specific-first under `/companies/*` and `/specialists/*`), even though every rule points at legacy-backend today — this proves the rule ordering works before any service exists to route to. |
-| 1.3 | Add `X-Request-Id` propagation at the gateway; legacy backend reads and logs it if `requestLogger.ts` supports it (extend minimally if not — no full tracing yet). |
-| 1.4 | Add `docker-compose.microservices-core.yml`: gateway + legacy-backend + postgres (+ rabbitmq only if already in use). No new services routed yet. |
+| 1.1 | `services/gateway/` has no Dockerfile — runs the official `traefik:v3.0` image directly (see `dockerfile-standard.md` exception note). Route **every** path from `route-inventory.md` to legacy-backend in all three dynamic-config files above — not just `/auth`, `/users`, `/companies`; also `/specialists`, `/services`, `/appointments`, `/notifications`, `/health*`, `/app/summary`, `/companies/:id/reviews`, `/services/:id/reviews`, `/specialists/:id/reviews`, `/appointments/:id/review`. |
+| 1.2 | Implement ordered routing via explicit Traefik `priority` values per `gateway-routing.md` (never rely on rule order or Traefik's default rule-length sort) — most-specific-first under `/companies/*` and `/specialists/*` — even though every router points at legacy-backend today. This proves the priority ordering works before any service exists to route to. |
+| 1.3 | `X-Request-Id`: Traefik has no built-in equivalent to nginx's `$request_id` (documented gap in `gateway-routing.md`). `backend/src/common/middleware/requestLogger.ts` already generates one via `genReqId` when missing and echoes it on the response — sufficient for Phase 1; full gateway-side generation is deferred to Phase 13 if needed. |
+| 1.4 | `docker/dev/`: `compose.legacy.yml` (Traefik + containerized legacy-backend, `dynamic.container.yml`) for container-parity testing, and `compose.gateway.yml` (Traefik only, `dynamic.host.yml` → `host.docker.internal`) for the fast day-to-day dev loop where legacy-backend runs via `yarn dev`. `docker/prod/`: `compose.yml` (Traefik + every real deploy unit, `expose`-only except the gateway) as an unverified scaffold for the eventual interim production shape. No new services routed yet anywhere. |
 
 **Routes affected:** all 62 (see `route-inventory.md` summary count).
 **Tables affected:** none.
 **Events affected:** none.
 **Data migration:** none.
-**Rollback:** trivial — gateway config points everything back to legacy-backend by default; this phase doesn't remove that path.
+**Rollback:** trivial — every router's `service=` label still points at `legacy-backend`; this phase doesn't remove that path.
 
-**Done when:** frontend can point `VITE_API_URL` at the gateway and every existing endpoint still works identically.
+**Done when:** frontend can point `VITE_API_URL` at the gateway and every existing endpoint still works identically. Verify with `docs/architecture/smoke-checklists/phase-1-traefik-gateway.md`.
 
 **Stop point:** await approval before Phase 2.
 

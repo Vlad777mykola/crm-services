@@ -1,15 +1,15 @@
 # Service Port Registry
 
 Single source of truth for local/dev ports, so the coding agent never invents one.
-Every new service's `EXPOSE` line, `.env.example` default, and
-`docker-compose.*.yml` port mapping must match this table.
+Every new service's `EXPOSE` line, `.env.example` default, and `docker/dev/*.yml` /
+`docker/prod/*.yml` port mapping must match this table.
 
 ## Correction from the proposed example list
 
 The initially proposed registry listed `notifications-service: 4010`. That is
 **wrong** — `notifications-service` is already deployed and running on port `4300`
 today (`services/notifications-service/Dockerfile` → `EXPOSE 4300`; also confirmed in
-`docker/docker-compose.workers.yml` → `ports: ['4300:4300']`). The table below uses
+`docker/dev/compose.services.yml` → `ports: ['4300:4300']`). The table below uses
 the real, already-running port for every service that already exists, and only
 assigns fresh ports to services that don't exist yet.
 
@@ -23,10 +23,10 @@ assigns fresh ports to services that don't exist yet.
 | notifications-service | 4300 | `services/notifications-service/Dockerfile` → `EXPOSE 4300` |
 | backend-projection-service | 4400 | `services/backend-projection-service/Dockerfile` → `EXPOSE 4400` |
 | outbox-publisher (shared, backend's outbox) | 4500 | `services/outbox-publisher/src/env.ts` → `HEALTH_PORT` default `4500` |
-| postgres | 5432 | `docker/docker-compose.yml` |
-| postgres-ai | 5433 (host) → 5432 (container) | `docker/docker-compose.ai.yml` |
-| redis | 6379 | `docker/docker-compose.yml` (reserved, unused) |
-| rabbitmq | 5672 (AMQP), 15672 (management UI) | `docker/docker-compose.events.yml` |
+| postgres | 5432 | `docker/dev/compose.infra.yml` |
+| postgres-ai | 5433 (host) → 5432 (container) | `docker/dev/compose.infra.yml` |
+| redis | 6379 | `docker/dev/compose.infra.yml` (reserved, unused) |
+| rabbitmq | 5672 (AMQP), 15672 (management UI) | `docker/dev/compose.infra.yml` |
 
 ## New — gateway (Phase 1)
 
@@ -80,10 +80,10 @@ port above.
 - Only the gateway is public. Every service port above is internal-only once
   Kubernetes/EKS is in play (Ingress fronts the gateway; services are
   ClusterIP-only).
-- Direct host port exposure (the `ports:` mappings in `docker-compose.*.yml`) is a
+- Direct host port exposure (the `ports:` mappings in `docker/dev/*.yml`) is a
   **local/dev convenience only** — it lets you curl a service directly while
-  debugging. Production Compose/Kubernetes manifests do not publish these ports to
-  the host/internet.
+  debugging. `docker/prod/compose.yml` and any future Kubernetes manifests use
+  `expose` only (no host port) for everything except the gateway.
 - If a new service is added beyond reviews-service, continue the sequence
   (`4010`, `4011`, ...) rather than reusing or renumbering existing entries.
 

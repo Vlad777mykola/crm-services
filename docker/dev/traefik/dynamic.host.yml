@@ -1,0 +1,178 @@
+# Traefik file-provider config for docker/dev/compose.gateway.yml (fast local
+# dev loop: only infra + gateway run in Docker; legacy-backend and every
+# extracted service run on the host via `yarn dev` for instant reload).
+#
+# Target is "http://host.docker.internal:4000" - Docker Desktop's special
+# DNS name for reaching the host machine from inside a container. Requires
+# legacy-backend to actually be running on the host at :4000 (`yarn dev` from
+# the repo root, or `yarn workspace @crm/backend dev`).
+#
+# This file must stay in sync with dynamic.container.yml: same routers, same
+# rules, same priorities - only the `services.*.loadBalancer.servers.url`
+# host differs (host.docker.internal:PORT here vs. <service-name>:PORT
+# there). When extracting a domain, update the matching router's `service:`
+# target and add the new host.docker.internal:PORT entry in both files.
+# See docs/architecture/gateway-routing.md.
+
+http:
+  routers:
+    legacy-health:
+      rule: "PathPrefix(`/health`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 10
+
+    legacy-auth:
+      rule: "PathPrefix(`/auth`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 10
+
+    legacy-users:
+      rule: "PathPrefix(`/users`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 10
+
+    # ---- Companies: ordered by priority, most specific = highest number ----
+    legacy-company-members: # company-members-service (Phase 5)
+      rule: "PathRegexp(`^/companies/[^/]+/members`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 100
+    legacy-company-services: # services-catalog-service (Phase 8)
+      rule: "PathRegexp(`^/companies/[^/]+/services`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 95
+    legacy-company-appointments: # appointments-service (Phase 9)
+      rule: "PathRegexp(`^/companies/[^/]+/appointments`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 90
+    legacy-company-specialist-requests-create: # company-specialists-service (Phase 7)
+      rule: "PathRegexp(`^/companies/[^/]+/specialists/requests$`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 89
+    legacy-company-specialist-requests-list: # company-specialists-service (Phase 7)
+      rule: "PathRegexp(`^/companies/[^/]+/specialist-requests$`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 88
+    legacy-company-specialists: # company-specialists-service (Phase 7)
+      rule: "PathRegexp(`^/companies/[^/]+/specialists$`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 87
+    legacy-company-reviews: # reviews-service (Phase 10)
+      rule: "PathRegexp(`^/companies/[^/]+/reviews$`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 80
+    legacy-company-summary: # dashboard / future read-api (Phase 15)
+      rule: "PathRegexp(`^/companies/[^/]+/summary$`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 79
+    legacy-company-status-history: # companies-service (Phase 4)
+      rule: "PathRegexp(`^/companies/[^/]+/status-history$`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 78
+    legacy-companies: # companies-service (Phase 4) - generic fallback (create, public, me, :id)
+      rule: "PathPrefix(`/companies`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 10
+
+    # ---- Specialists: ordered by priority, most specific = highest number ----
+    legacy-specialist-profile-create: # specialists-service (Phase 6)
+      rule: "Path(`/specialists/profile`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 100
+    legacy-specialist-status-history: # specialists-service (Phase 6)
+      rule: "Path(`/specialists/me/status-history`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 99
+    legacy-specialist-me-services: # services-catalog-service (Phase 8, Q13)
+      rule: "Path(`/specialists/me/services`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 98
+    legacy-specialist-company-requests: # company-specialists-service (Phase 7)
+      rule: "PathRegexp(`^/specialists/me/company-requests`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 97
+    legacy-specialist-companies: # company-specialists-service (Phase 7)
+      rule: "Path(`/specialists/me/companies`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 96
+    legacy-specialist-me: # specialists-service (Phase 6)
+      rule: "Path(`/specialists/me`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 95
+    legacy-specialist-public: # specialists-service (Phase 6)
+      rule: "Path(`/specialists/public`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 94
+    legacy-specialist-reviews: # reviews-service (Phase 10)
+      rule: "PathRegexp(`^/specialists/[^/]+/reviews$`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 85
+    legacy-specialists: # specialists-service (Phase 6) - generic fallback (:specialistId)
+      rule: "PathPrefix(`/specialists`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 10
+
+    # ---- Services catalog (Phase 8 target: services-catalog-service) ----
+    legacy-service-reviews: # reviews-service (Phase 10) takes priority over the generic fallback
+      rule: "PathRegexp(`^/services/[^/]+/reviews$`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 85
+    legacy-services:
+      rule: "PathPrefix(`/services`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 10
+
+    # ---- Appointments (Phase 9; review sub-path -> Phase 10) ----
+    legacy-appointment-review:
+      rule: "PathRegexp(`^/appointments/[^/]+/review$`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 85
+    legacy-appointments:
+      rule: "PathPrefix(`/appointments`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 10
+
+    # ---- Notifications (Phase 11 target: notifications-service HTTP API, if any) ----
+    legacy-notifications:
+      rule: "PathPrefix(`/notifications`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 10
+
+    # ---- Dashboard (Phase 15 decision: legacy or future read-api) ----
+    legacy-dashboard:
+      rule: "Path(`/app/summary`)"
+      service: legacy-backend
+      entryPoints: [web]
+      priority: 10
+
+  services:
+    legacy-backend:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:4000"

@@ -1,8 +1,9 @@
 # fill_dump_db
 
-Seeds the main database (`backend`'s Postgres - the same one `docker-compose.yml`
-provisions) with realistic fake data that exercises every status/enum value on every
-table, plus a fixed set of test accounts you can log in with immediately.
+Seeds the main database (`backend`'s Postgres - the same one
+`docker/dev/compose.infra.yml` provisions) with realistic fake data that exercises
+every status/enum value on every table, plus a fixed set of test accounts you can
+log in with immediately.
 
 Talks to Postgres directly over `pg` - it does **not** go through the backend's
 TypeORM setup or its `@/` path aliases, so it has no dependency on the backend
@@ -14,7 +15,7 @@ throwaway container, etc).
 ```bash
 cd scripts/fill_dump_db
 yarn install
-cp .env.example .env   # defaults already match docker-compose.yml's local Postgres
+cp .env.example .env   # defaults already match compose.infra.yml's local Postgres
 ```
 
 ## Usage

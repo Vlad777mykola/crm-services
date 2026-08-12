@@ -1,0 +1,207 @@
+# Temporary/cheap production shape - one VM running every deploy unit as a
+# container behind Traefik. Real target production is Kubernetes/AWS EKS
+# (see docs/architecture/target-production-architecture.md); this file is the
+# interim option before that migration, not a replacement for it.
+#
+# NOT YET USED/VERIFIED - this is a scaffold matching the "Production
+# deployment matrix" in target-production-architecture.md. Requires real
+# .env.production files (never commit them) before it will run. Only the
+# gateway publishes a host port; every other service uses `expose` only.
+#
+# Start (once .env.production files exist - see docker/prod/README.md):
+#   docker compose -f docker/prod/compose.yml up -d --build
+#
+# Postgres/RabbitMQ here are self-hosted containers for the cheap/interim
+# shape - swap for managed services (RDS, Amazon MQ, etc.) whenever that
+# becomes available; nothing else in this file needs to change to do that
+# beyond the connection URLs.
+
+services:
+  gateway:
+    image: traefik:v3.0
+    command:
+      - '--providers.file.filename=/etc/traefik/dynamic.yml'
+      - '--entrypoints.web.address=:80'
+    ports:
+      - '80:80' # the only port this stack publishes to the host/internet
+    volumes:
+      - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+    restart: unless-stopped
+    depends_on:
+      - legacy-backend
+
+  postgres:
+    image: postgres:16-alpine
+    env_file:
+      - .env.production
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    expose:
+      - '5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    expose:
+      - '6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    env_file:
+      - .env.production
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS}
+    expose:
+      - '5672'
+      - '15672'
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', 'check_port_connectivity']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # Dedicated Postgres for ai-service - deliberately different var names
+  # (AI_POSTGRES_*) from the main postgres above so both can be set in the
+  # same docker/prod/.env.production without colliding or sharing credentials.
+  postgres-ai:
+    image: postgres:16-alpine
+    env_file:
+      - .env.production
+    environment:
+      POSTGRES_USER: ${AI_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${AI_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${AI_POSTGRES_DB}
+    expose:
+      - '5432'
+    volumes:
+      - postgres-ai-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${AI_POSTGRES_USER}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  legacy-backend:
+    build:
+      context: ../..
+      dockerfile: backend/Dockerfile
+    env_file:
+      - ../../backend/.env.production
+    environment:
+      NODE_ENV: production
+    expose:
+      - '4000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  outbox-publisher:
+    build:
+      context: ../../services/outbox-publisher
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/outbox-publisher/.env.production
+    environment:
+      NODE_ENV: production
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  notifications-service:
+    build:
+      context: ../../services/notifications-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/notifications-service/.env.production
+    environment:
+      NODE_ENV: production
+    expose:
+      - '4300'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  metrics-service:
+    build:
+      context: ../../services/metrics-service
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      METRICS_PORT: '4100'
+    env_file:
+      - ../../services/metrics-service/.env.production
+    expose:
+      - '4100'
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  backend-projection-service:
+    build:
+      context: ../../services/backend-projection-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/backend-projection-service/.env.production
+    environment:
+      NODE_ENV: production
+    expose:
+      - '4400'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  ai-service:
+    build:
+      context: ../../services/ai-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/ai-service/.env.production
+    environment:
+      PYTHON_METRICS_PORT: '4200'
+    expose:
+      - '4200'
+    depends_on:
+      postgres-ai:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  redis-data:
+  rabbitmq-data:
+  postgres-ai-data:
