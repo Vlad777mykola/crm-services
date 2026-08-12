@@ -4,7 +4,6 @@ export const LOCAL_DEV_ENV = {
   DATABASE_URL: 'postgres://postgres:postgres@localhost:5432/crm',
   RABBITMQ_URL: 'amqp://crm:crm_local_only@localhost:5672',
   JWT_ACCESS_SECRET: 'dev-access-secret-change-me',
-  CORS_ORIGINS: 'http://localhost:5173',
 };
 
 /** @param {Record<string, string | number>} extra */

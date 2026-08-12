@@ -3,6 +3,14 @@
 Run extracted services on the **host** (`tsx watch`) while **Traefik** (in Docker)
 routes `http://localhost:8080` to `host.docker.internal:<port>` per path.
 
+## First-time setup
+
+Root `yarn install` only installs the **frontend** workspace. Each microservice has
+its own `node_modules` — run `yarn install:services` once.
+
+**CORS** is configured at the Traefik gateway only (`docker/traefik/cors/dev.middleware.yml`).
+Services do not need a `cors` package or `CORS_ORIGINS` env var.
+
 ## How it works
 
 ```text

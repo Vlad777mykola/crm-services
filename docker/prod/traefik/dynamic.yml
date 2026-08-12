@@ -9,28 +9,9 @@
 # with docker/dev/traefik/dynamic.container.yml (same rule/priority, only the
 # backend host differs between dev and prod).
 
-http:
-  middlewares:
-    cors:
-      headers:
-        accessControlAllowCredentials: true
-        accessControlAllowMethods:
-          - GET
-          - HEAD
-          - POST
-          - PATCH
-          - PUT
-          - DELETE
-          - OPTIONS
-        accessControlAllowHeaders:
-          - Content-Type
-          - Authorization
-          - X-Request-Id
-        accessControlAllowOriginList:
-          - http://localhost:5173
-        accessControlMaxAge: 86400
-        addVaryHeader: true
+# CORS: docker/traefik/cors/prod.middleware.yml (mounted by compose).
 
+http:
   routers:
     auth-service-health-root:
       rule: "Path(`/health`)"

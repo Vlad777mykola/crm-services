@@ -12,28 +12,10 @@
 # target and add the new host.docker.internal:PORT entry in both files.
 # See docs/architecture/gateway-routing.md.
 
-http:
-  middlewares:
-    cors:
-      headers:
-        accessControlAllowCredentials: true
-        accessControlAllowMethods:
-          - GET
-          - HEAD
-          - POST
-          - PATCH
-          - PUT
-          - DELETE
-          - OPTIONS
-        accessControlAllowHeaders:
-          - Content-Type
-          - Authorization
-          - X-Request-Id
-        accessControlAllowOriginList:
-          - http://localhost:5173
-        accessControlMaxAge: 86400
-        addVaryHeader: true
+# See docs/architecture/gateway-routing.md. CORS middleware lives in
+# docker/traefik/cors/dev.middleware.yml (mounted by compose.gateway.yml).
 
+http:
   routers:
     auth-service-health-root:
       rule: "Path(`/health`)"

@@ -20,13 +20,14 @@ services:
   gateway:
     image: traefik:v3.0
     command:
-      - '--providers.file.filename=/etc/traefik/dynamic.yml'
+      - '--providers.file.directory=/etc/traefik/dynamic'
       - '--entrypoints.web.address=:80'
       - '--entrypoints.web.http.middlewares=cors@file'
     ports:
       - '80:80' # the only port this stack publishes to the host/internet
     volumes:
-      - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - ../traefik/cors/prod.middleware.yml:/etc/traefik/dynamic/cors.middleware.yml:ro
+      - ./traefik/dynamic.yml:/etc/traefik/dynamic/routes.yml:ro
     restart: unless-stopped
     depends_on:
       - auth-service

@@ -1,0 +1,24 @@
+# Gateway-owned CORS for production. Edit accessControlAllowOriginList before deploy.
+# Services behind the gateway do not set CORS — only Traefik does.
+
+http:
+  middlewares:
+    cors:
+      headers:
+        accessControlAllowCredentials: true
+        accessControlAllowMethods:
+          - GET
+          - HEAD
+          - POST
+          - PATCH
+          - PUT
+          - DELETE
+          - OPTIONS
+        accessControlAllowHeaders:
+          - Content-Type
+          - Authorization
+          - X-Request-Id
+        accessControlAllowOriginList:
+          - https://your-frontend-origin.example.com
+        accessControlMaxAge: 86400
+        addVaryHeader: true

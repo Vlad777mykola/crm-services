@@ -18,7 +18,7 @@ services:
   gateway:
     image: traefik:v3.0
     command:
-      - '--providers.file.filename=/etc/traefik/dynamic.yml'
+      - '--providers.file.directory=/etc/traefik/dynamic'
       - '--providers.file.watch=true'
       - '--entrypoints.web.address=:8080'
       - '--entrypoints.web.http.middlewares=cors@file'
@@ -30,6 +30,7 @@ services:
       - '8080:8080'
       - '8081:8081'
     volumes:
-      - ./traefik/dynamic.host.yml:/etc/traefik/dynamic.yml:ro
+      - ../../traefik/cors/dev.middleware.yml:/etc/traefik/dynamic/cors.middleware.yml:ro
+      - ./traefik/dynamic.host.yml:/etc/traefik/dynamic/routes.yml:ro
     extra_hosts:
       - 'host.docker.internal:host-gateway'

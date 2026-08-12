@@ -9,10 +9,6 @@ const envSchema = z.object({
   // app, one port. Kept named HEALTH_PORT (not PORT) since every existing
   // compose/env file already references it under that name.
   HEALTH_PORT: z.coerce.number().int().positive().default(4300),
-  CORS_ORIGINS: z
-    .string()
-    .default('http://localhost:5173')
-    .transform((value) => value.split(',').map((origin) => origin.trim())),
   JWT_ACCESS_SECRET: z.string().min(1).default('dev-access-secret-change-me'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
 });

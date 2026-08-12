@@ -1,6 +1,6 @@
 import type { Pool } from 'pg';
 
-import { AppError } from '../errors/AppError.js';
+import { AppError } from '../../errors/AppError.js';
 
 export type CompanyMemberRole = 'owner' | 'manager';
 export type CompanyStatus = 'draft' | 'published' | 'suspended';

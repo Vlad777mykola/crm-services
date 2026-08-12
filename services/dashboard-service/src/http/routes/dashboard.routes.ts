@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import { z } from 'zod';
 
-import { requireAuth } from '../../http/require-auth.js';
-import type { DashboardService } from './dashboard.service.js';
+import { requireAuth } from '../require-auth.js';
+import type { DashboardService } from '../../modules/dashboard/dashboard.service.js';
 
 const companyIdParamsSchema = z.object({
   companyId: z.uuid(),

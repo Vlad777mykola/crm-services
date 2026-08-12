@@ -376,7 +376,6 @@ services:
       NODE_ENV: production
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm
       JWT_ACCESS_SECRET: dev-access-secret-change-me
-      CORS_ORIGINS: http://localhost:5173
     ports:
       - '4010:4010'
     depends_on:

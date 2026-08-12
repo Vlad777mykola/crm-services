@@ -102,16 +102,32 @@ YAML keys in a file instead of Docker labels.
 
 ## CORS (gateway-owned)
 
-Per the global checklist decision ("gateway routes + CORS"), Traefik applies a
-`cors` headers middleware on the `web` entrypoint (`--entrypoints.web.http.middlewares=cors@file`
-in every gateway compose file). The middleware is defined in each dynamic-config
-file under `http.middlewares.cors` with `accessControlAllowOriginList:
-http://localhost:5173` for local dev (match `CORS_ORIGINS` on backend/services).
+Browser CORS is handled **only by Traefik**, not by individual microservices.
+The gateway applies a `cors` headers middleware on the `web` entrypoint
+(`--entrypoints.web.http.middlewares=cors@file` in every gateway compose file).
 
-Traefik answers browser `OPTIONS` preflights directly and adds `Access-Control-*`
-headers on every response — including `502` when a routed service is not running
-on the host. Individual services still set their own CORS for direct-to-service
-local debugging (`yarn dev` against `:4003` etc. without the gateway hop).
+**Single source of truth** for allowed origins:
+
+| Environment | File |
+|---|---|
+| Local dev | `docker/traefik/cors/dev.middleware.yml` |
+| Production | `docker/traefik/cors/prod.middleware.yml` |
+
+Compose mounts that file into Traefik's file-provider directory together with the
+route definitions (`dynamic.host.yml`, `dynamic.container.yml`, or prod
+`dynamic.yml`). Edit the dev file to allow more localhost origins; edit the prod
+file before deploy.
+
+Dev defaults use `accessControlAllowOriginListRegex: ^http://localhost:517[0-9]{1,2}$`
+so Vite on `:5173` or `:5174` both work. `accessControlAllowCredentials: true`
+covers auth cookie flows.
+
+Traefik answers browser `OPTIONS` preflights at the gateway and adds
+`Access-Control-*` on every response — including `502` when a routed service is
+not running on the host.
+
+Microservices **do not** import the `cors` package or read `CORS_ORIGINS`. Point
+the frontend at `http://localhost:8080` (gateway), not at service ports directly.
 
 ## Dashboard (local dev only)
 

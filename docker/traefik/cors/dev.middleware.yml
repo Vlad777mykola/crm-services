@@ -1,0 +1,30 @@
+# Gateway-owned CORS — single source for local dev (host + container Traefik).
+# Mounted into Traefik's file provider directory by compose.gateway.yml and
+# docker/dev compose stacks that use dynamic.container.yml.
+#
+# Browser traffic should always go through the gateway (:8080). Individual
+# microservices do not set CORS headers.
+#
+# Vite may bind :5173 or :5174 when :5173 is busy — regex covers localhost dev ports.
+
+http:
+  middlewares:
+    cors:
+      headers:
+        accessControlAllowCredentials: true
+        accessControlAllowMethods:
+          - GET
+          - HEAD
+          - POST
+          - PATCH
+          - PUT
+          - DELETE
+          - OPTIONS
+        accessControlAllowHeaders:
+          - Content-Type
+          - Authorization
+          - X-Request-Id
+        accessControlAllowOriginListRegex:
+          - '^http://localhost:517[0-9]{1,2}$'
+        accessControlMaxAge: 86400
+        addVaryHeader: true

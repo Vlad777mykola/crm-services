@@ -5,10 +5,6 @@ import { z } from 'zod';
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(4008),
-  CORS_ORIGINS: z
-    .string()
-    .default('http://localhost:5173')
-    .transform((value) => value.split(',').map((origin) => origin.trim())),
   DATABASE_URL: z.string().default('postgres://postgres:postgres@localhost:5432/crm'),
   RABBITMQ_URL: z.string().default('amqp://crm:crm_local_only@localhost:5672'),
   JWT_ACCESS_SECRET: z.string().min(1).default('dev-access-secret-change-me'),

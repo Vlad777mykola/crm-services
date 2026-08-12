@@ -1,8 +1,6 @@
-import cors from 'cors';
 import express, { type Express } from 'express';
 import type { Pool } from 'pg';
 
-import { env } from './env.js';
 import { errorHandler } from './http/error-handler.js';
 import { notFoundHandler } from './http/not-found-handler.js';
 import { createNotificationsRouter } from './http/routes/notifications.routes.js';
@@ -13,7 +11,6 @@ import type { RabbitMqConsumer } from './rabbitmq/consumer.js';
 export function createApp(pool: Pool, consumer: RabbitMqConsumer, notificationsService: NotificationsHttpService): Express {
   const app = express();
 
-  app.use(cors({ origin: env.CORS_ORIGINS }));
   app.use(express.json());
   app.use(requestLogger);
 
