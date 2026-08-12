@@ -11,7 +11,7 @@ in [`docs/architecture/service-ownership.md`](../../docs/architecture/service-ow
 
 ## Domain events (exchange: `domain.events`)
 
-Published by the backend via the outbox pattern (see [`docs/architecture/event-driven-model.md`](../../docs/architecture/event-driven-model.md)).
+Published by the backend via the outbox pattern (see [`docs/architecture/event-driven-model.md`](../../docs/architecture/event-driven-model.md)), or, since Phase 2, by an extracted service via its own outbox.
 
 - [`appointment.requested.v1.json`](appointment.requested.v1.json)
 - [`appointment.approved.v1.json`](appointment.approved.v1.json)
@@ -19,6 +19,7 @@ Published by the backend via the outbox pattern (see [`docs/architecture/event-d
 - [`appointment.cancelled.v1.json`](appointment.cancelled.v1.json)
 - [`appointment.completed.v1.json`](appointment.completed.v1.json)
 - [`review.received.v1.json`](review.received.v1.json)
+- [`auth.user_registered.v1.json`](auth.user_registered.v1.json) - published by `services/auth-service`, consumed by `services/users-service`.
 
 ## Analytics / AI result events (exchange: `analytics.events`)
 

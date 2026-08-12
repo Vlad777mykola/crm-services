@@ -17,8 +17,10 @@
 # For a lighter/faster loop where legacy-backend runs on the host via `yarn dev`
 # instead of a container, use compose.gateway.yml instead - see docker/dev/README.md.
 #
-# Run:
-#   docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.legacy.yml up --build
+# Run (needs the `events` infra profile too, since Phase 2's auth-service/
+# users-service/outbox-publisher-auth depend on RabbitMQ):
+#   docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.legacy.yml \
+#     --profile events up --build
 #
 # Frontend then points VITE_API_URL at the gateway (http://localhost:8080) instead
 # of the backend directly (http://localhost:4000) - see
@@ -44,6 +46,7 @@ services:
       - ./traefik/dynamic.container.yml:/etc/traefik/dynamic.yml:ro
     depends_on:
       - legacy-backend
+      - auth-service
 
   legacy-backend:
     build:
@@ -61,4 +64,62 @@ services:
       postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+
+  # Extracted in Phase 2 - the gateway routes /auth/* here instead of
+  # legacy-backend (see traefik/dynamic.container.yml). legacy-backend's own
+  # /auth/* code is untouched, for rollback.
+  auth-service:
+    build:
+      context: ../../services/auth-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/auth-service/.env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm
+    ports:
+      - '4001:4001' # kept for local debugging - direct calls bypass the gateway
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Publishes auth-service's outbox_events (Q8 - same image as the shared
+  # outbox-publisher, different DATABASE_URL/search_path). Required for
+  # auth.user_registered to actually reach RabbitMQ in this mode.
+  outbox-publisher-auth:
+    build:
+      context: ../../services/outbox-publisher
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm?options=-c%20search_path%3Dauth_schema
+      RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672
+      HEALTH_PORT: '4501'
+    ports:
+      - '4501:4501'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # Phase 2 consumer-only - no gateway route yet (no /users/* HTTP API until
+  # Phase 3), included here so auth.user_registered has a real consumer in
+  # container-parity mode too.
+  users-service:
+    build:
+      context: ../../services/users-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/users-service/.env
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm
+      RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672
+    ports:
+      - '4002:4002'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy

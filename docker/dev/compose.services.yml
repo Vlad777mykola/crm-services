@@ -6,7 +6,7 @@
 #
 # Combine with compose.infra.yml:
 #   docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.services.yml \
-#     --profile events up outbox-publisher
+#     --profile events up outbox-publisher outbox-publisher-auth
 #   docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.services.yml \
 #     --profile events --profile node-workers up
 #   docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.services.yml \
@@ -28,6 +28,66 @@ services:
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm
       RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672
     depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  # Same outbox-publisher image, redeployed against auth-service's own schema
+  # (Q8 - see docs/architecture/service-port-registry.md). The `search_path`
+  # option is required because outbox-publisher queries the unqualified table
+  # name `outbox_events`, and this instance's table lives in `auth_schema`.
+  outbox-publisher-auth:
+    profiles: ['events']
+    build:
+      context: ../../services/outbox-publisher
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm?options=-c%20search_path%3Dauth_schema
+      RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672
+      HEALTH_PORT: '4501'
+    ports:
+      - '4501:4501'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # Owns identity/sessions/JWT issuance - see services/auth-service/README.md.
+  # Only needs Postgres directly; publishing goes through outbox-publisher-auth.
+  auth-service:
+    profiles: ['node-workers']
+    build:
+      context: ../../services/auth-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/auth-service/.env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm
+    ports:
+      - '4001:4001'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Consumer-only in Phase 2 - creates a profile from auth.user_registered.
+  # No HTTP API yet, no gateway route - see services/users-service/README.md.
+  users-service:
+    profiles: ['node-workers']
+    build:
+      context: ../../services/users-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/users-service/.env
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm
+      RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672
+    ports:
+      - '4002:4002'
+    depends_on:
+      postgres:
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
 

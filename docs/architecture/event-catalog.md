@@ -21,6 +21,7 @@ Every message uses the `envelope.v1.json` wrapper (`id`, `type`, `source`, `vers
 | `ai.appointment_recommendation_created` | `analytics.events` | `ai.appointment_recommendation_created` | ai-service | backend-projection-service | `ai.appointment_recommendation_created.v1.json` |
 | `ai.company_insight_created` | `analytics.events` | `ai.company_insight_created` | ai-service | backend-projection-service | `ai.company_insight_created.v1.json` |
 | `ai.job_failed` | `analytics.events` | `ai.job_failed` | ai-service | **Confirmed: no consumer for now.** Schema exists and ai-service may still publish it, but nothing in `services/backend-projection-service` (or elsewhere) needs to consume it yet. Do not add a consumer without a confirmed need. | `ai.job_failed.v1.json` |
+| `auth.user_registered` | `domain.events` | `auth.user_registered` | auth-service (via its own outbox) | users-service (creates profile idempotently) | `auth.user_registered.v1.json` |
 
 Routing confirmed from `backend/src/infrastructure/outbox/event-routing.ts` — the
 `domainEventRouting` map currently has exactly these 6 entries: `appointment.requested`,
@@ -32,7 +33,6 @@ today.
 
 | Event | Intended exchange | Publisher (future) | Consumer (future) | Phase | Status |
 |---|---|---|---|---|---|
-| `auth.user_registered` | `domain.events` | auth-service | users-service (creates profile) | 2 | **Blocks Task 2.3/2.5 until schema written** |
 | `auth.user_logged_in` | `domain.events` | auth-service | (none confirmed — analytics/audit candidate) | 2 | Not blocking; confirm need before writing schema |
 | `auth.session_revoked` | `domain.events` | auth-service | (none confirmed) | 2 | Not blocking; confirm need before writing schema |
 | `company.created` | `domain.events` | companies-service | appointments-service (projection) | 4 | **Blocks Task 4.3** |

@@ -10,9 +10,11 @@ crm-services/
 │   ├── openapi/                      # REST contract
 │   └── events/                       # shared event JSON schemas
 ├── services/
+│   ├── auth-service/                 # (Phase 2) identity, sessions, JWT issuance - owns auth_schema
+│   ├── users-service/                # (Phase 2) user profiles - owns users_schema, consumer-only until Phase 3
 │   ├── notifications-service/        # consumes domain/analytics events, sends emails + in-app notifications
 │   ├── metrics-service/              # observes RabbitMQ traffic, exposes /metrics + /health
-│   ├── outbox-publisher/             # publishes backend's outbox_events to RabbitMQ
+│   ├── outbox-publisher/             # publishes backend's outbox_events (and, redeployed per Q8, auth-service's) to RabbitMQ
 │   ├── backend-projection-service/   # consumes ai.* events, writes safe projections to main DB
 │   └── ai-service/                   # Python AI/analytics microservice, owns postgres-ai
 ├── docker/
@@ -41,6 +43,13 @@ flowchart LR
     PG[(main-postgres)]
   end
 
+  subgraph authLayer [Auth / Users - Phase 2]
+    AUTH[auth-service]
+    AUTHOB[(auth_schema.outbox_events)]
+    AUTHOP[outbox-publisher-auth]
+    USERS[users-service]
+  end
+
   subgraph eventLayer [Event Infrastructure]
     OB[(outbox_events)]
     OP[outbox-publisher]
@@ -60,10 +69,15 @@ flowchart LR
   end
 
   FE -->|REST only| API
+  FE -->|/auth/*| AUTH
   API --> PG
   API -->|same TX| OB
   OP -->|read and update outbox| OB
   OP -->|publish| RMQ
+  AUTH -->|same TX| AUTHOB
+  AUTHOP -->|read and update outbox| AUTHOB
+  AUTHOP -->|publish auth.user_registered| RMQ
+  RMQ --> USERS
   RMQ --> NS
   RMQ --> MS
   RMQ --> AI
@@ -102,6 +116,9 @@ move to Kubernetes/AWS EKS:
 | gateway | `traefik:v3.0` (no custom image) | — | none | none |
 | frontend | `frontend/dist` | static hosting (GitHub Pages, later S3+CloudFront) | none | none |
 | backend-api | `backend/Dockerfile` | `node dist/main.js` | main-postgres | none (HTTP only) |
+| auth-service | `services/auth-service/Dockerfile` | `node dist/main.js` | auth_schema | none (HTTP + own outbox only) |
+| outbox-publisher-auth | `services/outbox-publisher/Dockerfile` (redeployed, Q8) | `node dist/main.js` | auth_schema.outbox_events only | publisher |
+| users-service | `services/users-service/Dockerfile` | `node dist/main.js` | users_schema | consumer |
 | outbox-publisher | `services/outbox-publisher/Dockerfile` | `node dist/main.js` | outbox_events only | publisher |
 | notifications-service | `services/notifications-service/Dockerfile` | `node dist/main.js` | main-postgres (MVP) | consumer |
 | metrics-service | `services/metrics-service/Dockerfile` | `node dist/main.js` | none | observer |

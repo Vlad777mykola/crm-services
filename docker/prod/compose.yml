@@ -29,6 +29,7 @@ services:
     restart: unless-stopped
     depends_on:
       - legacy-backend
+      - auth-service
 
   postgres:
     image: postgres:16-alpine
@@ -176,6 +177,64 @@ services:
       NODE_ENV: production
     expose:
       - '4400'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Extracted in Phase 2 - the gateway routes /auth/* here instead of
+  # legacy-backend. Owns auth_schema in the shared `postgres` above.
+  auth-service:
+    build:
+      context: ../../services/auth-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/auth-service/.env.production
+    environment:
+      NODE_ENV: production
+    expose:
+      - '4001'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Same outbox-publisher image as the shared instance above, redeployed
+  # against auth-service's own schema (Q8) - see
+  # docs/architecture/service-port-registry.md.
+  outbox-publisher-auth:
+    build:
+      context: ../../services/outbox-publisher
+      dockerfile: Dockerfile
+    env_file:
+      # Deliberately NOT the same file as the `outbox-publisher` service above
+      # - this one's DATABASE_URL must point at auth_schema (search_path
+      # option), not the default/public schema. See docker/prod/README.md.
+      - ../../services/outbox-publisher/.env.production.auth
+    environment:
+      NODE_ENV: production
+      HEALTH_PORT: '4501'
+    expose:
+      - '4501'
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Phase 2 consumer-only - no gateway route yet (no /users/* HTTP API until
+  # Phase 3).
+  users-service:
+    build:
+      context: ../../services/users-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/users-service/.env.production
+    environment:
+      NODE_ENV: production
+    expose:
+      - '4002'
     depends_on:
       postgres:
         condition: service_healthy

@@ -56,6 +56,19 @@ cd services/backend-projection-service && yarn dev
 cd services/ai-service && python src/main.py
 ```
 
+Since Phase 2, also start these if you're testing `/auth/*` end-to-end
+(register/login need the identity write to actually reach RabbitMQ, and
+users-service to create the profile):
+
+```bash
+cd services/auth-service && yarn dev
+cd services/users-service && yarn dev
+
+# Second outbox-publisher instance, pointed at auth_schema (Q8) - copy
+# services/outbox-publisher/.env into a second file first, see below.
+cd services/outbox-publisher && DATABASE_URL="postgres://postgres:postgres@localhost:5432/crm?options=-c%20search_path%3Dauth_schema" HEALTH_PORT=4501 yarn dev
+```
+
 First time only - each app/service reads its config from its own `.env`, never
 from Compose:
 
@@ -66,7 +79,14 @@ cp services/notifications-service/.env.example services/notifications-service/.e
 cp services/metrics-service/.env.example services/metrics-service/.env
 cp services/backend-projection-service/.env.example services/backend-projection-service/.env
 cp services/ai-service/.env.example services/ai-service/.env
+cp services/auth-service/.env.example services/auth-service/.env
+cp services/users-service/.env.example services/users-service/.env
 ```
+
+`services/auth-service/.env`'s `JWT_ACCESS_SECRET` must match
+`backend/.env`'s exactly (both default to `dev-access-secret-change-me`, so
+this "just works" with the example files as-is) - see Phase 2 Task 2.6 in
+`docs/architecture/microservices-extraction-checklist.md`.
 
 All Postgres/RabbitMQ credentials in each `.env.example` already match what
 `compose.infra.yml` provisions, so no further edits are needed for local dev.
@@ -109,7 +129,10 @@ curl -i http://localhost:8080/auth/me
 ```
 
 See [`docs/architecture/smoke-checklists/phase-1-traefik-gateway.md`](../../docs/architecture/smoke-checklists/phase-1-traefik-gateway.md)
-for the full checklist.
+for the Phase 1 checklist and
+[`docs/architecture/smoke-checklists/phase-2-auth-service.md`](../../docs/architecture/smoke-checklists/phase-2-auth-service.md)
+for Phase 2 (`/auth/*` now served by auth-service; `auth.user_registered` ->
+users-service).
 
 ## Stop / clean up
 
@@ -146,4 +169,7 @@ Every deploy unit exposes `GET /health/live` (process alive) and `GET /health/re
 | `metrics-service` | 4100 | `/metrics`, `/health/live`, `/health/ready` |
 | `backend-projection-service` | 4400 | `/health/live`, `/health/ready` |
 | `ai-service` | 4200 | `/health/live`, `/health/ready` |
+| `auth-service` | 4001 | `/health/live`, `/health/ready` |
+| `users-service` | 4002 | `/health/live`, `/health/ready` |
+| `outbox-publisher-auth` | 4501 | `/health/live`, `/health/ready` |
 | `gateway` (Traefik) | 8080 (app traffic), 8081 (dashboard, local dev only) | none of its own - proxies `/health`, `/health/live`, `/health/ready` through to whichever backend currently owns that path |

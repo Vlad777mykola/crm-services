@@ -28,11 +28,11 @@ a single owner; the gateway/each Ingress rule points at whichever service it fro
 
 | Method | Path | Module | Handler | Target service | Phase | Status |
 |---|---|---|---|---|---|---|
-| POST | `/auth/register` | auth | `register()` | auth-service | 2 | legacy |
-| POST | `/auth/login` | auth | `login()` | auth-service | 2 | legacy |
-| POST | `/auth/refresh` | auth | `refresh()` | auth-service | 2 | legacy |
-| POST | `/auth/logout` | auth | `logout()` | auth-service | 2 | legacy |
-| GET | `/auth/me` | auth | `getCurrentUser()` | auth-service | 2 | legacy |
+| POST | `/auth/register` | auth | `register()` | auth-service | 2 | **auth-service** |
+| POST | `/auth/login` | auth | `login()` | auth-service | 2 | **auth-service** |
+| POST | `/auth/refresh` | auth | `refresh()` | auth-service | 2 | **auth-service** |
+| POST | `/auth/logout` | auth | `logout()` | auth-service | 2 | **auth-service** |
+| GET | `/auth/me` | auth | `getCurrentUser()` | auth-service | 2 | **auth-service** (minimal identity payload only until Phase 3 — see Task 2.4) |
 
 Notes:
 - Refresh-token cookie path is hardcoded to `/auth` (`REFRESH_COOKIE_PATH = '/auth'` in

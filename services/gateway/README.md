@@ -19,9 +19,10 @@ live in Traefik's file provider (`docker/dev/traefik/*.yml`,
 ## Owned routes
 
 None — the gateway routes every path in `docs/architecture/route-inventory.md`, it
-does not own any of them. As of Phase 1, every route points at `legacy-backend`.
-Each later phase changes only the `service=`/port labels for that domain's routers,
-not the path list or priority values.
+does not own any of them. As of Phase 2, `/auth/*` points at `auth-service`; every
+other route still points at `legacy-backend`. Each later phase changes only the
+`service=`/port target for that domain's routers, not the path list or priority
+values.
 
 ## Owned tables / schema
 
@@ -65,11 +66,14 @@ dev only, see `gateway-routing.md`) shows live router/service status if needed.
 
 ## Current migration status
 
-**Phase 1.** Every route routes to `legacy-backend:4000` via Traefik, using explicit
-per-router `priority` values (not rule order) so `/companies/*` and `/specialists/*`
-sub-paths already resolve correctly ahead of their generic fallbacks — see
-`docker/dev/traefik/` and `docs/architecture/gateway-routing.md`.
+**Phase 2.** `/auth/*` routes to `auth-service:4001`; every other route still
+routes to `legacy-backend:4000` via Traefik, using explicit per-router `priority`
+values (not rule order) so `/companies/*` and `/specialists/*` sub-paths already
+resolve correctly ahead of their generic fallbacks — see `docker/dev/traefik/`,
+`docker/prod/traefik/dynamic.yml`, and `docs/architecture/gateway-routing.md`.
 
-Rollback: point `VITE_API_URL` back at `http://localhost:4000` to bypass the gateway
-entirely — no route has been reassigned to a new service yet, so there is nothing
-else to undo.
+Rollback: repoint the `auth-service` router's `service:` target back at
+`legacy-backend` in all three dynamic-config files (see `gateway-routing.md`) —
+legacy-backend's own `/auth/*` code is untouched. Any accounts created only in
+`auth_schema` after cutover won't exist on legacy, per the "no backfill" data
+policy (`docs/architecture/table-ownership-matrix.md`).

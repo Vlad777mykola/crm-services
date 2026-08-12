@@ -17,9 +17,9 @@ http:
       entryPoints: [web]
       priority: 10
 
-    legacy-auth:
+    auth-service: # auth-service (Phase 2)
       rule: "PathPrefix(`/auth`)"
-      service: legacy-backend
+      service: auth-service
       entryPoints: [web]
       priority: 10
 
@@ -171,3 +171,8 @@ http:
       loadBalancer:
         servers:
           - url: "http://legacy-backend:4000"
+
+    auth-service:
+      loadBalancer:
+        servers:
+          - url: "http://auth-service:4001"

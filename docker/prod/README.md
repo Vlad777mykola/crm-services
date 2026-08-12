@@ -18,16 +18,30 @@ tested deployment.
 cp docker/prod/.env.production.example docker/prod/.env.production
 cp backend/.env.example backend/.env.production
 cp services/outbox-publisher/.env.example services/outbox-publisher/.env.production
+cp services/outbox-publisher/.env.example services/outbox-publisher/.env.production.auth
 cp services/notifications-service/.env.example services/notifications-service/.env.production
 cp services/metrics-service/.env.example services/metrics-service/.env.production
 cp services/backend-projection-service/.env.example services/backend-projection-service/.env.production
 cp services/ai-service/.env.example services/ai-service/.env.production
+cp services/auth-service/.env.example services/auth-service/.env.production
+cp services/users-service/.env.example services/users-service/.env.production
 ```
 
 Then fill in real values in every file. The `DATABASE_URL`/`RABBITMQ_URL` values
 in each service's `.env.production` must use the same credentials you set in
 `docker/prod/.env.production` (host is the Compose service name, e.g.
 `postgres`, `rabbitmq` - not `localhost`).
+
+`services/outbox-publisher/.env.production.auth` is a **second, separate**
+copy for the `outbox-publisher-auth` service (Q8 - same image, different
+config) - its `DATABASE_URL` must add `?options=-c%20search_path%3Dauth_schema`
+so it reads/writes `auth_schema.outbox_events` instead of the default schema,
+and its `HEALTH_PORT` must be `4501` (the shared `outbox-publisher` keeps
+`4500`) - see `docs/architecture/service-port-registry.md`.
+
+`services/auth-service/.env.production`'s `JWT_ACCESS_SECRET` must match
+`backend/.env.production`'s exactly, or tokens auth-service issues won't
+verify against not-yet-extracted legacy routes (Phase 2 Task 2.6).
 
 ## Start
 
@@ -38,7 +52,8 @@ docker compose -f docker/prod/compose.yml up -d --build
 Adds every service in the "Production deployment matrix"
 (`target-production-architecture.md`): `gateway`, `legacy-backend`,
 `outbox-publisher`, `notifications-service`, `metrics-service`,
-`backend-projection-service`, `ai-service`, plus self-hosted `postgres`,
+`backend-projection-service`, `ai-service`, plus, since Phase 2, `auth-service`,
+`outbox-publisher-auth`, `users-service` - and self-hosted `postgres`,
 `redis`, `rabbitmq`, `postgres-ai`. Only `gateway` publishes a host port
 (`80`) - every other service uses `expose`, reachable only from other
 containers on this stack's network.
