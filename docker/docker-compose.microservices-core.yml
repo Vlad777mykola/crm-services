@@ -1,0 +1,38 @@
+# Phase 1 of docs/architecture/microservices-extraction-checklist.md: gateway +
+# legacy-backend, with the gateway proxying every current route through unchanged.
+# No domain service has been extracted yet - this file only adds the gateway hop.
+#
+# Run:
+#   docker compose -f docker/docker-compose.yml -f docker/docker-compose.microservices-core.yml up
+#
+# Frontend then points VITE_API_URL at the gateway (http://localhost:8080) instead
+# of the backend directly (http://localhost:4000) - see
+# docs/architecture/url-convention.md.
+
+services:
+  legacy-backend:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+    env_file:
+      - ../backend/.env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm
+      REDIS_URL: redis://redis:6379
+    ports:
+      - '4000:4000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  gateway:
+    build:
+      context: ../services/gateway
+      dockerfile: Dockerfile
+    ports:
+      - '8080:8080'
+    depends_on:
+      - legacy-backend

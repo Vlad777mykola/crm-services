@@ -9,6 +9,11 @@ Compose too - the files here are purely for local orchestration, split by concer
 - `docker-compose.events.yml` - RabbitMQ + `outbox-publisher`, behind the `events` profile.
 - `docker-compose.workers.yml` - Node.js consumer services, behind the `node-workers` profile.
 - `docker-compose.ai.yml` - Python AI service + its own Postgres, behind the `python-workers` profile.
+- `docker-compose.microservices-core.yml` - gateway + legacy-backend (Phase 1 of the
+  [microservices extraction](../docs/architecture/microservices-extraction-checklist.md)).
+  No profile needed. As each domain is extracted, its service is added here and the
+  gateway's `nginx.conf` `proxy_pass` target for that domain changes - the route list
+  itself does not.
 
 See [`docs/architecture/target-production-architecture.md`](../docs/architecture/target-production-architecture.md)
 for the full service map this mirrors.
@@ -69,6 +74,20 @@ docker compose \
 
 You can also target individual services instead of a whole profile, e.g. add
 `metrics-service` to the end of the command above.
+
+### 5. Gateway in front of legacy-backend (microservices migration, Phase 1)
+
+```bash
+docker compose -f docker/docker-compose.yml -f docker/docker-compose.microservices-core.yml up
+```
+
+Adds `gateway` (nginx, port `8080`) in front of a Dockerized `legacy-backend`
+(the existing `backend/`, unchanged). Every route still resolves to the same
+backend as calling `:4000` directly - the only difference is one extra proxy hop
+and centralized `X-Request-Id` handling. Point the frontend's `VITE_API_URL` at
+`http://localhost:8080` to use it. See
+[`docs/architecture/url-convention.md`](../docs/architecture/url-convention.md) and
+[`docs/architecture/microservices-extraction-checklist.md`](../docs/architecture/microservices-extraction-checklist.md).
 
 ## Fully local, no Docker for the app itself
 
@@ -137,3 +156,4 @@ me" from "don't route traffic to me yet":
 | `metrics-service` | 4100 | `/metrics`, `/health/live`, `/health/ready` |
 | `backend-projection-service` | 4400 | `/health/live`, `/health/ready` |
 | `ai-service` | 4200 | `/health/live`, `/health/ready` |
+| `gateway` | 8080 | none of its own - proxies `/health`, `/health/live`, `/health/ready` through to whichever backend currently owns that path |
