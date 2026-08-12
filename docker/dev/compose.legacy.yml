@@ -54,6 +54,7 @@ services:
       - company-specialists-service
       - services-catalog-service
       - appointments-service
+      - reviews-service
 
   legacy-backend:
     build:
@@ -343,6 +344,41 @@ services:
       HEALTH_PORT: '4508'
     ports:
       - '4508:4508'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # Extracted in Phase 10 - see traefik/dynamic.container.yml. HTTP-only, no
+  # RabbitMQ consumer.
+  reviews-service:
+    build:
+      context: ../../services/reviews-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/reviews-service/.env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm
+    ports:
+      - '4009:4009' # kept for local debugging - direct calls bypass the gateway
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Publishes reviews-service's outbox_events (Q8).
+  outbox-publisher-reviews:
+    build:
+      context: ../../services/outbox-publisher
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm?options=-c%20search_path%3Dreviews_schema
+      RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672
+      HEALTH_PORT: '4509'
+    ports:
+      - '4509:4509'
     depends_on:
       postgres:
         condition: service_healthy

@@ -70,9 +70,9 @@ http:
       service: company-specialists-service
       entryPoints: [web]
       priority: 87
-    legacy-company-reviews:
+    reviews-service-company-reviews:
       rule: "PathRegexp(`^/companies/[^/]+/reviews$`)"
-      service: legacy-backend
+      service: reviews-service
       entryPoints: [web]
       priority: 80
     legacy-company-summary:
@@ -137,9 +137,9 @@ http:
       service: specialists-service
       entryPoints: [web]
       priority: 94
-    legacy-specialist-reviews:
+    reviews-service-specialist-reviews:
       rule: "PathRegexp(`^/specialists/[^/]+/reviews$`)"
-      service: legacy-backend
+      service: reviews-service
       entryPoints: [web]
       priority: 85
     specialists-service-by-id:
@@ -154,9 +154,9 @@ http:
       priority: 10
 
     # ---- Services catalog ----
-    legacy-service-reviews:
+    reviews-service-service-reviews:
       rule: "PathRegexp(`^/services/[^/]+/reviews$`)"
-      service: legacy-backend
+      service: reviews-service
       entryPoints: [web]
       priority: 85
     services-catalog-service-specialists:
@@ -181,9 +181,9 @@ http:
       priority: 10
 
     # ---- Appointments ----
-    legacy-appointment-review:
+    reviews-service-appointment-review:
       rule: "PathRegexp(`^/appointments/[^/]+/review$`)"
-      service: legacy-backend
+      service: reviews-service
       entryPoints: [web]
       priority: 85
     appointments-service-me:
@@ -266,3 +266,8 @@ http:
       loadBalancer:
         servers:
           - url: "http://appointments-service:4008"
+
+    reviews-service:
+      loadBalancer:
+        servers:
+          - url: "http://reviews-service:4009"

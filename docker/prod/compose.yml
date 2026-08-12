@@ -37,6 +37,7 @@ services:
       - company-specialists-service
       - services-catalog-service
       - appointments-service
+      - reviews-service
 
   postgres:
     image: postgres:16-alpine
@@ -457,6 +458,40 @@ services:
       HEALTH_PORT: '4508'
     expose:
       - '4508'
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Extracted in Phase 10. Owns reviews; HTTP-only, no RabbitMQ consumer.
+  reviews-service:
+    build:
+      context: ../../services/reviews-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/reviews-service/.env.production
+    environment:
+      NODE_ENV: production
+    expose:
+      - '4009'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Same outbox-publisher image, redeployed against reviews-service's own
+  # schema (Q8).
+  outbox-publisher-reviews:
+    build:
+      context: ../../services/outbox-publisher
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/outbox-publisher/.env.production.reviews
+    environment:
+      NODE_ENV: production
+      HEALTH_PORT: '4509'
+    expose:
+      - '4509'
     depends_on:
       rabbitmq:
         condition: service_healthy

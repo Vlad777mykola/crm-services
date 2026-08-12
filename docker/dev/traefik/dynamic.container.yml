@@ -73,9 +73,9 @@ http:
       service: company-specialists-service
       entryPoints: [web]
       priority: 87
-    legacy-company-reviews: # reviews-service (Phase 10)
+    reviews-service-company-reviews: # reviews-service (Phase 10)
       rule: "PathRegexp(`^/companies/[^/]+/reviews$`)"
-      service: legacy-backend
+      service: reviews-service
       entryPoints: [web]
       priority: 80
     legacy-company-summary: # dashboard / future read-api (Phase 15)
@@ -140,9 +140,9 @@ http:
       service: specialists-service
       entryPoints: [web]
       priority: 94
-    legacy-specialist-reviews: # reviews-service (Phase 10)
+    reviews-service-specialist-reviews: # reviews-service (Phase 10)
       rule: "PathRegexp(`^/specialists/[^/]+/reviews$`)"
-      service: legacy-backend
+      service: reviews-service
       entryPoints: [web]
       priority: 85
     specialists-service-by-id: # specialists-service (Phase 6)
@@ -157,9 +157,9 @@ http:
       priority: 10
 
     # ---- Services catalog (Phase 8: services-catalog-service) ----
-    legacy-service-reviews: # reviews-service (Phase 10) takes priority over the generic fallback
+    reviews-service-service-reviews: # reviews-service (Phase 10) takes priority over the generic fallback
       rule: "PathRegexp(`^/services/[^/]+/reviews$`)"
-      service: legacy-backend
+      service: reviews-service
       entryPoints: [web]
       priority: 85
     services-catalog-service-specialists: # services-catalog-service (Phase 8) - covers POST/GET/DELETE .../specialists*
@@ -183,10 +183,10 @@ http:
       entryPoints: [web]
       priority: 10
 
-    # ---- Appointments (Phase 9; review sub-path -> Phase 10) ----
-    legacy-appointment-review: # reviews-service (Phase 10) takes priority over appointments-service's fallback
+    # ---- Appointments (Phase 9; review sub-path -> Phase 10: reviews-service) ----
+    reviews-service-appointment-review: # reviews-service (Phase 10) takes priority over appointments-service's fallback
       rule: "PathRegexp(`^/appointments/[^/]+/review$`)"
-      service: legacy-backend
+      service: reviews-service
       entryPoints: [web]
       priority: 85
     appointments-service-me: # appointments-service (Phase 9)
@@ -269,3 +269,8 @@ http:
       loadBalancer:
         servers:
           - url: "http://appointments-service:4008"
+
+    reviews-service:
+      loadBalancer:
+        servers:
+          - url: "http://reviews-service:4009"

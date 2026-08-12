@@ -343,6 +343,45 @@ services:
       rabbitmq:
         condition: service_healthy
 
+  # Same outbox-publisher image, redeployed against reviews-service's own
+  # schema (Q8). Own `reviews` profile.
+  outbox-publisher-reviews:
+    profiles: ['reviews']
+    build:
+      context: ../../services/outbox-publisher
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm?options=-c%20search_path%3Dreviews_schema
+      RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672
+      HEALTH_PORT: '4509'
+    ports:
+      - '4509:4509'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # Owns reviews - see services/reviews-service/README.md. HTTP-only, no
+  # RabbitMQ consumer, but still needs rabbitmq for outbox-publisher-reviews
+  # above to reach it. Own `reviews` profile.
+  reviews-service:
+    profiles: ['reviews']
+    build:
+      context: ../../services/reviews-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/reviews-service/.env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm
+    ports:
+      - '4009:4009'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   # Consumes domain.events + analytics.events, writes emails (Postgres
   # `email_logs`) and in-app notifications (`notifications`). Logical owner
   # of both tables during the MVP phase - see docs/architecture/service-ownership.md.
