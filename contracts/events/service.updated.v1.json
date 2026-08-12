@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://crm-services/contracts/events/service.updated.v1.json",
+  "title": "service.updated",
+  "description": "Published when a service is updated via PATCH /companies/:companyId/services/:serviceId (profile fields and/or status). Exchange: domain.events. Routing key: service.updated.",
+  "type": "object",
+  "required": ["serviceId", "companyId", "name", "status"],
+  "additionalProperties": false,
+  "properties": {
+    "serviceId": { "type": "string", "format": "uuid" },
+    "companyId": { "type": "string", "format": "uuid" },
+    "name": { "type": "string" },
+    "status": { "type": "string", "enum": ["draft", "published", "suspended"] }
+  }
+}

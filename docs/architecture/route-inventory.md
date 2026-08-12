@@ -90,24 +90,24 @@ specifically so `invite` is never captured as a member id.
 
 | Method | Path | Module | Handler | Target service | Phase | Status |
 |---|---|---|---|---|---|---|
-| POST | `/specialists/profile` | specialists | `createMySpecialistProfile()` | specialists-service | 6 | legacy |
-| GET | `/specialists/me` | specialists | `getMySpecialistProfile()` | specialists-service | 6 | legacy |
-| PATCH | `/specialists/me` | specialists | `updateMySpecialistProfile()` | specialists-service | 6 | legacy |
-| GET | `/specialists/me/status-history` | specialists | `getMySpecialistStatusHistory()` | specialists-service | 6 (see Task 0.0b) | legacy |
-| GET | `/specialists/public` | specialists | `getPublicSpecialists()` | specialists-service | 6 | legacy |
-| GET | `/specialists/:specialistId` | specialists | `getSpecialistById()` | specialists-service | 6 | legacy |
+| POST | `/specialists/profile` | specialists | `createMySpecialistProfile()` | specialists-service | 6 | **specialists-service** |
+| GET | `/specialists/me` | specialists | `getMySpecialistProfile()` | specialists-service | 6 | **specialists-service** |
+| PATCH | `/specialists/me` | specialists | `updateMySpecialistProfile()` | specialists-service | 6 | **specialists-service** |
+| GET | `/specialists/me/status-history` | specialists | `getMySpecialistStatusHistory()` | specialists-service | 6 (see Task 0.0b) | **specialists-service** |
+| GET | `/specialists/public` | specialists | `getPublicSpecialists()` | specialists-service | 6 | **specialists-service** |
+| GET | `/specialists/:specialistId` | specialists | `getSpecialistById()` | specialists-service | 6 | **specialists-service** |
 
 ## Company-specialists
 
 | Method | Path | Module | Handler | Target service | Phase | Status |
 |---|---|---|---|---|---|---|
-| POST | `/companies/:companyId/specialists/requests` | company-specialists | `sendSpecialistRequest()` | company-specialists-service | 7 | legacy |
-| GET | `/companies/:companyId/specialist-requests` | company-specialists | `listCompanySpecialistRequests()` | company-specialists-service | 7 | legacy |
-| GET | `/companies/:companyId/specialists` | company-specialists | `listCompanySpecialists()` | company-specialists-service | 7 | legacy |
-| GET | `/specialists/me/company-requests` | company-specialists | `listMySpecialistCompanyRequests()` | company-specialists-service | 7 | legacy |
-| GET | `/specialists/me/companies` | company-specialists | `listMySpecialistCompanies()` | company-specialists-service | 7 | legacy |
-| POST | `/specialists/me/company-requests/:requestId/accept` | company-specialists | `acceptSpecialistCompanyRequest()` | company-specialists-service | 7 | legacy |
-| POST | `/specialists/me/company-requests/:requestId/reject` | company-specialists | `rejectSpecialistCompanyRequest()` | company-specialists-service | 7 | legacy |
+| POST | `/companies/:companyId/specialists/requests` | company-specialists | `sendSpecialistRequest()` | company-specialists-service | 7 | **company-specialists-service** |
+| GET | `/companies/:companyId/specialist-requests` | company-specialists | `listCompanySpecialistRequests()` | company-specialists-service | 7 | **company-specialists-service** |
+| GET | `/companies/:companyId/specialists` | company-specialists | `listCompanySpecialists()` | company-specialists-service | 7 | **company-specialists-service** |
+| GET | `/specialists/me/company-requests` | company-specialists | `listMySpecialistCompanyRequests()` | company-specialists-service | 7 | **company-specialists-service** |
+| GET | `/specialists/me/companies` | company-specialists | `listMySpecialistCompanies()` | company-specialists-service | 7 | **company-specialists-service** |
+| POST | `/specialists/me/company-requests/:requestId/accept` | company-specialists | `acceptSpecialistCompanyRequest()` | company-specialists-service | 7 | **company-specialists-service** |
+| POST | `/specialists/me/company-requests/:requestId/reject` | company-specialists | `rejectSpecialistCompanyRequest()` | company-specialists-service | 7 | **company-specialists-service** |
 
 Note: `GET /companies/:companyId/specialists` (list a company's active specialists) is
 distinct from `GET /companies/:companyId/specialist-requests` (pending requests) —
@@ -117,12 +117,12 @@ easy to conflate when writing gateway rules; both belong to company-specialists-
 
 | Method | Path | Module | Handler | Target service | Phase | Status |
 |---|---|---|---|---|---|---|
-| POST | `/companies/:companyId/services` | services | `createService()` | services-catalog-service | 8 | legacy |
-| GET | `/companies/:companyId/services` | services | `listCompanyServices()` | services-catalog-service | 8 | legacy |
-| PATCH | `/companies/:companyId/services/:serviceId` | services | `updateService()` | services-catalog-service | 8 | legacy |
-| GET | `/companies/:companyId/services/:serviceId/status-history` | services | `getServiceStatusHistory()` | services-catalog-service | 8 (see Task 0.0b) | legacy |
-| GET | `/services/public` | services | `listPublicServices()` | services-catalog-service | 8 | legacy |
-| GET | `/services/:serviceId` | services | `getServiceById()` | services-catalog-service | 8 | legacy |
+| POST | `/companies/:companyId/services` | services | `createService()` | services-catalog-service | 8 | **services-catalog-service** |
+| GET | `/companies/:companyId/services` | services | `listCompanyServices()` | services-catalog-service | 8 | **services-catalog-service** |
+| PATCH | `/companies/:companyId/services/:serviceId` | services | `updateService()` | services-catalog-service | 8 | **services-catalog-service** |
+| GET | `/companies/:companyId/services/:serviceId/status-history` | services | `getServiceStatusHistory()` | services-catalog-service | 8 (see Task 0.0b) | **services-catalog-service** |
+| GET | `/services/public` | services | `listPublicServices()` | services-catalog-service | 8 | **services-catalog-service** |
+| GET | `/services/:serviceId` | services | `getServiceById()` | services-catalog-service | 8 | **services-catalog-service** |
 
 **No `DELETE /companies/:companyId/services/:serviceId` exists.** Do not implement
 unless approved as new functionality (Q_delete-service).
@@ -131,10 +131,10 @@ unless approved as new functionality (Q_delete-service).
 
 | Method | Path | Module | Handler | Target service | Phase | Status |
 |---|---|---|---|---|---|---|
-| POST | `/services/:serviceId/specialists` | services (service-specialists) | `assignServiceSpecialist()` | services-catalog-service | 8 | legacy |
-| GET | `/services/:serviceId/specialists` | services (service-specialists) | `listServiceSpecialists()` | services-catalog-service | 8 | legacy |
-| DELETE | `/services/:serviceId/specialists/:specialistProfileId` | services (service-specialists) | `unassignServiceSpecialist()` | services-catalog-service | 8 | legacy |
-| GET | `/specialists/me/services` | services (service-specialists) | `listMySpecialistServices()` | services-catalog-service | 8 | legacy |
+| POST | `/services/:serviceId/specialists` | services (service-specialists) | `assignServiceSpecialist()` | services-catalog-service | 8 | **services-catalog-service** |
+| GET | `/services/:serviceId/specialists` | services (service-specialists) | `listServiceSpecialists()` | services-catalog-service | 8 | **services-catalog-service** |
+| DELETE | `/services/:serviceId/specialists/:specialistProfileId` | services (service-specialists) | `unassignServiceSpecialist()` | services-catalog-service | 8 | **services-catalog-service** |
+| GET | `/specialists/me/services` | services (service-specialists) | `listMySpecialistServices()` | services-catalog-service | 8 | **services-catalog-service** |
 
 **Q13 confirmed: services-catalog-service owns `services`, `service_specialists`, and
 all four routes above** (including the specialist-facing `GET /specialists/me/services`).

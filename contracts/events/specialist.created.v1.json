@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://crm-services/contracts/events/specialist.created.v1.json",
+  "title": "specialist.created",
+  "description": "Published when a specialist profile is created via POST /specialists/profile. Exchange: domain.events. Routing key: specialist.created.",
+  "type": "object",
+  "required": ["specialistProfileId", "userId", "displayName"],
+  "additionalProperties": false,
+  "properties": {
+    "specialistProfileId": { "type": "string", "format": "uuid" },
+    "userId": { "type": "string", "format": "uuid" },
+    "displayName": { "type": "string" }
+  }
+}

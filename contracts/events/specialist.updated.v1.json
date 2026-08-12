@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://crm-services/contracts/events/specialist.updated.v1.json",
+  "title": "specialist.updated",
+  "description": "Published when a specialist profile is updated via PATCH /specialists/me. Exchange: domain.events. Routing key: specialist.updated.",
+  "type": "object",
+  "required": ["specialistProfileId", "userId", "status"],
+  "additionalProperties": false,
+  "properties": {
+    "specialistProfileId": { "type": "string", "format": "uuid" },
+    "userId": { "type": "string", "format": "uuid" },
+    "status": { "type": "string", "enum": ["draft", "published", "suspended"] }
+  }
+}

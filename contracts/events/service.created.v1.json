@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://crm-services/contracts/events/service.created.v1.json",
+  "title": "service.created",
+  "description": "Published when a service is created via POST /companies/:companyId/services. Exchange: domain.events. Routing key: service.created.",
+  "type": "object",
+  "required": ["serviceId", "companyId", "name", "status"],
+  "additionalProperties": false,
+  "properties": {
+    "serviceId": { "type": "string", "format": "uuid" },
+    "companyId": { "type": "string", "format": "uuid" },
+    "name": { "type": "string" },
+    "status": { "type": "string", "enum": ["draft", "published", "suspended"] }
+  }
+}

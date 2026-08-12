@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://crm-services/contracts/events/company-specialist.accepted.v1.json",
+  "title": "company-specialist.accepted",
+  "description": "Published when a specialist accepts a company's request via POST /specialists/me/company-requests/:requestId/accept. Exchange: domain.events. Routing key: company-specialist.accepted.",
+  "type": "object",
+  "required": ["companyId", "specialistProfileId"],
+  "additionalProperties": false,
+  "properties": {
+    "companyId": { "type": "string", "format": "uuid" },
+    "specialistProfileId": { "type": "string", "format": "uuid" }
+  }
+}

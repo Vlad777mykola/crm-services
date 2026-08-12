@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://crm-services/contracts/events/specialist-service.assigned.v1.json",
+  "title": "specialist-service.assigned",
+  "description": "Published when a specialist is assigned to perform a service via POST /services/:serviceId/specialists. Exchange: domain.events. Routing key: specialist-service.assigned.",
+  "type": "object",
+  "required": ["serviceId", "companyId", "specialistProfileId"],
+  "additionalProperties": false,
+  "properties": {
+    "serviceId": { "type": "string", "format": "uuid" },
+    "companyId": { "type": "string", "format": "uuid" },
+    "specialistProfileId": { "type": "string", "format": "uuid" }
+  }
+}

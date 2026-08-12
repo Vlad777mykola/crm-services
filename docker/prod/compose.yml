@@ -33,6 +33,9 @@ services:
       - users-service
       - companies-service
       - company-members-service
+      - specialists-service
+      - company-specialists-service
+      - services-catalog-service
 
   postgres:
     image: postgres:16-alpine
@@ -314,6 +317,108 @@ services:
       HEALTH_PORT: '4504'
     expose:
       - '4504'
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Extracted in Phase 6. Owns specialist profile data.
+  specialists-service:
+    build:
+      context: ../../services/specialists-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/specialists-service/.env.production
+    environment:
+      NODE_ENV: production
+    expose:
+      - '4005'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Same outbox-publisher image, redeployed against specialists-service's own
+  # schema (Q8).
+  outbox-publisher-specialists:
+    build:
+      context: ../../services/outbox-publisher
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/outbox-publisher/.env.production.specialists
+    environment:
+      NODE_ENV: production
+      HEALTH_PORT: '4505'
+    expose:
+      - '4505'
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Extracted in Phase 7. Owns company<->specialist requests/relations.
+  company-specialists-service:
+    build:
+      context: ../../services/company-specialists-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/company-specialists-service/.env.production
+    environment:
+      NODE_ENV: production
+    expose:
+      - '4006'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Same outbox-publisher image, redeployed against company-specialists-service's
+  # own schema (Q8).
+  outbox-publisher-company-specialists:
+    build:
+      context: ../../services/outbox-publisher
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/outbox-publisher/.env.production.company-specialists
+    environment:
+      NODE_ENV: production
+      HEALTH_PORT: '4506'
+    expose:
+      - '4506'
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Extracted in Phase 8. Owns the service catalog + service-specialist assignment.
+  services-catalog-service:
+    build:
+      context: ../../services/services-catalog-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/services-catalog-service/.env.production
+    environment:
+      NODE_ENV: production
+    expose:
+      - '4007'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Same outbox-publisher image, redeployed against services-catalog-service's
+  # own schema (Q8).
+  outbox-publisher-services-catalog:
+    build:
+      context: ../../services/outbox-publisher
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/outbox-publisher/.env.production.services-catalog
+    environment:
+      NODE_ENV: production
+      HEALTH_PORT: '4507'
+    expose:
+      - '4507'
     depends_on:
       rabbitmq:
         condition: service_healthy

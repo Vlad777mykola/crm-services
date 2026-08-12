@@ -186,6 +186,120 @@ services:
       rabbitmq:
         condition: service_healthy
 
+  # Same outbox-publisher image, redeployed against specialists-service's own
+  # schema (Q8). Own `specialists` profile.
+  outbox-publisher-specialists:
+    profiles: ['specialists']
+    build:
+      context: ../../services/outbox-publisher
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm?options=-c%20search_path%3Dspecialists_schema
+      RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672
+      HEALTH_PORT: '4505'
+    ports:
+      - '4505:4505'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # Owns specialist profile data - see services/specialists-service/README.md.
+  # Own `specialists` profile.
+  specialists-service:
+    profiles: ['specialists']
+    build:
+      context: ../../services/specialists-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/specialists-service/.env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm
+    ports:
+      - '4005:4005'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Same outbox-publisher image, redeployed against company-specialists-service's
+  # own schema (Q8). Own `company-specialists` profile.
+  outbox-publisher-company-specialists:
+    profiles: ['company-specialists']
+    build:
+      context: ../../services/outbox-publisher
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm?options=-c%20search_path%3Dcompany_specialists_schema
+      RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672
+      HEALTH_PORT: '4506'
+    ports:
+      - '4506:4506'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # Owns company<->specialist requests/relations - see
+  # services/company-specialists-service/README.md. Own `company-specialists` profile.
+  company-specialists-service:
+    profiles: ['company-specialists']
+    build:
+      context: ../../services/company-specialists-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/company-specialists-service/.env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm
+    ports:
+      - '4006:4006'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Same outbox-publisher image, redeployed against services-catalog-service's
+  # own schema (Q8). Own `services-catalog` profile.
+  outbox-publisher-services-catalog:
+    profiles: ['services-catalog']
+    build:
+      context: ../../services/outbox-publisher
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm?options=-c%20search_path%3Dservices_schema
+      RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672
+      HEALTH_PORT: '4507'
+    ports:
+      - '4507:4507'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # Owns the service catalog + service-specialist assignment - see
+  # services/services-catalog-service/README.md. Own `services-catalog` profile.
+  services-catalog-service:
+    profiles: ['services-catalog']
+    build:
+      context: ../../services/services-catalog-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/services-catalog-service/.env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm
+    ports:
+      - '4007:4007'
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   # Consumes domain.events + analytics.events, writes emails (Postgres
   # `email_logs`) and in-app notifications (`notifications`). Logical owner
   # of both tables during the MVP phase - see docs/architecture/service-ownership.md.

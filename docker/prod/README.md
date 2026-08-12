@@ -29,6 +29,12 @@ cp services/companies-service/.env.example services/companies-service/.env.produ
 cp services/outbox-publisher/.env.example services/outbox-publisher/.env.production.companies
 cp services/company-members-service/.env.example services/company-members-service/.env.production
 cp services/outbox-publisher/.env.example services/outbox-publisher/.env.production.company-members
+cp services/specialists-service/.env.example services/specialists-service/.env.production
+cp services/outbox-publisher/.env.example services/outbox-publisher/.env.production.specialists
+cp services/company-specialists-service/.env.example services/company-specialists-service/.env.production
+cp services/outbox-publisher/.env.example services/outbox-publisher/.env.production.company-specialists
+cp services/services-catalog-service/.env.example services/services-catalog-service/.env.production
+cp services/outbox-publisher/.env.example services/outbox-publisher/.env.production.services-catalog
 ```
 
 Then fill in real values in every file. The `DATABASE_URL`/`RABBITMQ_URL` values
@@ -47,7 +53,11 @@ and its `HEALTH_PORT` must be `4501` (the shared `outbox-publisher` keeps
 `backend/.env.production`'s exactly, or tokens auth-service issues won't
 verify against not-yet-extracted legacy routes (Phase 2 Task 2.6). The same
 applies to `services/companies-service/.env.production`'s `JWT_ACCESS_SECRET`
-(Phase 4) — every service that verifies tokens must share this value.
+(Phase 4), `services/specialists-service/.env.production`'s `JWT_ACCESS_SECRET`
+(Phase 6), `services/company-specialists-service/.env.production`'s
+`JWT_ACCESS_SECRET` (Phase 7), and `services/services-catalog-service/.env.production`'s
+`JWT_ACCESS_SECRET` (Phase 8) — every service that verifies tokens must share
+this value.
 
 `services/outbox-publisher/.env.production.companies` is the same pattern as
 `.env.production.auth`, pointed at `companies_schema` (`?options=-c%20search_path%3Dcompanies_schema`)
@@ -69,7 +79,10 @@ Adds every service in the "Production deployment matrix"
 `backend-projection-service`, `ai-service`, plus, since Phase 2/3, `auth-service`,
 `outbox-publisher-auth`, `users-service`, since Phase 4, `companies-service`,
 `outbox-publisher-companies`, and since Phase 5, `company-members-service`,
-`outbox-publisher-company-members` - and self-hosted `postgres`,
+`outbox-publisher-company-members`, since Phase 6, `specialists-service`,
+`outbox-publisher-specialists`, since Phase 7, `company-specialists-service`,
+`outbox-publisher-company-specialists`, and since Phase 8, `services-catalog-service`,
+`outbox-publisher-services-catalog` - and self-hosted `postgres`,
 `redis`, `rabbitmq`, `postgres-ai`. Only `gateway` publishes a host port
 (`80`) - every other service uses `expose`, reachable only from other
 containers on this stack's network.

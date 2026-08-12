@@ -48,9 +48,9 @@ http:
       service: company-members-service
       entryPoints: [web]
       priority: 100
-    legacy-company-services: # services-catalog-service (Phase 8)
+    services-catalog-service-company-services: # services-catalog-service (Phase 8)
       rule: "PathRegexp(`^/companies/[^/]+/services`)"
-      service: legacy-backend
+      service: services-catalog-service
       entryPoints: [web]
       priority: 95
     legacy-company-appointments: # appointments-service (Phase 9)
@@ -58,19 +58,19 @@ http:
       service: legacy-backend
       entryPoints: [web]
       priority: 90
-    legacy-company-specialist-requests-create: # company-specialists-service (Phase 7)
+    company-specialists-service-requests-create: # company-specialists-service (Phase 7)
       rule: "PathRegexp(`^/companies/[^/]+/specialists/requests$`)"
-      service: legacy-backend
+      service: company-specialists-service
       entryPoints: [web]
       priority: 89
-    legacy-company-specialist-requests-list: # company-specialists-service (Phase 7)
+    company-specialists-service-requests-list: # company-specialists-service (Phase 7)
       rule: "PathRegexp(`^/companies/[^/]+/specialist-requests$`)"
-      service: legacy-backend
+      service: company-specialists-service
       entryPoints: [web]
       priority: 88
-    legacy-company-specialists: # company-specialists-service (Phase 7)
+    company-specialists-service-list: # company-specialists-service (Phase 7)
       rule: "PathRegexp(`^/companies/[^/]+/specialists$`)"
-      service: legacy-backend
+      service: company-specialists-service
       entryPoints: [web]
       priority: 87
     legacy-company-reviews: # reviews-service (Phase 10)
@@ -105,39 +105,39 @@ http:
       priority: 10
 
     # ---- Specialists: ordered by priority, most specific = highest number ----
-    legacy-specialist-profile-create: # specialists-service (Phase 6)
+    specialists-service-profile-create: # specialists-service (Phase 6)
       rule: "Path(`/specialists/profile`)"
-      service: legacy-backend
+      service: specialists-service
       entryPoints: [web]
       priority: 100
-    legacy-specialist-status-history: # specialists-service (Phase 6)
+    specialists-service-status-history: # specialists-service (Phase 6)
       rule: "Path(`/specialists/me/status-history`)"
-      service: legacy-backend
+      service: specialists-service
       entryPoints: [web]
       priority: 99
-    legacy-specialist-me-services: # services-catalog-service (Phase 8, Q13)
+    services-catalog-service-my-services: # services-catalog-service (Phase 8, Q13)
       rule: "Path(`/specialists/me/services`)"
-      service: legacy-backend
+      service: services-catalog-service
       entryPoints: [web]
       priority: 98
-    legacy-specialist-company-requests: # company-specialists-service (Phase 7)
+    company-specialists-service-company-requests: # company-specialists-service (Phase 7)
       rule: "PathRegexp(`^/specialists/me/company-requests`)"
-      service: legacy-backend
+      service: company-specialists-service
       entryPoints: [web]
       priority: 97
-    legacy-specialist-companies: # company-specialists-service (Phase 7)
+    company-specialists-service-my-companies: # company-specialists-service (Phase 7)
       rule: "Path(`/specialists/me/companies`)"
-      service: legacy-backend
+      service: company-specialists-service
       entryPoints: [web]
       priority: 96
-    legacy-specialist-me: # specialists-service (Phase 6)
+    specialists-service-me: # specialists-service (Phase 6)
       rule: "Path(`/specialists/me`)"
-      service: legacy-backend
+      service: specialists-service
       entryPoints: [web]
       priority: 95
-    legacy-specialist-public: # specialists-service (Phase 6)
+    specialists-service-public: # specialists-service (Phase 6)
       rule: "Path(`/specialists/public`)"
-      service: legacy-backend
+      service: specialists-service
       entryPoints: [web]
       priority: 94
     legacy-specialist-reviews: # reviews-service (Phase 10)
@@ -145,19 +145,39 @@ http:
       service: legacy-backend
       entryPoints: [web]
       priority: 85
-    legacy-specialists: # specialists-service (Phase 6) - generic fallback (:specialistId)
+    specialists-service-by-id: # specialists-service (Phase 6)
+      rule: "PathRegexp(`^/specialists/[^/]+$`)"
+      service: specialists-service
+      entryPoints: [web]
+      priority: 84
+    legacy-specialists: # generic fallback for anything under /specialists not claimed above
       rule: "PathPrefix(`/specialists`)"
       service: legacy-backend
       entryPoints: [web]
       priority: 10
 
-    # ---- Services catalog (Phase 8 target: services-catalog-service) ----
+    # ---- Services catalog (Phase 8: services-catalog-service) ----
     legacy-service-reviews: # reviews-service (Phase 10) takes priority over the generic fallback
       rule: "PathRegexp(`^/services/[^/]+/reviews$`)"
       service: legacy-backend
       entryPoints: [web]
       priority: 85
-    legacy-services:
+    services-catalog-service-specialists: # services-catalog-service (Phase 8) - covers POST/GET/DELETE .../specialists*
+      rule: "PathRegexp(`^/services/[^/]+/specialists`)"
+      service: services-catalog-service
+      entryPoints: [web]
+      priority: 30
+    services-catalog-service-public: # services-catalog-service (Phase 8)
+      rule: "Path(`/services/public`)"
+      service: services-catalog-service
+      entryPoints: [web]
+      priority: 20
+    services-catalog-service-by-id: # services-catalog-service (Phase 8)
+      rule: "PathRegexp(`^/services/[^/]+$`)"
+      service: services-catalog-service
+      entryPoints: [web]
+      priority: 15
+    legacy-services: # generic fallback for anything under /services not claimed above
       rule: "PathPrefix(`/services`)"
       service: legacy-backend
       entryPoints: [web]
@@ -214,3 +234,18 @@ http:
       loadBalancer:
         servers:
           - url: "http://company-members-service:4004"
+
+    specialists-service:
+      loadBalancer:
+        servers:
+          - url: "http://specialists-service:4005"
+
+    company-specialists-service:
+      loadBalancer:
+        servers:
+          - url: "http://company-specialists-service:4006"
+
+    services-catalog-service:
+      loadBalancer:
+        servers:
+          - url: "http://services-catalog-service:4007"

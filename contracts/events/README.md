@@ -25,6 +25,14 @@ Published by the backend via the outbox pattern (see [`docs/architecture/event-d
 - [`company-member.added.v1.json`](company-member.added.v1.json) - published by `services/company-members-service`, consumed by `services/auth-service` (membership projection).
 - [`company-member.removed.v1.json`](company-member.removed.v1.json) - published by `services/company-members-service`, consumed by `services/auth-service` (membership projection).
 - [`company-member.role_changed.v1.json`](company-member.role_changed.v1.json) - schema exists, not currently published (see `docs/architecture/event-catalog.md`).
+- [`specialist.created.v1.json`](specialist.created.v1.json) - published by `services/specialists-service`.
+- [`specialist.updated.v1.json`](specialist.updated.v1.json) - published by `services/specialists-service`.
+- [`company-specialist.accepted.v1.json`](company-specialist.accepted.v1.json) - published by `services/company-specialists-service`.
+- [`company-specialist.removed.v1.json`](company-specialist.removed.v1.json) - schema exists, not currently published (no removal endpoint exists in legacy).
+- [`service.created.v1.json`](service.created.v1.json) - published by `services/services-catalog-service`.
+- [`service.updated.v1.json`](service.updated.v1.json) - published by `services/services-catalog-service`.
+- [`specialist-service.assigned.v1.json`](specialist-service.assigned.v1.json) - published by `services/services-catalog-service`.
+- [`specialist-service.removed.v1.json`](specialist-service.removed.v1.json) - published by `services/services-catalog-service`.
 
 ## Analytics / AI result events (exchange: `analytics.events`)
 

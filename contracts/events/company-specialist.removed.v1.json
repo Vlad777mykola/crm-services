@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://crm-services/contracts/events/company-specialist.removed.v1.json",
+  "title": "company-specialist.removed",
+  "description": "Reserved for when a company-specialist relation is removed. Exchange: domain.events. Routing key: company-specialist.removed. NOT currently published - legacy has no code path that sets a CompanySpecialist row to 'removed' (no removal endpoint exists in backend/src/modules/company-specialists). Schema kept so appointments-service (Phase 9) can plan its projection ahead of this becoming reachable.",
+  "type": "object",
+  "required": ["companyId", "specialistProfileId"],
+  "additionalProperties": false,
+  "properties": {
+    "companyId": { "type": "string", "format": "uuid" },
+    "specialistProfileId": { "type": "string", "format": "uuid" }
+  }
+}

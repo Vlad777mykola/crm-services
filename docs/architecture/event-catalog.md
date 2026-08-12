@@ -27,6 +27,13 @@ Every message uses the `envelope.v1.json` wrapper (`id`, `type`, `source`, `vers
 | `company.created` (re-consumed) | `domain.events` | — | — | company-members-service (auto-creates the `owner` row) | `company.created.v1.json` |
 | `company-member.added` | `domain.events` | `company-member.added` | company-members-service (via its own outbox) | auth-service (membership projection) | `company-member.added.v1.json` |
 | `company-member.removed` | `domain.events` | `company-member.removed` | company-members-service (via its own outbox) | auth-service (membership projection) | `company-member.removed.v1.json` |
+| `specialist.created` | `domain.events` | `specialist.created` | specialists-service (via its own outbox) | appointments-service (projection, Phase 9 — no consumer yet) | `specialist.created.v1.json` |
+| `specialist.updated` | `domain.events` | `specialist.updated` | specialists-service (via its own outbox) | appointments-service (projection, Phase 9 — no consumer yet) | `specialist.updated.v1.json` |
+| `company-specialist.accepted` | `domain.events` | `company-specialist.accepted` | company-specialists-service (via its own outbox) | appointments-service (projection, Phase 9 — no consumer yet) | `company-specialist.accepted.v1.json` |
+| `service.created` | `domain.events` | `service.created` | services-catalog-service (via its own outbox) | appointments-service (projection, Phase 9 — no consumer yet) | `service.created.v1.json` |
+| `service.updated` | `domain.events` | `service.updated` | services-catalog-service (via its own outbox) | appointments-service (projection, Phase 9 — no consumer yet) | `service.updated.v1.json` |
+| `specialist-service.assigned` | `domain.events` | `specialist-service.assigned` | services-catalog-service (via its own outbox) | appointments-service (projection, Phase 9 — no consumer yet) | `specialist-service.assigned.v1.json` |
+| `specialist-service.removed` | `domain.events` | `specialist-service.removed` | services-catalog-service (via its own outbox) | appointments-service (projection, Phase 9 — no consumer yet) | `specialist-service.removed.v1.json` |
 
 `company-member.role_changed.v1.json` exists (contract-first, per Task 5.3) but is
 **not published** — no code path in company-members-service changes a member's role
@@ -46,17 +53,9 @@ today.
 | `auth.session_revoked` | `domain.events` | auth-service | (none confirmed) | 2 | Not blocking; confirm need before writing schema |
 | `company.published` | `domain.events` | companies-service | (none confirmed — public listing candidate) | 4 | Confirm need before writing schema |
 | `company-member.suspended` | `domain.events` | company-members-service | auth-service (membership projection) | 5 | **Excluded — confirmed.** `CompanyMemberStatus` enum has only `active`/`removed` (verified in `company-member.entity.ts`). Do not add this event or schema; it implies a status that does not exist. |
-| `specialist.created` | `domain.events` | specialists-service | appointments-service (projection) | 6 | **Blocks Task 6.2** |
-| `specialist.updated` | `domain.events` | specialists-service | appointments-service (projection) | 6 | **Blocks Task 6.2** |
 | `specialist.published` | `domain.events` | specialists-service | (none confirmed) | 6 | Confirm need |
-| `company-specialist.requested` | `domain.events` | company-specialists-service | (none confirmed — notifications candidate) | 7 | Confirm need |
-| `company-specialist.accepted` | `domain.events` | company-specialists-service | appointments-service (projection) | 7 | **Blocks Task 7.2** |
-| `company-specialist.rejected` | `domain.events` | company-specialists-service | (none confirmed) | 7 | Confirm need |
-| `company-specialist.removed` | `domain.events` | company-specialists-service | appointments-service (projection) | 7 | **Blocks Task 7.2** |
-| `service.created` | `domain.events` | services-catalog-service | appointments-service (projection) | 8 | **Blocks Task 8.3** |
-| `service.updated` | `domain.events` | services-catalog-service | appointments-service (projection) | 8 | **Blocks Task 8.3** |
-| `specialist-service.assigned` | `domain.events` | services-catalog-service | appointments-service (projection) | 8 | **Blocks Task 8.3** |
-| `specialist-service.removed` | `domain.events` | services-catalog-service | appointments-service (projection) | 8 | **Blocks Task 8.3** |
+| `company-specialist.requested` | `domain.events` | company-specialists-service | (none confirmed — notifications candidate) | 7 | Confirm need — not added |
+| `company-specialist.rejected` | `domain.events` | company-specialists-service | (none confirmed) | 7 | Confirm need — not added |
 | `user.profile_created` | `domain.events` | users-service | (none confirmed) | 3 | Confirm need — may be redundant with `auth.user_registered` |
 | `user.profile_updated` | `domain.events` | users-service | (none confirmed) | 3 | Confirm need before writing schema |
 | `notification.created` | `domain.events` | notifications-service | (none confirmed) | 11 | Confirm need — notifications-service is currently a pure consumer, not a publisher |
