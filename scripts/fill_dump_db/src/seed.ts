@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 
 import { SHARED_TEST_PASSWORD, TEST_ACCOUNTS } from './data/credentials.js';
 import { daysFromNow, insert } from './insert.js';
+import { seedCompaniesSchema } from './seed-microservices.js';
 
 // Same cost factor as backend/src/common/auth/password.ts, so these hashes are
 // interchangeable with ones the real API would generate.
@@ -655,4 +656,87 @@ export async function seedDatabase(): Promise<void> {
     eventId: review1Id,
   });
   console.log('[fill_dump_db] created 4 email logs');
+
+  // ---------------------------------------------------------------------
+  // companies_schema (companies-service) - same company rows as legacy public.companies
+  // ---------------------------------------------------------------------
+  await seedCompaniesSchema(
+    [
+      {
+        id: dentalId,
+        name: 'Bright Smile Dental',
+        slug: 'bright-smile-dental',
+        description: 'Full-service dental clinic in the city center.',
+        category: 'Dental',
+        website: 'https://bright-smile-dental.example.com',
+        phone: '+380441234501',
+        email: 'contact@bright-smile-dental.example.com',
+        status: 'published',
+        isRemoteSupported: false,
+        city: 'Kyiv',
+        address: '12 Khreshchatyk St',
+        createdByUserId: uid('owner.dental@example.com'),
+      },
+      {
+        id: beautyId,
+        name: 'Glow Beauty Studio',
+        slug: 'glow-beauty-studio',
+        description: 'Hair, nails, and skincare - in-studio or at your place.',
+        category: 'Beauty',
+        website: 'https://glow-beauty-studio.example.com',
+        phone: '+380441234502',
+        email: 'contact@glow-beauty-studio.example.com',
+        status: 'published',
+        isRemoteSupported: true,
+        city: 'Lviv',
+        address: '5 Rynok Square',
+        createdByUserId: uid('owner.beauty@example.com'),
+      },
+      {
+        id: fitnessId,
+        name: 'Fresh Start Fitness',
+        slug: 'fresh-start-fitness',
+        description: 'Personal training studio - opening soon.',
+        category: 'Fitness',
+        website: null,
+        phone: null,
+        email: null,
+        status: 'draft',
+        isRemoteSupported: false,
+        city: 'Odesa',
+        address: null,
+        createdByUserId: uid('owner.fitness@example.com'),
+      },
+      {
+        id: spaId,
+        name: 'Old Town Spa',
+        slug: 'old-town-spa',
+        description: 'Spa and massage salon.',
+        category: 'Spa',
+        website: null,
+        phone: '+380441234504',
+        email: 'contact@old-town-spa.example.com',
+        status: 'suspended',
+        isRemoteSupported: false,
+        city: 'Kharkiv',
+        address: '3 Sumska St',
+        createdByUserId: uid('owner.spa@example.com'),
+      },
+    ],
+    [
+      {
+        companyId: dentalId,
+        fromStatus: 'draft',
+        toStatus: 'published',
+        changedByUserId: uid('owner.dental@example.com'),
+      },
+      {
+        companyId: spaId,
+        fromStatus: 'published',
+        toStatus: 'suspended',
+        changedByUserId: null,
+        reason: 'Policy violation - suspended pending review.',
+      },
+    ],
+  );
 }

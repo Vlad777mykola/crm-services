@@ -20,10 +20,25 @@ cp .env.example .env   # defaults already match compose.infra.yml's local Postgr
 
 ## Usage
 
-Make sure Postgres is running and the backend has already run its migrations at least
-once (`yarn workspace @crm/backend migration:run`, or just start the backend once with
-`NODE_ENV=development` so TypeORM's `synchronize` creates the tables) - this script only
-inserts rows, it never creates tables.
+Make sure Postgres is running (`yarn dev:infra` from the repo root, or
+`docker compose -f docker/dev/compose.infra.yml up`).
+
+**Microservices-only loop** (frontend + `companies-service`, no legacy backend):
+
+```bash
+yarn seed:companies        # 2 published companies in companies_schema
+yarn seed:companies:reset  # wipe + re-insert those 2 rows
+```
+
+`GET /companies/public` reads `companies_schema.companies` — not legacy
+`public.companies`. Use `seed:companies` when testing the extracted
+companies-service.
+
+**Full legacy + microservice mirror** (every table, test login accounts):
+
+Legacy tables must exist first (`yarn workspace @crm/backend migration:run`, or
+start legacy-backend once with `NODE_ENV=development` so TypeORM `synchronize`
+creates them). This script only inserts rows.
 
 ```bash
 yarn seed          # insert fake data (fails if it collides with existing rows, e.g. same email)
@@ -31,8 +46,9 @@ yarn seed:reset    # wipe every table this script touches, then insert fresh fak
 ```
 
 `--reset` runs `TRUNCATE ... RESTART IDENTITY CASCADE` on every table listed in
-`src/reset.ts` first. **Never point this at a database you care about** - it deletes
-everything in those tables, no confirmation prompt.
+`src/reset.ts` first (legacy `public.*` plus `companies_schema.*`). **Never point
+this at a database you care about** - it deletes everything in those tables, no
+confirmation prompt.
 
 ## Test accounts
 
@@ -74,6 +90,8 @@ accounts above through the frontend hits real, connected data instead of empty s
 |---|---|---|
 | `users` / `auth_identities` | 15 | `active` + `disabled` user status |
 | `companies` | 4 | `draft`, `published` (x2, one remote-supported), `suspended` |
+| `companies_schema.companies` | 4 (full seed) or 2 (`seed:companies`) | same rows mirrored for **companies-service**; 2 published appear on `/companies/public` |
+| `companies_schema.company_status_history` | 2 | draft→published + published→suspended |
 | `company_members` | 6 | `owner` + `manager` roles; `active` + `removed` status |
 | `specialist_profiles` | 5 | `draft`, `published` (x3), `suspended` |
 | `company_specialist_requests` | 7 | `pending`, `accepted` (x4), `rejected`, `cancelled` |

@@ -100,6 +100,19 @@ Each router also sets `entryPoints: [web]` (never the `traefik` entrypoint, whic
 is dashboard/API-only) and an explicit `priority:` — same reasoning as above, just
 YAML keys in a file instead of Docker labels.
 
+## CORS (gateway-owned)
+
+Per the global checklist decision ("gateway routes + CORS"), Traefik applies a
+`cors` headers middleware on the `web` entrypoint (`--entrypoints.web.http.middlewares=cors@file`
+in every gateway compose file). The middleware is defined in each dynamic-config
+file under `http.middlewares.cors` with `accessControlAllowOriginList:
+http://localhost:5173` for local dev (match `CORS_ORIGINS` on backend/services).
+
+Traefik answers browser `OPTIONS` preflights directly and adds `Access-Control-*`
+headers on every response — including `502` when a routed service is not running
+on the host. Individual services still set their own CORS for direct-to-service
+local debugging (`yarn dev` against `:4003` etc. without the gateway hop).
+
 ## Dashboard (local dev only)
 
 Both `docker/dev` gateway compose files pass `--api.dashboard=true` +

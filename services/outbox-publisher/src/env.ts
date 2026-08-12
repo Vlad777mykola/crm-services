@@ -4,6 +4,8 @@ import { z } from 'zod';
 
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
+  /** Schema owning outbox_events (e.g. auth_schema). Empty = public.outbox_events (legacy). */
+  OUTBOX_SCHEMA: z.string().optional().default(''),
   RABBITMQ_URL: z.string().min(1),
   POLL_INTERVAL_MS: z.coerce.number().int().positive().default(1000),
   BATCH_SIZE: z.coerce.number().int().positive().default(50),
@@ -26,3 +28,9 @@ function loadEnv(): Env {
 }
 
 export const env = loadEnv();
+
+/** Qualified SQL table reference for outbox_events in the configured schema. */
+export function outboxEventsTable(): string {
+  const schema = env.OUTBOX_SCHEMA.trim();
+  return schema ? `"${schema}"."outbox_events"` : '"outbox_events"';
+}

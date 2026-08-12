@@ -1,7 +1,8 @@
 import { pool } from './db.js';
+import { ensureCompaniesSchema } from './seed-microservices.js';
 
-// Every table this seed script touches, in one place, so add/remove/reset stay
-// in sync. Order doesn't matter - TRUNCATE ... CASCADE below handles FKs.
+// Every legacy public table this seed script touches. Order doesn't matter -
+// TRUNCATE ... CASCADE below handles FKs.
 export const SEEDED_TABLES = [
   'reviews',
   'notifications',
@@ -21,13 +22,27 @@ export const SEEDED_TABLES = [
   'outbox_events',
 ];
 
+/** Microservice-owned schemas mirrored by this script (companies-service reads these). */
+export const MICROSERVICE_SEEDED_TABLES = ['companies_schema.companies'];
+
 /**
- * Wipes every table this script seeds - dev/test databases only, never point
- * this at anything you care about. `RESTART IDENTITY CASCADE` also resets any
- * sequences and follows FKs so table order above doesn't matter.
+ * Wipes microservice schema tables this script seeds. `companies` CASCADE clears
+ * company_status_history and company_insight_projections too.
+ */
+export async function resetMicroserviceSchemas(): Promise<void> {
+  await ensureCompaniesSchema();
+  const tableList = MICROSERVICE_SEEDED_TABLES.join(', ');
+  await pool.query(`TRUNCATE TABLE ${tableList} RESTART IDENTITY CASCADE`);
+  console.log(`[fill_dump_db] truncated ${MICROSERVICE_SEEDED_TABLES.length} microservice table(s)`);
+}
+
+/**
+ * Wipes every legacy + microservice table this script seeds - dev/test only.
  */
 export async function resetDatabase(): Promise<void> {
   const tableList = SEEDED_TABLES.map((table) => `"${table}"`).join(', ');
   await pool.query(`TRUNCATE TABLE ${tableList} RESTART IDENTITY CASCADE`);
-  console.log(`[fill_dump_db] truncated ${SEEDED_TABLES.length} tables`);
+  console.log(`[fill_dump_db] truncated ${SEEDED_TABLES.length} legacy table(s)`);
+
+  await resetMicroserviceSchemas();
 }

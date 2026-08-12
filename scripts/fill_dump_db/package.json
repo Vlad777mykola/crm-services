@@ -7,6 +7,8 @@
   "scripts": {
     "seed": "tsx src/index.ts",
     "seed:reset": "tsx src/index.ts --reset",
+    "seed:companies": "tsx src/seed-companies-only.ts",
+    "seed:companies:reset": "tsx src/seed-companies-only.ts --reset",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

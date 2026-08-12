@@ -3,19 +3,29 @@ import { randomUUID } from 'node:crypto';
 import { query } from './db.js';
 
 /**
- * Generic single-row insert - every table this script touches has a uuid
- * `id` primary key, so one helper covers all of them instead of hand-writing
- * an INSERT per table. Returns the id (the one passed in `values.id`, or a
- * freshly generated one if omitted).
+ * Generic single-row insert into a public-schema table - every legacy table this
+ * script touches has a uuid `id` primary key.
  */
 export async function insert(table: string, values: Record<string, unknown>): Promise<string> {
+  return insertQualified('public', table, values);
+}
+
+/**
+ * Insert into a schema-qualified table (e.g. companies_schema.companies).
+ */
+export async function insertQualified(
+  schema: string,
+  table: string,
+  values: Record<string, unknown>,
+): Promise<string> {
   const id = (values.id as string | undefined) ?? randomUUID();
   const row = { ...values, id };
   const columns = Object.keys(row);
   const placeholders = columns.map((_, i) => `$${i + 1}`);
+  const qualified = `"${schema}"."${table}"`;
 
   await query(
-    `INSERT INTO "${table}" (${columns.map((c) => `"${c}"`).join(', ')}) VALUES (${placeholders.join(', ')})`,
+    `INSERT INTO ${qualified} (${columns.map((c) => `"${c}"`).join(', ')}) VALUES (${placeholders.join(', ')})`,
     Object.values(row),
   );
 

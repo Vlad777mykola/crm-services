@@ -33,6 +33,7 @@ services:
       - '--providers.file.filename=/etc/traefik/dynamic.yml'
       - '--providers.file.watch=true'
       - '--entrypoints.web.address=:8080'
+      - '--entrypoints.web.http.middlewares=cors@file'
       - '--entrypoints.traefik.address=:8081'
       - '--api.dashboard=true'
       # Dashboard is unauthenticated on the dedicated :8081 entrypoint - fine for

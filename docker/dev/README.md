@@ -31,15 +31,20 @@ for how the gateway's routing rules work.
 docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.gateway.yml up
 ```
 
-Starts Postgres, Redis, and the gateway (Traefik, routing to
+Or from the repo root: `yarn dev:infra` (includes RabbitMQ `--profile events`).
+
+Starts Postgres, Redis, RabbitMQ, and the gateway (Traefik, routing to
 `host.docker.internal`). Then, on the host, in another terminal:
 
 ```bash
-yarn dev            # frontend + legacy-backend
+yarn dev:list        # all bundles and per-service scripts
+yarn dev             # frontend + companies-service (default)
+yarn dev:auth:app    # frontend + auth + users + outbox-auth
 ```
 
-Point the frontend at the gateway: `VITE_API_URL=http://localhost:8080`. No image
-rebuild needed for backend code changes - `tsx watch` handles reload.
+Point the frontend at the gateway: `VITE_API_URL=http://localhost:8080` (bundle
+scripts set this automatically). See [`scripts/dev/README.md`](../../scripts/dev/README.md)
+for every `yarn dev:svc:*` / `yarn dev:outbox:*` command and port map.
 
 Add RabbitMQ/`postgres-ai` if you need events/AI running too:
 

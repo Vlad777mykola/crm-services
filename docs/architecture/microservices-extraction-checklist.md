@@ -406,18 +406,18 @@ No new tests. Can be pulled earlier (right after Phase 1) if debugging extracted
 
 ---
 
-## Phase 14 — AI-service wiring
+## Phase 14 — AI-service wiring ✅ Done
 
 AI-service already exists — this phase rewires event sources, it does not recreate the service.
 
 | Task | Description |
 |---|---|
-| 14.1 | Confirm `ai-service` still owns `postgres-ai` unchanged. |
-| 14.2 | Confirm it validates against `contracts/events` (already does). |
-| 14.3 | Consume `appointment.requested`/`.approved`/`.completed` from the new appointments-service instead of legacy. |
-| 14.4 | Consume `company.*`, `specialist.*`, `service.*` from their new publishers. |
-| 14.5 | Continue publishing `ai.appointment_recommendation_created`, `ai.company_insight_created`, `ai.job_failed` unchanged. |
-| 14.6 | Route AI results into whichever service owns the projection per Phase 12's decision. |
+| 14.1 | ✅ Confirmed — `ai-service` still owns `postgres-ai` exclusively (`AI_DATABASE_URL`), untouched by any other phase. |
+| 14.2 | ✅ Confirmed — payload shapes match `contracts/events/ai.*.v1.json` by construction (no runtime JSON-schema validator is used anywhere in this project — "contract-first" here means schema files are the source of truth checked by hand/code-review, same convention as every other service). |
+| 14.3 | ✅ **No code change needed.** `services/ai-service/src/rabbitmq/consumer.py` binds `appointment.*` and `review.received` on the `domain.events` **exchange**, not to a specific publisher. `appointments-service` (Phase 9) and `reviews-service` (Phase 10) publish to that exact same exchange/routing-key shape (reused v1 contracts unchanged), so ai-service started consuming from them automatically the moment those services went live — nothing "instead of legacy" to switch over. |
+| 14.4 | **N/A — not applicable.** ai-service has never consumed `company.*`/`specialist.*`/`service.*`; nothing in its handlers needs company/specialist/service data today (its two handlers only look at `appointment.requested` and `review.received` payloads). Confirmed no such need exists rather than speculatively adding bindings — consistent with "don't add a consumer without a confirmed need" (see Phase 1 decision re: `ai.job_failed`). |
+| 14.5 | ✅ Confirmed unchanged — still publishes `ai.appointment_recommendation_created`, `analytics.company_rating_updated`; `ai.job_failed`'s schema exists but is not actually published by any handler today (no code path raises it) — same "no consumer, and now also no confirmed producer path" status as before this phase. |
+| 14.6 | ✅ Done in Phase 12 — `ai.appointment_recommendation_created` routes into appointments-service, `ai.company_insight_created` routes into companies-service. |
 
 Frontend never calls ai-service directly (unchanged rule).
 
@@ -425,14 +425,16 @@ Frontend never calls ai-service directly (unchanged rule).
 
 ---
 
-## Phase 15 — Dashboard / BFF decision
+## Phase 15 — Dashboard / BFF decision ⏸ Awaiting sign-off
+
+Full write-up in `docs/architecture/phase-15-dashboard-design.md`.
 
 | Task | Description |
 |---|---|
-| 15.1 | List `/app/summary` and `/companies/:id/summary` data dependencies (confirmed: appointments, company-members, specialists, company-specialists, companies, service-specialists repositories, all queried directly in `dashboard.service.ts`). |
-| 15.2 | Keep both routes on legacy-backend until appointments/companies/users are stable in their own services. |
-| 15.3 | Design read-api-service (or dashboard-service) projections once ready to extract. |
-| 15.4 | Move the route only after design is confirmed. |
+| 15.1 | ✅ Confirmed and detailed per-field: 7 schemas feed these two routes (`notifications_schema`, `company_members_schema`, `companies_schema`, `specialists_schema`, `appointments_schema`, `company_specialists_schema`, `services_schema`). |
+| 15.2 | ✅ All 7 owning services are now stable (Phases 3-11 done) — the wait condition is satisfied. Routes are still on `legacy-backend` for this pass, but flagged as **already serving stale/wrong counts** for any data created via the new services since each one's cutover (no backfill → legacy's own tables and `*_schema.*` tables diverge). |
+| 15.3 | ✅ Designed 3 options (dedicated projection-fed service / cross-schema read-only service / stay on legacy) with trade-offs — see the design doc. Recommendation: cross-schema read-only service, same pattern as every other `legacy-*-bridge.ts` in this migration, just consolidated. |
+| 15.4 | ⏸ **Not moved yet** — awaiting explicit sign-off on the Option B recommendation before standing up a service with read access to 7 schemas. Mechanical once confirmed (see design doc "Recommendation"). |
 
 **Stop point:** await approval before Phase 16.
 

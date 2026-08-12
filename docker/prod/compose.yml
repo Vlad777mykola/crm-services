@@ -22,6 +22,7 @@ services:
     command:
       - '--providers.file.filename=/etc/traefik/dynamic.yml'
       - '--entrypoints.web.address=:80'
+      - '--entrypoints.web.http.middlewares=cors@file'
     ports:
       - '80:80' # the only port this stack publishes to the host/internet
     volumes:

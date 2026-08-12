@@ -14,7 +14,34 @@ async function bootstrap(): Promise<void> {
 
   let stopped = false;
 
+  async function waitForOutboxTable(): Promise<void> {
+    let loggedHint = false;
+    let lastWaitLogAt = 0;
+    const waitLogIntervalMs = 10_000;
+
+    while (!stopped && !(await repository.isOutboxTableReady())) {
+      const now = Date.now();
+      if (!loggedHint) {
+        logger.warn(
+          { schema: env.OUTBOX_SCHEMA || 'public' },
+          '[outbox-publisher] outbox_events not found — start the owning service in another terminal (auth_schema: yarn dev:svc:auth) or use yarn dev:auth',
+        );
+        loggedHint = true;
+        lastWaitLogAt = now;
+      } else if (now - lastWaitLogAt >= waitLogIntervalMs) {
+        logger.warn(
+          { schema: env.OUTBOX_SCHEMA || 'public' },
+          '[outbox-publisher] still waiting for outbox_events…',
+        );
+        lastWaitLogAt = now;
+      }
+      await new Promise((resolve) => setTimeout(resolve, env.POLL_INTERVAL_MS));
+    }
+  }
+
   async function pollLoop(): Promise<void> {
+    await waitForOutboxTable();
+
     while (!stopped) {
       try {
         const processed = await publishPendingBatch(repository, publisher);
@@ -28,7 +55,10 @@ async function bootstrap(): Promise<void> {
     }
   }
 
-  logger.info('[outbox-publisher] started - polling outbox_events for pending rows (Ctrl+C to stop)');
+  logger.info(
+    { schema: env.OUTBOX_SCHEMA || 'public' },
+    '[outbox-publisher] started - polling outbox_events for pending rows (Ctrl+C to stop)',
+  );
   const loopPromise = pollLoop();
 
   function shutdown(signal: string): void {
