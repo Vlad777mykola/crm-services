@@ -40,9 +40,9 @@ http:
       priority: 10
 
     # ---- Companies: ordered by priority, most specific = highest number ----
-    legacy-company-members:
+    company-members-service:
       rule: "PathRegexp(`^/companies/[^/]+/members`)"
-      service: legacy-backend
+      service: company-members-service
       entryPoints: [web]
       priority: 100
     legacy-company-services:
@@ -206,3 +206,8 @@ http:
       loadBalancer:
         servers:
           - url: "http://companies-service:4003"
+
+    company-members-service:
+      loadBalancer:
+        servers:
+          - url: "http://company-members-service:4004"

@@ -24,6 +24,13 @@ Every message uses the `envelope.v1.json` wrapper (`id`, `type`, `source`, `vers
 | `auth.user_registered` | `domain.events` | `auth.user_registered` | auth-service (via its own outbox) | users-service (creates profile idempotently) | `auth.user_registered.v1.json` |
 | `company.created` | `domain.events` | `company.created` | companies-service (via its own outbox) | appointments-service (projection, Phase 9 — no consumer yet) | `company.created.v1.json` |
 | `company.updated` | `domain.events` | `company.updated` | companies-service (via its own outbox) | appointments-service (projection, Phase 9 — no consumer yet) | `company.updated.v1.json` |
+| `company.created` (re-consumed) | `domain.events` | — | — | company-members-service (auto-creates the `owner` row) | `company.created.v1.json` |
+| `company-member.added` | `domain.events` | `company-member.added` | company-members-service (via its own outbox) | auth-service (membership projection) | `company-member.added.v1.json` |
+| `company-member.removed` | `domain.events` | `company-member.removed` | company-members-service (via its own outbox) | auth-service (membership projection) | `company-member.removed.v1.json` |
+
+`company-member.role_changed.v1.json` exists (contract-first, per Task 5.3) but is
+**not published** — no code path in company-members-service changes a member's role
+after creation (legacy parity: PATCH only ever changes status).
 
 Routing confirmed from `backend/src/infrastructure/outbox/event-routing.ts` — the
 `domainEventRouting` map currently has exactly these 6 entries: `appointment.requested`,
@@ -38,9 +45,6 @@ today.
 | `auth.user_logged_in` | `domain.events` | auth-service | (none confirmed — analytics/audit candidate) | 2 | Not blocking; confirm need before writing schema |
 | `auth.session_revoked` | `domain.events` | auth-service | (none confirmed) | 2 | Not blocking; confirm need before writing schema |
 | `company.published` | `domain.events` | companies-service | (none confirmed — public listing candidate) | 4 | Confirm need before writing schema |
-| `company-member.added` | `domain.events` | company-members-service | auth-service (membership projection) | 5 | **Blocks Task 5.3, 5.4** |
-| `company-member.removed` | `domain.events` | company-members-service | auth-service (membership projection) | 5 | **Blocks Task 5.3, 5.4** |
-| `company-member.role_changed` | `domain.events` | company-members-service | auth-service (membership projection) | 5 | **Blocks Task 5.3, 5.4** |
 | `company-member.suspended` | `domain.events` | company-members-service | auth-service (membership projection) | 5 | **Excluded — confirmed.** `CompanyMemberStatus` enum has only `active`/`removed` (verified in `company-member.entity.ts`). Do not add this event or schema; it implies a status that does not exist. |
 | `specialist.created` | `domain.events` | specialists-service | appointments-service (projection) | 6 | **Blocks Task 6.2** |
 | `specialist.updated` | `domain.events` | specialists-service | appointments-service (projection) | 6 | **Blocks Task 6.2** |

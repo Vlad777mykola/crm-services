@@ -32,16 +32,20 @@ namespace — see `docs/architecture/table-ownership-matrix.md`):
   canonical userId used everywhere (JWT `sub` claim, event payloads).
 - `auth_sessions` — refresh-token session records (hash only, never the raw
   token).
-- `auth_membership_projection` — empty placeholder, populated in Phase 5 from
-  `company-member.*` events.
-- `processed_events` — reserved ahead of Phase 5 (this service doesn't
-  consume anything yet).
+- `auth_membership_projection` — fed by `company-member.added`/`.removed`
+  since Phase 5 (Task 5.4). Permission checks anywhere in this service read
+  this table, never company-members-service's schema directly and never a
+  synchronous HTTP call to it.
+- `processed_events` — idempotency ledger for the Phase 5 consumer.
 - `outbox_events` — written by `register()`, read by a dedicated
   `outbox-publisher` instance pointed at this schema (see Docker run below).
 
 ## Consumed events
 
-None yet (Phase 5 adds `company-member.*` for the membership projection).
+| Event | What happens |
+|---|---|
+| `company-member.added` | Upserts a row into `auth_membership_projection` (companyId, userId, role). |
+| `company-member.removed` | Deletes the matching row from `auth_membership_projection`. |
 
 ## Published events
 
@@ -58,6 +62,7 @@ None yet (Phase 5 adds `company-member.*` for the membership projection).
 | `CORS_ORIGINS` | Comma-separated allowed origins | `http://localhost:5173` |
 | `LOG_LEVEL` | pino level | `info` |
 | `DATABASE_URL` | Postgres connection string | `postgres://postgres:postgres@localhost:5432/crm` |
+| `RABBITMQ_URL` | RabbitMQ connection string — needed since Phase 5 (`company-member.*` consumer) | `amqp://crm:crm_local_only@localhost:5672` |
 | `JWT_ACCESS_SECRET` | **Must match legacy-backend's** `JWT_ACCESS_SECRET` exactly, so tokens this service issues are still accepted by not-yet-extracted legacy routes (Task 2.6) | `dev-access-secret-change-me` |
 | `JWT_ACCESS_TTL_MINUTES` | Access token lifetime | `15` |
 | `REFRESH_TOKEN_TTL_DAYS` | Refresh-token/session lifetime | `30` |
@@ -90,7 +95,8 @@ unqualified table name `outbox_events`, and this service's table lives in
 
 ## Current migration status
 
-Extracted in Phase 2. `/auth/*` is routed here from the gateway; every other
+Extracted in Phase 2, extended in Phase 5 (membership projection consumer).
+`/auth/*` is routed here from the gateway; every other
 route stays on legacy-backend. Rollback: point the gateway's `/auth/*` router
 back at `legacy-backend` (its own `/auth/*` code is untouched, so it keeps
 working on its own accounts — but any accounts created only in `auth_schema`

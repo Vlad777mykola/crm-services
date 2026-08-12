@@ -45,9 +45,9 @@ http:
       priority: 10
 
     # ---- Companies: ordered by priority, most specific = highest number ----
-    legacy-company-members: # company-members-service (Phase 5)
+    company-members-service: # company-members-service (Phase 5)
       rule: "PathRegexp(`^/companies/[^/]+/members`)"
-      service: legacy-backend
+      service: company-members-service
       entryPoints: [web]
       priority: 100
     legacy-company-services: # services-catalog-service (Phase 8)
@@ -211,3 +211,8 @@ http:
       loadBalancer:
         servers:
           - url: "http://host.docker.internal:4003"
+
+    company-members-service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:4004"

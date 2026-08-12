@@ -77,10 +77,10 @@ no dedicated `company_status_history` table today.
 
 | Method | Path | Module | Handler | Target service | Phase | Status |
 |---|---|---|---|---|---|---|
-| GET | `/companies/:companyId/members` | company-members | `listCompanyMembers()` | company-members-service | 5 | legacy |
-| POST | `/companies/:companyId/members/invite` | company-members | `inviteCompanyMember()` | company-members-service | 5 | legacy |
-| PATCH | `/companies/:companyId/members/:memberId` | company-members | `updateCompanyMember()` | company-members-service | 5 | legacy |
-| DELETE | `/companies/:companyId/members/:memberId` | company-members | `removeCompanyMember()` | company-members-service | 5 | legacy |
+| GET | `/companies/:companyId/members` | company-members | `listCompanyMembers()` | company-members-service | 5 | **company-members-service** |
+| POST | `/companies/:companyId/members/invite` | company-members | `inviteCompanyMember()` | company-members-service | 5 | **company-members-service** |
+| PATCH | `/companies/:companyId/members/:memberId` | company-members | `updateCompanyMember()` | company-members-service | 5 | **company-members-service** |
+| DELETE | `/companies/:companyId/members/:memberId` | company-members | `removeCompanyMember()` | company-members-service | 5 | **company-members-service** |
 
 Note: invite is `POST /companies/:companyId/members/invite`, **not**
 `POST /companies/:companyId/members`. Registered before the `:memberId` routes in code

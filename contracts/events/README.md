@@ -20,8 +20,11 @@ Published by the backend via the outbox pattern (see [`docs/architecture/event-d
 - [`appointment.completed.v1.json`](appointment.completed.v1.json)
 - [`review.received.v1.json`](review.received.v1.json)
 - [`auth.user_registered.v1.json`](auth.user_registered.v1.json) - published by `services/auth-service`, consumed by `services/users-service`.
-- [`company.created.v1.json`](company.created.v1.json) - published by `services/companies-service`.
+- [`company.created.v1.json`](company.created.v1.json) - published by `services/companies-service`, consumed by `services/company-members-service` (auto-creates the owner row).
 - [`company.updated.v1.json`](company.updated.v1.json) - published by `services/companies-service`.
+- [`company-member.added.v1.json`](company-member.added.v1.json) - published by `services/company-members-service`, consumed by `services/auth-service` (membership projection).
+- [`company-member.removed.v1.json`](company-member.removed.v1.json) - published by `services/company-members-service`, consumed by `services/auth-service` (membership projection).
+- [`company-member.role_changed.v1.json`](company-member.role_changed.v1.json) - schema exists, not currently published (see `docs/architecture/event-catalog.md`).
 
 ## Analytics / AI result events (exchange: `analytics.events`)
 

@@ -32,6 +32,7 @@ services:
       - auth-service
       - users-service
       - companies-service
+      - company-members-service
 
   postgres:
     image: postgres:16-alpine
@@ -201,6 +202,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     restart: unless-stopped
 
   # Same outbox-publisher image as the shared instance above, redeployed
@@ -275,6 +278,42 @@ services:
       HEALTH_PORT: '4503'
     expose:
       - '4503'
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Extracted in Phase 5. Consumes company.created, publishes company-member.*.
+  company-members-service:
+    build:
+      context: ../../services/company-members-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/company-members-service/.env.production
+    environment:
+      NODE_ENV: production
+    expose:
+      - '4004'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Same outbox-publisher image, redeployed against company-members-service's
+  # own schema (Q8).
+  outbox-publisher-company-members:
+    build:
+      context: ../../services/outbox-publisher
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/outbox-publisher/.env.production.company-members
+    environment:
+      NODE_ENV: production
+      HEALTH_PORT: '4504'
+    expose:
+      - '4504'
     depends_on:
       rabbitmq:
         condition: service_healthy

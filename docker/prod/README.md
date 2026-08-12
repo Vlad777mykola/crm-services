@@ -27,6 +27,8 @@ cp services/auth-service/.env.example services/auth-service/.env.production
 cp services/users-service/.env.example services/users-service/.env.production
 cp services/companies-service/.env.example services/companies-service/.env.production
 cp services/outbox-publisher/.env.example services/outbox-publisher/.env.production.companies
+cp services/company-members-service/.env.example services/company-members-service/.env.production
+cp services/outbox-publisher/.env.example services/outbox-publisher/.env.production.company-members
 ```
 
 Then fill in real values in every file. The `DATABASE_URL`/`RABBITMQ_URL` values
@@ -49,7 +51,11 @@ applies to `services/companies-service/.env.production`'s `JWT_ACCESS_SECRET`
 
 `services/outbox-publisher/.env.production.companies` is the same pattern as
 `.env.production.auth`, pointed at `companies_schema` (`?options=-c%20search_path%3Dcompanies_schema`)
-with `HEALTH_PORT=4503`.
+with `HEALTH_PORT=4503`. Same for `.env.production.company-members`
+(`company_members_schema`, `HEALTH_PORT=4504`).
+
+`services/auth-service/.env.production` now also needs `RABBITMQ_URL` set —
+since Phase 5 it consumes `company-member.*` into its membership projection.
 
 ## Start
 
@@ -61,8 +67,9 @@ Adds every service in the "Production deployment matrix"
 (`target-production-architecture.md`): `gateway`, `legacy-backend`,
 `outbox-publisher`, `notifications-service`, `metrics-service`,
 `backend-projection-service`, `ai-service`, plus, since Phase 2/3, `auth-service`,
-`outbox-publisher-auth`, `users-service`, and since Phase 4, `companies-service`,
-`outbox-publisher-companies` - and self-hosted `postgres`,
+`outbox-publisher-auth`, `users-service`, since Phase 4, `companies-service`,
+`outbox-publisher-companies`, and since Phase 5, `company-members-service`,
+`outbox-publisher-company-members` - and self-hosted `postgres`,
 `redis`, `rabbitmq`, `postgres-ai`. Only `gateway` publishes a host port
 (`80`) - every other service uses `expose`, reachable only from other
 containers on this stack's network.

@@ -19,12 +19,13 @@ live in Traefik's file provider (`docker/dev/traefik/*.yml`,
 ## Owned routes
 
 None — the gateway routes every path in `docs/architecture/route-inventory.md`, it
-does not own any of them. As of Phase 4, `/auth/*` points at `auth-service`;
+does not own any of them. As of Phase 5, `/auth/*` points at `auth-service`;
 `/users/me` and `/users/:id` point at `users-service` (`POST /users` stays on
-legacy-backend, Q5); the 6 company-profile routes point at `companies-service`
-(`/companies/:id/members/*` etc. stay legacy); every other route still points
-at `legacy-backend`. Each later phase changes only the `service=`/port target
-for that domain's routers, not the path list or priority values.
+legacy-backend, Q5); the 6 company-profile routes point at `companies-service`;
+`/companies/:id/members/*` points at `company-members-service`; every other
+route still points at `legacy-backend`. Each later phase changes only the
+`service=`/port target for that domain's routers, not the path list or
+priority values.
 
 ## Owned tables / schema
 
@@ -68,14 +69,15 @@ dev only, see `gateway-routing.md`) shows live router/service status if needed.
 
 ## Current migration status
 
-**Phase 4.** `/auth/*` routes to `auth-service:4001`; `/users/me` and
+**Phase 5.** `/auth/*` routes to `auth-service:4001`; `/users/me` and
 `/users/:id` route to `users-service:4002` (`POST /users` stays on
 legacy-backend, Q5); the 6 company-profile routes route to
-`companies-service:4003` (`/companies/:id/members/*`, `/services/*`,
-`/appointments/*`, `/specialist*`, `/reviews`, `/summary` stay legacy); every
-other route still routes to `legacy-backend:4000` via Traefik, using explicit
-per-router `priority` values (not rule order) so sub-paths already resolve
-correctly ahead of their generic fallbacks — see `docker/dev/traefik/`,
+`companies-service:4003`; `/companies/:id/members/*` routes to
+`company-members-service:4004` (`/services/*`, `/appointments/*`,
+`/specialist*`, `/reviews`, `/summary` stay legacy); every other route still
+routes to `legacy-backend:4000` via Traefik, using explicit per-router
+`priority` values (not rule order) so sub-paths already resolve correctly
+ahead of their generic fallbacks — see `docker/dev/traefik/`,
 `docker/prod/traefik/dynamic.yml`, and `docs/architecture/gateway-routing.md`.
 
 Rollback: repoint the relevant router's `service:` target back at

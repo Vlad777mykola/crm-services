@@ -77,23 +77,33 @@ cd services/companies-service && yarn dev
 cd services/outbox-publisher && DATABASE_URL="postgres://postgres:postgres@localhost:5432/crm?options=-c%20search_path%3Dcompanies_schema" HEALTH_PORT=4503 yarn dev
 ```
 
-or, containerized instead of `yarn dev`, using the dedicated `auth`/`companies`
-profiles in `compose.services.yml` (each turns its own group on/off together,
-independent of the other worker services):
+Since Phase 5, also start company-members-service if you're testing
+`/companies/:id/members/*` (auth-service's membership projection needs it too):
+
+```bash
+cd services/company-members-service && yarn dev
+cd services/outbox-publisher && DATABASE_URL="postgres://postgres:postgres@localhost:5432/crm?options=-c%20search_path%3Dcompany_members_schema" HEALTH_PORT=4504 yarn dev
+```
+
+or, containerized instead of `yarn dev`, using the dedicated `auth`/`companies`/
+`company-members` profiles in `compose.services.yml` (each turns its own group
+on/off together, independent of the other worker services):
 
 ```bash
 docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.gateway.yml \
-  -f docker/dev/compose.services.yml --profile events --profile auth --profile companies up
+  -f docker/dev/compose.services.yml --profile events --profile auth --profile companies --profile company-members up
 ```
 
 (`--profile events` is required too, since `outbox-publisher-auth`,
-`outbox-publisher-companies`, and `users-service` all need RabbitMQ, which
+`outbox-publisher-companies`, `outbox-publisher-company-members`,
+`users-service`, and `company-members-service` all need RabbitMQ, which
 lives behind infra's `events` profile.) Stop just these with:
 
 ```bash
 docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.gateway.yml \
-  -f docker/dev/compose.services.yml --profile events --profile auth --profile companies stop \
-  auth-service users-service outbox-publisher-auth companies-service outbox-publisher-companies
+  -f docker/dev/compose.services.yml --profile events --profile auth --profile companies --profile company-members stop \
+  auth-service users-service outbox-publisher-auth companies-service outbox-publisher-companies \
+  company-members-service outbox-publisher-company-members
 ```
 
 First time only - each app/service reads its config from its own `.env`, never
@@ -109,6 +119,7 @@ cp services/ai-service/.env.example services/ai-service/.env
 cp services/auth-service/.env.example services/auth-service/.env
 cp services/users-service/.env.example services/users-service/.env
 cp services/companies-service/.env.example services/companies-service/.env
+cp services/company-members-service/.env.example services/company-members-service/.env
 ```
 
 `services/auth-service/.env`'s `JWT_ACCESS_SECRET` must match
@@ -138,10 +149,12 @@ docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.gateway.yml
 ```
 
 Add `--profile python-workers` for `ai-service`, `--profile auth` for
-`auth-service`/`users-service`/`outbox-publisher-auth` (Phase 2/3), or
+`auth-service`/`users-service`/`outbox-publisher-auth` (Phase 2/3),
 `--profile companies` for `companies-service`/`outbox-publisher-companies`
-(Phase 4) - each kept in its own profile, separate from `node-workers`, so it
-can be turned on/off on its own. You can also target individual services instead of a whole profile,
+(Phase 4), or `--profile company-members` for
+`company-members-service`/`outbox-publisher-company-members` (Phase 5) - each
+kept in its own profile, separate from `node-workers`, so it can be turned
+on/off on its own. You can also target individual services instead of a whole profile,
 e.g. add `metrics-service` or `auth-service` to the end of the command above -
 Compose still needs `--profile <name>` passed for that service's profile to
 be recognized, even when you name it explicitly.
@@ -169,7 +182,9 @@ users-service),
 [`docs/architecture/smoke-checklists/phase-3-users-service.md`](../../docs/architecture/smoke-checklists/phase-3-users-service.md)
 for Phase 3 (`/users/me`, `/users/:id`), and
 [`docs/architecture/smoke-checklists/phase-4-companies-service.md`](../../docs/architecture/smoke-checklists/phase-4-companies-service.md)
-for Phase 4 (`/companies/*` profile routes).
+for Phase 4 (`/companies/*` profile routes), and
+[`docs/architecture/smoke-checklists/phase-5-company-members-service.md`](../../docs/architecture/smoke-checklists/phase-5-company-members-service.md)
+for Phase 5 (`/companies/:id/members/*`, auth membership projection).
 
 ## Stop / clean up
 

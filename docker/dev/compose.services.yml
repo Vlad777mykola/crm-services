@@ -75,10 +75,13 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm
+      RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672
     ports:
       - '4001:4001'
     depends_on:
       postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   # Consumes auth.user_registered (Phase 2) and serves GET/PATCH /users/me,
@@ -140,6 +143,47 @@ services:
       - '4003:4003'
     depends_on:
       postgres:
+        condition: service_healthy
+
+  # Same outbox-publisher image, redeployed against company-members-service's
+  # own schema (Q8). Own `company-members` profile.
+  outbox-publisher-company-members:
+    profiles: ['company-members']
+    build:
+      context: ../../services/outbox-publisher
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm?options=-c%20search_path%3Dcompany_members_schema
+      RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672
+      HEALTH_PORT: '4504'
+    ports:
+      - '4504:4504'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # Owns company membership - see services/company-members-service/README.md.
+  # Own `company-members` profile.
+  company-members-service:
+    profiles: ['company-members']
+    build:
+      context: ../../services/company-members-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/company-members-service/.env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm
+      RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672
+    ports:
+      - '4004:4004'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
 
   # Consumes domain.events + analytics.events, writes emails (Postgres
