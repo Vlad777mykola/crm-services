@@ -50,9 +50,9 @@ http:
       service: services-catalog-service
       entryPoints: [web]
       priority: 95
-    legacy-company-appointments:
+    appointments-service-company-appointments:
       rule: "PathRegexp(`^/companies/[^/]+/appointments`)"
-      service: legacy-backend
+      service: appointments-service
       entryPoints: [web]
       priority: 90
     company-specialists-service-requests-create:
@@ -186,6 +186,21 @@ http:
       service: legacy-backend
       entryPoints: [web]
       priority: 85
+    appointments-service-me:
+      rule: "Path(`/appointments/me`)"
+      service: appointments-service
+      entryPoints: [web]
+      priority: 80
+    appointments-service-status-history:
+      rule: "PathRegexp(`^/appointments/[^/]+/status-history$`)"
+      service: appointments-service
+      entryPoints: [web]
+      priority: 80
+    appointments-service-cancel:
+      rule: "PathRegexp(`^/appointments/[^/]+/cancel$`)"
+      service: appointments-service
+      entryPoints: [web]
+      priority: 80
     legacy-appointments:
       rule: "PathPrefix(`/appointments`)"
       service: legacy-backend
@@ -246,3 +261,8 @@ http:
       loadBalancer:
         servers:
           - url: "http://services-catalog-service:4007"
+
+    appointments-service:
+      loadBalancer:
+        servers:
+          - url: "http://appointments-service:4008"

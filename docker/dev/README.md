@@ -108,29 +108,40 @@ cd services/services-catalog-service && yarn dev
 cd services/outbox-publisher && DATABASE_URL="postgres://postgres:postgres@localhost:5432/crm?options=-c%20search_path%3Dservices_schema" HEALTH_PORT=4507 yarn dev
 ```
 
+Since Phase 9, also start appointments-service if you're testing
+`/companies/:id/appointments*`, `/appointments/me`,
+`/appointments/:id/status-history`, or `/appointments/:id/cancel`:
+
+```bash
+cd services/appointments-service && yarn dev
+cd services/outbox-publisher && DATABASE_URL="postgres://postgres:postgres@localhost:5432/crm?options=-c%20search_path%3Dappointments_schema" HEALTH_PORT=4508 yarn dev
+```
+
 or, containerized instead of `yarn dev`, using the dedicated `auth`/`companies`/
-`company-members`/`specialists`/`company-specialists`/`services-catalog`
+`company-members`/`specialists`/`company-specialists`/`services-catalog`/`appointments`
 profiles in `compose.services.yml` (each turns its own group on/off together,
 independent of the other worker services):
 
 ```bash
 docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.gateway.yml \
-  -f docker/dev/compose.services.yml --profile events --profile auth --profile companies --profile company-members --profile specialists --profile company-specialists --profile services-catalog up
+  -f docker/dev/compose.services.yml --profile events --profile auth --profile companies --profile company-members --profile specialists --profile company-specialists --profile services-catalog --profile appointments up
 ```
 
 (`--profile events` is required too, since `outbox-publisher-auth`,
 `outbox-publisher-companies`, `outbox-publisher-company-members`,
 `outbox-publisher-specialists`, `outbox-publisher-company-specialists`,
-`outbox-publisher-services-catalog`, `users-service`, and
-`company-members-service` all need RabbitMQ, which lives behind infra's
-`events` profile.) Stop just these with:
+`outbox-publisher-services-catalog`, `outbox-publisher-appointments`,
+`users-service`, `company-members-service`, and `appointments-service` all
+need RabbitMQ, which lives behind infra's `events` profile.) Stop just these
+with:
 
 ```bash
 docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.gateway.yml \
-  -f docker/dev/compose.services.yml --profile events --profile auth --profile companies --profile company-members --profile specialists --profile company-specialists --profile services-catalog stop \
+  -f docker/dev/compose.services.yml --profile events --profile auth --profile companies --profile company-members --profile specialists --profile company-specialists --profile services-catalog --profile appointments stop \
   auth-service users-service outbox-publisher-auth companies-service outbox-publisher-companies \
   company-members-service outbox-publisher-company-members specialists-service outbox-publisher-specialists \
-  company-specialists-service outbox-publisher-company-specialists services-catalog-service outbox-publisher-services-catalog
+  company-specialists-service outbox-publisher-company-specialists services-catalog-service outbox-publisher-services-catalog \
+  appointments-service outbox-publisher-appointments
 ```
 
 First time only - each app/service reads its config from its own `.env`, never
@@ -150,6 +161,7 @@ cp services/company-members-service/.env.example services/company-members-servic
 cp services/specialists-service/.env.example services/specialists-service/.env
 cp services/company-specialists-service/.env.example services/company-specialists-service/.env
 cp services/services-catalog-service/.env.example services/services-catalog-service/.env
+cp services/appointments-service/.env.example services/appointments-service/.env
 ```
 
 `services/auth-service/.env`'s `JWT_ACCESS_SECRET` must match
@@ -186,9 +198,10 @@ Add `--profile python-workers` for `ai-service`, `--profile auth` for
 `--profile specialists` for `specialists-service`/`outbox-publisher-specialists`
 (Phase 6), `--profile company-specialists` for
 `company-specialists-service`/`outbox-publisher-company-specialists` (Phase 7),
-or `--profile services-catalog` for
-`services-catalog-service`/`outbox-publisher-services-catalog` (Phase 8)
-- each kept in its own profile, separate from `node-workers`, so it
+`--profile services-catalog` for
+`services-catalog-service`/`outbox-publisher-services-catalog` (Phase 8), or
+`--profile appointments` for `appointments-service`/`outbox-publisher-appointments`
+(Phase 9) - each kept in its own profile, separate from `node-workers`, so it
 can be turned on/off on its own. You can also target individual services instead of a whole profile,
 e.g. add `metrics-service` or `auth-service` to the end of the command above -
 Compose still needs `--profile <name>` passed for that service's profile to
@@ -225,7 +238,9 @@ for Phase 6 (`/specialists/*` profile routes), and
 [`docs/architecture/smoke-checklists/phase-7-company-specialists-service.md`](../../docs/architecture/smoke-checklists/phase-7-company-specialists-service.md)
 for Phase 7 (`/companies/:id/specialists*`, `/specialists/me/company*`), and
 [`docs/architecture/smoke-checklists/phase-8-services-catalog-service.md`](../../docs/architecture/smoke-checklists/phase-8-services-catalog-service.md)
-for Phase 8 (`/companies/:id/services*`, `/services/*`, `/specialists/me/services`).
+for Phase 8 (`/companies/:id/services*`, `/services/*`, `/specialists/me/services`), and
+[`docs/architecture/smoke-checklists/phase-9-appointments-service.md`](../../docs/architecture/smoke-checklists/phase-9-appointments-service.md)
+for Phase 9 (`/companies/:id/appointments*`, `/appointments/me`, `/appointments/:id/status-history`, `/appointments/:id/cancel`).
 
 ## Stop / clean up
 
@@ -265,4 +280,11 @@ Every deploy unit exposes `GET /health/live` (process alive) and `GET /health/re
 | `auth-service` | 4001 | `/health/live`, `/health/ready` |
 | `users-service` | 4002 | `/health/live`, `/health/ready` |
 | `outbox-publisher-auth` | 4501 | `/health/live`, `/health/ready` |
+| `companies-service` | 4003 | `/health/live`, `/health/ready` |
+| `company-members-service` | 4004 | `/health/live`, `/health/ready` |
+| `specialists-service` | 4005 | `/health/live`, `/health/ready` |
+| `company-specialists-service` | 4006 | `/health/live`, `/health/ready` |
+| `services-catalog-service` | 4007 | `/health/live`, `/health/ready` |
+| `appointments-service` | 4008 | `/health/live`, `/health/ready` |
+| `outbox-publisher-appointments` | 4508 | `/health/live`, `/health/ready` |
 | `gateway` (Traefik) | 8080 (app traffic), 8081 (dashboard, local dev only) | none of its own - proxies `/health`, `/health/live`, `/health/ready` through to whichever backend currently owns that path |

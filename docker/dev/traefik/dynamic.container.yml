@@ -53,9 +53,9 @@ http:
       service: services-catalog-service
       entryPoints: [web]
       priority: 95
-    legacy-company-appointments: # appointments-service (Phase 9)
+    appointments-service-company-appointments: # appointments-service (Phase 9)
       rule: "PathRegexp(`^/companies/[^/]+/appointments`)"
-      service: legacy-backend
+      service: appointments-service
       entryPoints: [web]
       priority: 90
     company-specialists-service-requests-create: # company-specialists-service (Phase 7)
@@ -184,12 +184,27 @@ http:
       priority: 10
 
     # ---- Appointments (Phase 9; review sub-path -> Phase 10) ----
-    legacy-appointment-review:
+    legacy-appointment-review: # reviews-service (Phase 10) takes priority over appointments-service's fallback
       rule: "PathRegexp(`^/appointments/[^/]+/review$`)"
       service: legacy-backend
       entryPoints: [web]
       priority: 85
-    legacy-appointments:
+    appointments-service-me: # appointments-service (Phase 9)
+      rule: "Path(`/appointments/me`)"
+      service: appointments-service
+      entryPoints: [web]
+      priority: 80
+    appointments-service-status-history: # appointments-service (Phase 9)
+      rule: "PathRegexp(`^/appointments/[^/]+/status-history$`)"
+      service: appointments-service
+      entryPoints: [web]
+      priority: 80
+    appointments-service-cancel: # appointments-service (Phase 9)
+      rule: "PathRegexp(`^/appointments/[^/]+/cancel$`)"
+      service: appointments-service
+      entryPoints: [web]
+      priority: 80
+    legacy-appointments: # generic fallback for anything under /appointments not claimed above
       rule: "PathPrefix(`/appointments`)"
       service: legacy-backend
       entryPoints: [web]
@@ -249,3 +264,8 @@ http:
       loadBalancer:
         servers:
           - url: "http://services-catalog-service:4007"
+
+    appointments-service:
+      loadBalancer:
+        servers:
+          - url: "http://appointments-service:4008"

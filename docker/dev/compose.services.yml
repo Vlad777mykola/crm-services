@@ -300,6 +300,49 @@ services:
       postgres:
         condition: service_healthy
 
+  # Same outbox-publisher image, redeployed against appointments-service's own
+  # schema (Q8). Own `appointments` profile.
+  outbox-publisher-appointments:
+    profiles: ['appointments']
+    build:
+      context: ../../services/outbox-publisher
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm?options=-c%20search_path%3Dappointments_schema
+      RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672
+      HEALTH_PORT: '4508'
+    ports:
+      - '4508:4508'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  # Owns the appointment lifecycle - see services/appointments-service/README.md.
+  # Both an HTTP API and a domain.events consumer (local projections), so it
+  # depends on rabbitmq too, unlike services-catalog-service above. Own
+  # `appointments` profile.
+  appointments-service:
+    profiles: ['appointments']
+    build:
+      context: ../../services/appointments-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/appointments-service/.env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm
+      RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672
+    ports:
+      - '4008:4008'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
   # Consumes domain.events + analytics.events, writes emails (Postgres
   # `email_logs`) and in-app notifications (`notifications`). Logical owner
   # of both tables during the MVP phase - see docs/architecture/service-ownership.md.

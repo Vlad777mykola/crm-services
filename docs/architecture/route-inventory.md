@@ -143,13 +143,13 @@ all four routes above** (including the specialist-facing `GET /specialists/me/se
 
 | Method | Path | Module | Handler | Target service | Phase | Status |
 |---|---|---|---|---|---|---|
-| POST | `/companies/:companyId/appointments` | appointments | `createAppointment()` | appointments-service | 9 | legacy |
-| GET | `/companies/:companyId/appointments` | appointments | `listCompanyAppointments()` | appointments-service | 9 | legacy |
-| PATCH | `/companies/:companyId/appointments/:appointmentId` | appointments | `respondToAppointment()` | appointments-service | 9 | legacy |
-| POST | `/companies/:companyId/appointments/:appointmentId/complete` | appointments | `completeAppointment()` | appointments-service | 9 | legacy |
-| GET | `/appointments/me` | appointments | `listMyAppointments()` | appointments-service | 9 | legacy |
-| GET | `/appointments/:appointmentId/status-history` | appointments | `getAppointmentStatusHistory()` | appointments-service | 9 (see Task 0.0b) | legacy |
-| POST | `/appointments/:appointmentId/cancel` | appointments | `cancelAppointment()` | appointments-service | 9 | legacy |
+| POST | `/companies/:companyId/appointments` | appointments | `createAppointment()` | **appointments-service** | 9 | **appointments-service** |
+| GET | `/companies/:companyId/appointments` | appointments | `listCompanyAppointments()` | **appointments-service** | 9 | **appointments-service** |
+| PATCH | `/companies/:companyId/appointments/:appointmentId` | appointments | `respondToAppointment()` | **appointments-service** | 9 | **appointments-service** |
+| POST | `/companies/:companyId/appointments/:appointmentId/complete` | appointments | `completeAppointment()` | **appointments-service** | 9 | **appointments-service** |
+| GET | `/appointments/me` | appointments | `listMyAppointments()` | **appointments-service** | 9 | **appointments-service** |
+| GET | `/appointments/:appointmentId/status-history` | appointments | `getAppointmentStatusHistory()` | **appointments-service** | 9 (see Task 0.0b) | **appointments-service** |
+| POST | `/appointments/:appointmentId/cancel` | appointments | `cancelAppointment()` | **appointments-service** | 9 | **appointments-service** |
 
 **Important — endpoints that do NOT exist. Do not implement without approval:**
 

@@ -36,6 +36,7 @@ services:
       - specialists-service
       - company-specialists-service
       - services-catalog-service
+      - appointments-service
 
   postgres:
     image: postgres:16-alpine
@@ -419,6 +420,43 @@ services:
       HEALTH_PORT: '4507'
     expose:
       - '4507'
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Extracted in Phase 9. Owns the appointment lifecycle; also a domain.events
+  # consumer (local projections), so it depends on rabbitmq too.
+  appointments-service:
+    build:
+      context: ../../services/appointments-service
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/appointments-service/.env.production
+    environment:
+      NODE_ENV: production
+    expose:
+      - '4008'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Same outbox-publisher image, redeployed against appointments-service's own
+  # schema (Q8).
+  outbox-publisher-appointments:
+    build:
+      context: ../../services/outbox-publisher
+      dockerfile: Dockerfile
+    env_file:
+      - ../../services/outbox-publisher/.env.production.appointments
+    environment:
+      NODE_ENV: production
+      HEALTH_PORT: '4508'
+    expose:
+      - '4508'
     depends_on:
       rabbitmq:
         condition: service_healthy
