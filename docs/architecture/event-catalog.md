@@ -11,16 +11,16 @@ Every message uses the `envelope.v1.json` wrapper (`id`, `type`, `source`, `vers
 
 | Event | Exchange | Routing key | Publisher | Consumers | Schema file |
 |---|---|---|---|---|---|
-| `appointment.requested` | `domain.events` | `appointment.requested` | backend (via outbox) | notifications-service, ai-service, backend-projection-service (indirectly via ai.*) | `appointment.requested.v1.json` |
+| `appointment.requested` | `domain.events` | `appointment.requested` | backend (via outbox) | notifications-service, ai-service, appointments-service (indirectly via ai.*, Phase 12) | `appointment.requested.v1.json` |
 | `appointment.approved` | `domain.events` | `appointment.approved` | backend (via outbox) | notifications-service, ai-service | `appointment.approved.v1.json` |
 | `appointment.rejected` | `domain.events` | `appointment.rejected` | backend (via outbox) | notifications-service | `appointment.rejected.v1.json` |
 | `appointment.cancelled` | `domain.events` | `appointment.cancelled` | backend (via outbox) | notifications-service | `appointment.cancelled.v1.json` |
 | `appointment.completed` | `domain.events` | `appointment.completed` | backend (via outbox) | notifications-service, ai-service | `appointment.completed.v1.json` |
 | `review.received` | `domain.events` | `review.received` | backend (via outbox) | notifications-service | `review.received.v1.json` |
-| `analytics.company_rating_updated` | `analytics.events` | `analytics.company_rating_updated` | ai-service | backend-projection-service | `analytics.company_rating_updated.v1.json` |
-| `ai.appointment_recommendation_created` | `analytics.events` | `ai.appointment_recommendation_created` | ai-service | backend-projection-service | `ai.appointment_recommendation_created.v1.json` |
-| `ai.company_insight_created` | `analytics.events` | `ai.company_insight_created` | ai-service | backend-projection-service | `ai.company_insight_created.v1.json` |
-| `ai.job_failed` | `analytics.events` | `ai.job_failed` | ai-service | **Confirmed: no consumer for now.** Schema exists and ai-service may still publish it, but nothing in `services/backend-projection-service` (or elsewhere) needs to consume it yet. Do not add a consumer without a confirmed need. | `ai.job_failed.v1.json` |
+| `analytics.company_rating_updated` | `analytics.events` | `analytics.company_rating_updated` | ai-service | notifications-service | `analytics.company_rating_updated.v1.json` |
+| `ai.appointment_recommendation_created` | `analytics.events` | `ai.appointment_recommendation_created` | ai-service | appointments-service (`appointment_recommendation_projections`, moved from backend-projection-service in Phase 12) | `ai.appointment_recommendation_created.v1.json` |
+| `ai.company_insight_created` | `analytics.events` | `ai.company_insight_created` | ai-service | companies-service (`company_insight_projections`, moved from backend-projection-service in Phase 12) | `ai.company_insight_created.v1.json` |
+| `ai.job_failed` | `analytics.events` | `ai.job_failed` | ai-service | **Confirmed: no consumer for now.** Schema exists and ai-service may still publish it, but nothing needs to consume it yet. Do not add a consumer without a confirmed need. | `ai.job_failed.v1.json` |
 | `auth.user_registered` | `domain.events` | `auth.user_registered` | auth-service (via its own outbox) | users-service (creates profile idempotently) | `auth.user_registered.v1.json` |
 | `company.created` | `domain.events` | `company.created` | companies-service (via its own outbox) | appointments-service (projection, Phase 9 — no consumer yet) | `company.created.v1.json` |
 | `company.updated` | `domain.events` | `company.updated` | companies-service (via its own outbox) | appointments-service (projection, Phase 9 — no consumer yet) | `company.updated.v1.json` |
@@ -80,8 +80,7 @@ during a migration window by checking `version` before decoding `data`.
 Every consumer keeps its own `processed_events(event_id, consumer_name, processed_at)`
 table, per `service-ownership.md` rule 5. This applies to every new consumer listed
 above (auth-service, users-service, appointments-service projections, etc.) exactly as
-it already applies to `notifications-service`, `backend-projection-service`, and
-`ai-service`.
+it already applies to `notifications-service` and `ai-service`.
 
 ## Contract-first hard rule
 

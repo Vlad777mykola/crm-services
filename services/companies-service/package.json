@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Owns company profile data (companies_schema: companies, company_status_history, processed_events, outbox_events). Serves POST /companies, GET /companies/public, GET /companies/me, GET /companies/:companyId, PATCH /companies/:companyId, GET /companies/:companyId/status-history. See docs/architecture/microservices-extraction-checklist.md Phase 4.",
+  "description": "Owns company profile data (companies_schema: companies, company_status_history, company_insight_projections, processed_events, outbox_events). Serves POST /companies, GET /companies/public, GET /companies/me, GET /companies/:companyId, PATCH /companies/:companyId, GET /companies/:companyId/status-history. Consumes ai.company_insight_created (moved from backend-projection-service in Phase 12). See docs/architecture/microservices-extraction-checklist.md Phase 4 and Phase 12.",
   "scripts": {
     "dev": "tsx watch src/main.ts",
     "build": "tsc",
@@ -13,6 +13,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "amqplib": "^0.10.9",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
@@ -24,6 +25,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/amqplib": "^0.10.7",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",

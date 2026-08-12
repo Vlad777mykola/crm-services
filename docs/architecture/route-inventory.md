@@ -20,9 +20,9 @@ appointments, notifications, reviews, dashboard.
 
 Note: `/health/live` and `/health/ready` are not domain routes — every extracted
 service gets its own copy of these two endpoints (already the pattern used by
-`outbox-publisher`, `notifications-service`, `metrics-service`,
-`backend-projection-service`, `ai-service`). They are not "routed" by the gateway to
-a single owner; the gateway/each Ingress rule points at whichever service it fronts.
+`outbox-publisher`, `notifications-service`, `metrics-service`, `ai-service`). They
+are not "routed" by the gateway to a single owner; the gateway/each Ingress rule
+points at whichever service it fronts.
 
 ## Auth
 

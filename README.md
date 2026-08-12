@@ -23,7 +23,6 @@ crm-services/
 │   ├── notifications-service/        # consumes domain/analytics events, sends emails + in-app notifications
 │   ├── metrics-service/              # observes RabbitMQ traffic, exposes /metrics + /health
 │   ├── outbox-publisher/             # publishes the backend's outbox_events to RabbitMQ
-│   ├── backend-projection-service/   # consumes ai.* events, writes safe projections to main DB
 │   └── ai-service/                   # Python AI/analytics microservice, owns postgres-ai
 ├── docker/                           # docker/dev (local development) + docker/prod (interim prod shape)
 ├── docs/architecture/                # current/target architecture, ownership, event model

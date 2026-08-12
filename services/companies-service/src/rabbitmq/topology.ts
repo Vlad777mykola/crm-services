@@ -5,7 +5,7 @@ export const ANALYTICS_EVENTS_EXCHANGE = 'analytics.events';
 export const COMMANDS_EXCHANGE = 'commands';
 export const DOMAIN_EVENTS_DLX = 'domain.events.dlx';
 export const COMMANDS_DLX = 'commands.dlx';
-export const PROJECTIONS_DEAD_QUEUE = 'projections.dead.q';
+export const COMPANIES_DEAD_QUEUE = 'companies.dead.q';
 
 /**
  * Declares the exchanges and dead-letter topology this service depends on.
@@ -21,6 +21,6 @@ export async function declareTopology(channel: Channel): Promise<void> {
   await channel.assertExchange(DOMAIN_EVENTS_DLX, 'topic', { durable: true });
   await channel.assertExchange(COMMANDS_DLX, 'topic', { durable: true });
 
-  await channel.assertQueue(PROJECTIONS_DEAD_QUEUE, { durable: true });
-  await channel.bindQueue(PROJECTIONS_DEAD_QUEUE, DOMAIN_EVENTS_DLX, '#');
+  await channel.assertQueue(COMPANIES_DEAD_QUEUE, { durable: true });
+  await channel.bindQueue(COMPANIES_DEAD_QUEUE, DOMAIN_EVENTS_DLX, '#');
 }

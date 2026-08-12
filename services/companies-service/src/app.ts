@@ -9,15 +9,16 @@ import { notFoundHandler } from './http/not-found-handler.js';
 import { requestLogger } from './http/request-logger.js';
 import { createCompaniesRouter } from './http/routes/companies.routes.js';
 import type { CompaniesService } from './modules/companies/companies.service.js';
+import type { RabbitMqConsumer } from './rabbitmq/consumer.js';
 
-export function createApp(pool: Pool, companiesService: CompaniesService): Express {
+export function createApp(pool: Pool, consumer: RabbitMqConsumer, companiesService: CompaniesService): Express {
   const app = express();
 
   app.use(cors({ origin: env.CORS_ORIGINS, credentials: true }));
   app.use(express.json());
   app.use(requestLogger);
 
-  app.use(createHealthRouter(pool));
+  app.use(createHealthRouter(pool, consumer));
   app.use(createCompaniesRouter(companiesService));
 
   app.use(notFoundHandler);

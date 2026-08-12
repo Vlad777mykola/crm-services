@@ -374,14 +374,14 @@ register -> login -> create company -> create specialist profile
 
 ---
 
-## Phase 12 — Backend-projection-service lifecycle
+## Phase 12 — Backend-projection-service lifecycle ✅ Done
 
 | Task | Description |
 |---|---|
-| 12.1 | List projection tables it writes: `appointment_recommendation_projections`, `company_insight_projections`. |
-| 12.2 | Decide future owner per table (appointments-service / companies-service or read-api) — see open question in `table-ownership-matrix.md`. |
-| 12.3 | Move consumers gradually once appointments-service/companies-service exist; no data migration needed (projections are derived, safe to rebuild from new events). |
-| 12.4 | Retire `backend-projection-service` only after all projections have new owners. |
+| 12.1 | Listed projection tables it wrote: `appointment_recommendation_projections`, `company_insight_projections`. |
+| 12.2 | **Decided:** `appointment_recommendation_projections` → appointments-service; `company_insight_projections` → companies-service (both stable since Phases 9 and 4). |
+| 12.3 | Moved consumers: appointments-service now binds `ai.appointment_recommendation_created`, companies-service now binds `ai.company_insight_created` (its first-ever RabbitMQ consumer — added the topology/consumer/idempotency scaffolding). No data migration — new empty tables, rebuilt from new events as they arrive. |
+| 12.4 | Retired `backend-projection-service` — deleted `services/backend-projection-service/`, its Dockerfile, its CI workflow, and removed it from `docker/dev/compose.services.yml` and `docker/prod/compose.yml`. Port `4400` is free. |
 
 **Stop point:** await approval before Phase 13.
 

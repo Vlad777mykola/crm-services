@@ -26,6 +26,11 @@ legacy-backend until their own phases (5, 7, 8, 9, 10, 15).
 
 - `companies`
 - `company_status_history` — new, per-domain table (never writes to legacy's shared `status_history_entries`).
+- `company_insight_projections` — moved here from `backend-projection-service`
+  in Phase 12; fed by `ai.company_insight_created`. AI-derived, not
+  source-of-truth; safe to drop and rebuild. No HTTP route exposes this
+  projection yet; it existed in the old service purely as a write target with
+  no confirmed reader.
 - `processed_events`, `outbox_events` — reserved/outbox plumbing.
 
 ## Known temporary compromise: `company_members` read bridge
@@ -41,6 +46,14 @@ and not the target architecture — see
 A future cleanup could replace this with a local projection fed by
 `company-member.*` events, the same pattern auth-service uses for
 `auth_membership_projection` (Task 5.4).
+
+## Consumed events
+
+`ai.company_insight_created` (from `analytics.events`, published by
+`ai-service`) — feeds `company_insight_projections`. Moved here from
+`backend-projection-service` in Phase 12 (see
+`docs/architecture/table-ownership-matrix.md`); this service now runs its own
+RabbitMQ consumer alongside its HTTP API, so `RABBITMQ_URL` is required.
 
 ## Published events
 

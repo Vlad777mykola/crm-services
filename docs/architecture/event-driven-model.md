@@ -66,8 +66,8 @@ Minimum retry policy (see `services/*/src/rabbitmq/topology.*`):
 | Event type | Published by | Exchange | Consumed by |
 |---|---|---|---|
 | `analytics.company_rating_updated` | ai-service | `analytics.events` | notifications-service |
-| `ai.appointment_recommendation_created` | ai-service | `analytics.events` | backend-projection-service |
-| `ai.company_insight_created` | ai-service | `analytics.events` | backend-projection-service |
+| `ai.appointment_recommendation_created` | ai-service | `analytics.events` | appointments-service (Phase 12, moved from backend-projection-service) |
+| `ai.company_insight_created` | ai-service | `analytics.events` | companies-service (Phase 12, moved from backend-projection-service) |
 | `ai.job_failed` | ai-service | `analytics.events` | (observability only — metrics-service) |
 
 ## Idempotent consumers
@@ -84,4 +84,4 @@ Every worker that writes data keeps a `processed_events(event_id, consumer_name,
 
 ## Backend API and RabbitMQ
 
-The backend API process is HTTP-only. It never opens a RabbitMQ consumer. Anything that needs to react to a RabbitMQ event (AI results, analytics results) is handled by a dedicated small service (`backend-projection-service`, `notifications-service`) that writes into the database on the API's behalf — the API only ever reads what those services wrote.
+The backend API process is HTTP-only. It never opens a RabbitMQ consumer. Anything that needs to react to a RabbitMQ event (AI results, analytics results) is handled by a dedicated service (`notifications-service`, or — since Phase 12 — whichever domain service owns the derived projection, e.g. `appointments-service` for `ai.appointment_recommendation_created`) that writes into the database on the API's behalf — the API only ever reads what those services wrote.

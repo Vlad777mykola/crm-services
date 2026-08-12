@@ -10,6 +10,7 @@ const envSchema = z.object({
     .default('http://localhost:5173')
     .transform((value) => value.split(',').map((origin) => origin.trim())),
   DATABASE_URL: z.string().default('postgres://postgres:postgres@localhost:5432/crm'),
+  RABBITMQ_URL: z.string().default('amqp://guest:guest@localhost:5672'),
   JWT_ACCESS_SECRET: z.string().min(1).default('dev-access-secret-change-me'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
 });

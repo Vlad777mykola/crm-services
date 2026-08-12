@@ -15,7 +15,6 @@ crm-services/
 │   ├── notifications-service/        # consumes domain/analytics events, sends emails + in-app notifications
 │   ├── metrics-service/              # observes RabbitMQ traffic, exposes /metrics + /health
 │   ├── outbox-publisher/             # publishes backend's outbox_events (and, redeployed per Q8, auth-service's) to RabbitMQ
-│   ├── backend-projection-service/   # consumes ai.* events, writes safe projections to main DB
 │   └── ai-service/                   # Python AI/analytics microservice, owns postgres-ai
 ├── docker/
 │   ├── dev/                          # local development - see docker/dev/README.md
@@ -60,7 +59,6 @@ flowchart LR
   subgraph nodeWorkers [Node Services]
     NS[notifications-service]
     MS[metrics-service]
-    BP[backend-projection-service]
   end
 
   subgraph aiLayer [AI Service]
@@ -81,13 +79,17 @@ flowchart LR
   RMQ --> NS
   RMQ --> MS
   RMQ --> AI
-  RMQ --> BP
   RMQ -->|failed messages| DLQ
   NS -->|MVP write| PG
-  BP -->|projection write| PG
   AI --> PGAI
   AI -->|publish ai results| RMQ
 ```
+
+This diagram predates the per-domain extractions (Phases 4-10) and doesn't
+show every extracted service. Notably, `backend-projection-service` (shown
+in earlier drafts of this diagram) was retired in Phase 12 — its two `ai.*`
+consumers moved directly into `appointments-service` and `companies-service`,
+which aren't pictured here either.
 
 ## Local Compose modes
 
@@ -122,7 +124,6 @@ move to Kubernetes/AWS EKS:
 | outbox-publisher | `services/outbox-publisher/Dockerfile` | `node dist/main.js` | outbox_events only | publisher |
 | notifications-service | `services/notifications-service/Dockerfile` | `node dist/main.js` | main-postgres (MVP) | consumer |
 | metrics-service | `services/metrics-service/Dockerfile` | `node dist/main.js` | none | observer |
-| backend-projection-service | `services/backend-projection-service/Dockerfile` | `node dist/main.js` | main-postgres (projections) | consumer |
 | ai-service | `services/ai-service/Dockerfile` | `python src/main.py` | postgres-ai | consumer + publisher |
 | rabbitmq | managed broker | — | — | infrastructure |
 | redis | managed cache | — | — | reserved, unused today |

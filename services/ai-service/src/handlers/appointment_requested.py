@@ -1,9 +1,11 @@
 """Handles appointment.requested: produces a first-pass recommendation and
 publishes ai.appointment_recommendation_created for
-services/backend-projection-service to turn into a read-model row in the
-main database. The scoring below is a placeholder heuristic, not a trained
-model - swap `_score` out once there's real signal to learn from; the
-RabbitMQ/Postgres plumbing around it does not need to change."""
+services/appointments-service to turn into a read-model row in
+appointments_schema (moved here from the now-retired
+services/backend-projection-service in Phase 12). The scoring below is a
+placeholder heuristic, not a trained model - swap `_score` out once there's
+real signal to learn from; the RabbitMQ/Postgres plumbing around it does not
+need to change."""
 from __future__ import annotations
 
 from typing import Any

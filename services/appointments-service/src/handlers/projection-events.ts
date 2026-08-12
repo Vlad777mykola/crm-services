@@ -1,5 +1,6 @@
 import type { PoolClient } from 'pg';
 
+import type { AppointmentRecommendationRepository } from '../db/appointment-recommendation-repository.js';
 import type { ProjectionsRepository } from '../db/projections-repository.js';
 
 export interface CompanyMemberAddedData {
@@ -28,6 +29,14 @@ export interface ServiceEventData {
 export interface SpecialistServiceEventData {
   serviceId: string;
   specialistProfileId: string;
+}
+
+export interface AiRecommendationCreatedData {
+  recommendationId: string;
+  appointmentId: string;
+  companyId: string;
+  summary: string;
+  confidence: number;
 }
 
 export async function handleCompanyMemberAdded(
@@ -81,4 +90,23 @@ export async function handleSpecialistServiceRemoved(
   client: PoolClient,
 ): Promise<void> {
   await projections.removeServiceSpecialist(client, data.serviceId, data.specialistProfileId);
+}
+
+/**
+ * Mirrors contracts/events/ai.appointment_recommendation_created.v1.json.
+ * Moved from backend-projection-service in Phase 12 - not part of the
+ * transactional projection-events client/transaction above because it's
+ * unrelated to appointment writes; called directly with the pool.
+ */
+export async function handleAiRecommendationCreated(
+  data: AiRecommendationCreatedData,
+  repository: AppointmentRecommendationRepository,
+): Promise<void> {
+  await repository.upsert({
+    id: data.recommendationId,
+    appointmentId: data.appointmentId,
+    companyId: data.companyId,
+    summary: data.summary,
+    confidence: data.confidence,
+  });
 }

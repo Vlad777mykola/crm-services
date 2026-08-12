@@ -96,6 +96,22 @@ export async function ensureAppointmentsSchema(pool: Pool): Promise<void> {
     )
   `);
 
+  // AI-derived, not a source-of-truth table - moved here from
+  // backend-projection-service in Phase 12 (see table-ownership-matrix.md).
+  // Fed by ai.appointment_recommendation_created (ai-service, analytics.events
+  // exchange). Safe to drop and rebuild; no backfill from the old table.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS appointments_schema.appointment_recommendation_projections (
+      "id" uuid PRIMARY KEY,
+      "appointmentId" uuid NOT NULL,
+      "companyId" uuid NOT NULL,
+      "summary" text NOT NULL,
+      "confidence" numeric(3, 2) NOT NULL,
+      "createdAt" timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS "IDX_appointment_recommendation_projections_appointmentId" ON appointments_schema.appointment_recommendation_projections ("appointmentId")`);
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS appointments_schema.processed_events (
       "event_id" uuid NOT NULL,

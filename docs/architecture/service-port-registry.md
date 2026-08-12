@@ -21,7 +21,7 @@ assigns fresh ports to services that don't exist yet.
 | metrics-service | 4100 | `services/metrics-service/Dockerfile` → `EXPOSE 4100` |
 | ai-service | 4200 | `services/ai-service/Dockerfile` → `EXPOSE 4200` |
 | notifications-service | 4300 | `services/notifications-service/Dockerfile` → `EXPOSE 4300` |
-| backend-projection-service | 4400 | `services/backend-projection-service/Dockerfile` → `EXPOSE 4400` |
+| ~~backend-projection-service~~ | ~~4400~~ | Retired in Phase 12 — port free. Its two consumers (`ai.appointment_recommendation_created`, `ai.company_insight_created`) moved into appointments-service (4008) and companies-service (4003) respectively. |
 | outbox-publisher (shared, backend's outbox) | 4500 | `services/outbox-publisher/src/env.ts` → `HEALTH_PORT` default `4500` |
 | postgres | 5432 | `docker/dev/compose.infra.yml` |
 | postgres-ai | 5433 (host) → 5432 (container) | `docker/dev/compose.infra.yml` |

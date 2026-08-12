@@ -15,7 +15,7 @@
 # auth-service + users-service (Phase 2) have their own `auth` profile,
 # independent of `node-workers`, so you can turn just these two (+ their own
 # outbox-publisher instance) on/off without starting notifications-service/
-# metrics-service/backend-projection-service too:
+# metrics-service too:
 #   docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.services.yml \
 #     --profile events --profile auth up
 
@@ -419,29 +419,6 @@ services:
     ports:
       - '4100:4100'
     depends_on:
-      rabbitmq:
-        condition: service_healthy
-
-  # Consumes ai.* result events published by services/ai-service and writes
-  # safe, denormalized projection rows into the main database - the only
-  # service besides the backend API allowed to write to main-postgres, and
-  # only into its own projection tables (never business tables).
-  backend-projection-service:
-    profiles: ['node-workers']
-    build:
-      context: ../../services/backend-projection-service
-      dockerfile: Dockerfile
-    env_file:
-      - ../../services/backend-projection-service/.env
-    environment:
-      NODE_ENV: production
-      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm
-      RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672
-    ports:
-      - '4400:4400'
-    depends_on:
-      postgres:
-        condition: service_healthy
       rabbitmq:
         condition: service_healthy
 

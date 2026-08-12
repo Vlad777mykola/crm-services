@@ -48,6 +48,23 @@ export async function ensureCompaniesSchema(pool: Pool): Promise<void> {
     CREATE INDEX IF NOT EXISTS "IDX_company_status_history_companyId" ON companies_schema.company_status_history ("companyId")
   `);
 
+  // AI-derived, not a source-of-truth table - moved here from
+  // backend-projection-service in Phase 12 (see table-ownership-matrix.md).
+  // Fed by ai.company_insight_created (ai-service, analytics.events
+  // exchange). Safe to drop and rebuild; no backfill from the old table.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS companies_schema.company_insight_projections (
+      "id" uuid PRIMARY KEY,
+      "companyId" uuid NOT NULL,
+      "insightType" varchar(100) NOT NULL,
+      "summary" text NOT NULL,
+      "createdAt" timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS "IDX_company_insight_projections_companyId" ON companies_schema.company_insight_projections ("companyId")
+  `);
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS companies_schema.processed_events (
       "event_id" uuid NOT NULL,

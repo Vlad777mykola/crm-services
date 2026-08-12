@@ -1,15 +1,18 @@
 import { createApp } from './app.js';
+import { AppointmentRecommendationRepository } from './db/appointment-recommendation-repository.js';
 import { createPool } from './db/pool.js';
 import { ensureAppointmentsSchema } from './db/schema.js';
 import { ProjectionsRepository } from './db/projections-repository.js';
 import { env } from './env.js';
 import {
+  handleAiRecommendationCreated,
   handleCompanyEvent,
   handleCompanyMemberAdded,
   handleCompanyMemberRemoved,
   handleServiceEvent,
   handleSpecialistServiceAssigned,
   handleSpecialistServiceRemoved,
+  type AiRecommendationCreatedData,
   type CompanyEventData,
   type CompanyMemberAddedData,
   type CompanyMemberRemovedData,
@@ -20,7 +23,7 @@ import { ProcessedEventsRepository } from './idempotency/processed-events-reposi
 import { logger } from './logger.js';
 import { AppointmentsService } from './modules/appointments/appointments.service.js';
 import { consumeFromRabbitMq } from './rabbitmq/consumer.js';
-import { DOMAIN_EVENTS_DLX, DOMAIN_EVENTS_EXCHANGE } from './rabbitmq/topology.js';
+import { ANALYTICS_EVENTS_EXCHANGE, DOMAIN_EVENTS_DLX, DOMAIN_EVENTS_EXCHANGE } from './rabbitmq/topology.js';
 
 const QUEUE_NAME = 'appointments-service.q';
 
@@ -30,6 +33,7 @@ async function bootstrap(): Promise<void> {
 
   const processedEvents = new ProcessedEventsRepository(pool);
   const projections = new ProjectionsRepository(pool);
+  const recommendations = new AppointmentRecommendationRepository(pool);
   const appointmentsService = new AppointmentsService(pool);
 
   const consumer = await consumeFromRabbitMq({
@@ -45,6 +49,8 @@ async function bootstrap(): Promise<void> {
       { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'service.updated' },
       { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'specialist-service.assigned' },
       { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'specialist-service.removed' },
+      // Moved from backend-projection-service in Phase 12.
+      { exchange: ANALYTICS_EVENTS_EXCHANGE, routingKey: 'ai.appointment_recommendation_created' },
     ],
     onMessage: async (parsedBody) => {
       const envelope = parsedBody as { id: string; type: string; data: Record<string, unknown> };
@@ -52,6 +58,11 @@ async function bootstrap(): Promise<void> {
       const isNewEvent = await processedEvents.markProcessed(envelope.id);
       if (!isNewEvent) {
         logger.info({ eventId: envelope.id }, '[appointments-service] already processed - skipping');
+        return;
+      }
+
+      if (envelope.type === 'ai.appointment_recommendation_created') {
+        await handleAiRecommendationCreated(envelope.data as unknown as AiRecommendationCreatedData, recommendations);
         return;
       }
 

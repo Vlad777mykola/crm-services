@@ -54,7 +54,6 @@ then, on the host, whichever of these you need:
 cd services/outbox-publisher && yarn dev
 cd services/notifications-service && yarn dev
 cd services/metrics-service && yarn dev
-cd services/backend-projection-service && yarn dev
 cd services/ai-service && python src/main.py
 ```
 
@@ -161,7 +160,6 @@ cp backend/.env.example backend/.env
 cp services/outbox-publisher/.env.example services/outbox-publisher/.env
 cp services/notifications-service/.env.example services/notifications-service/.env
 cp services/metrics-service/.env.example services/metrics-service/.env
-cp services/backend-projection-service/.env.example services/backend-projection-service/.env
 cp services/ai-service/.env.example services/ai-service/.env
 cp services/auth-service/.env.example services/auth-service/.env
 cp services/users-service/.env.example services/users-service/.env
@@ -183,6 +181,13 @@ value too (it now verifies tokens for its new HTTP API), and `backend/.env`'s
 `IN_PROCESS_NOTIFICATIONS_ENABLED` should be `false` (default in
 `backend/.env.example` as of this phase) so notifications-service's consumer
 is the only thing creating notifications/emails.
+
+Since Phase 12, `backend-projection-service` no longer exists —
+`appointments-service` and `companies-service` each grew their own RabbitMQ
+consumer for the one `ai.*` event they used to receive through it
+(`ai.appointment_recommendation_created` and `ai.company_insight_created`
+respectively), so make sure both services' `.env` files have `RABBITMQ_URL`
+set (already the default in their `.env.example`s). Port `4400` is free.
 
 All Postgres/RabbitMQ credentials in each `.env.example` already match what
 `compose.infra.yml` provisions, so no further edits are needed for local dev.
@@ -295,7 +300,6 @@ Every deploy unit exposes `GET /health/live` (process alive) and `GET /health/re
 | `outbox-publisher` | 4500 | `/health/live`, `/health/ready` |
 | `notifications-service` | 4300 | `/health/live`, `/health/ready`, `/notifications/me*` |
 | `metrics-service` | 4100 | `/metrics`, `/health/live`, `/health/ready` |
-| `backend-projection-service` | 4400 | `/health/live`, `/health/ready` |
 | `ai-service` | 4200 | `/health/live`, `/health/ready` |
 | `auth-service` | 4001 | `/health/live`, `/health/ready` |
 | `users-service` | 4002 | `/health/live`, `/health/ready` |

@@ -1,4 +1,4 @@
-import type { CompanyInsightRepository } from '../db/projections/company-insight-repository.js';
+import type { CompanyInsightRepository } from '../db/company-insight-repository.js';
 
 export interface AiCompanyInsightCreatedData {
   insightId: string;

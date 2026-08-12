@@ -74,7 +74,7 @@ services/<service-name>/
 - The `db/` layer owns persistence — no service reaches into another service's schema.
 - **No imports from `backend/src/modules/*`.** Every extracted service is standalone,
   matching the existing rule already enforced for `notifications-service`,
-  `outbox-publisher`, `backend-projection-service`, and `ai-service` (see
+  `outbox-publisher`, and `ai-service` (see
   `target-production-architecture.md`: "None of them import `backend/src/modules/*`").
 - **No shared business-logic package.** Cross-cutting technical concerns (logger
   setup, error envelope shape, correlation-id helpers) may eventually justify a small

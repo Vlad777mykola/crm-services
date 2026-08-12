@@ -3,9 +3,10 @@
 Consumes domain.events (`appointment.*`, `review.received`) from RabbitMQ,
 owns its own Postgres database (postgres-ai, via AI_DATABASE_URL - never
 main-postgres), and publishes AI result events onto analytics.events for
-services/backend-projection-service and services/notifications-service to
-react to. Never calls the backend API directly - see
-docs/architecture/service-ownership.md and
+services/notifications-service, services/appointments-service, and
+services/companies-service to react to (Phase 12 moved the latter two off
+the now-retired services/backend-projection-service). Never calls the
+backend API directly - see docs/architecture/service-ownership.md and
 docs/architecture/event-driven-model.md.
 
 Evolved from python-worker/worker.py (same event bindings, same idea) but

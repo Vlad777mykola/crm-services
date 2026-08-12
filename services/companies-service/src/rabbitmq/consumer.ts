@@ -21,21 +21,13 @@ export interface RabbitMqConsumer {
   close: () => Promise<void>;
 }
 
-/**
- * Declares the shared topology, binds a durable queue (with a dead-letter
- * exchange so unrecoverable messages are never silently dropped), and
- * dispatches each delivery to `onMessage` - acking on success, nacking
- * without requeue on failure so RabbitMQ routes it to the dead-letter queue.
- */
 export async function consumeFromRabbitMq(options: ConsumeOptions): Promise<RabbitMqConsumer> {
   const connection: ChannelModel = await amqp.connect(options.url);
   let connected = true;
   connection.on('close', () => {
     connected = false;
   });
-  connection.on('error', (err: unknown) =>
-    logger.warn({ err }, '[backend-projection-service] RabbitMQ connection error'),
-  );
+  connection.on('error', (err: unknown) => logger.warn({ err }, '[companies-service] RabbitMQ connection error'));
 
   const channel = await connection.createChannel();
   await declareTopology(channel);
@@ -50,9 +42,7 @@ export async function consumeFromRabbitMq(options: ConsumeOptions): Promise<Rabb
 
   await channel.prefetch(1);
   await channel.consume(options.queue, (msg) => {
-    if (!msg) {
-      return;
-    }
+    if (!msg) return;
     void handleMessage(channel, msg, options.onMessage);
   });
 
@@ -77,7 +67,7 @@ async function handleMessage(
   } catch (err) {
     logger.error(
       { err, routingKey: msg.fields.routingKey },
-      '[backend-projection-service] failed to process message - routing to dead-letter queue',
+      '[companies-service] failed to process message - routing to dead-letter queue',
     );
     channel.nack(msg, false, false);
   }

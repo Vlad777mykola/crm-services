@@ -2,9 +2,12 @@
 
 Python AI/analytics microservice - evolved from `python-worker/`. Owns its own Postgres
 database (`postgres-ai`, via `AI_DATABASE_URL`) instead of the SQLite file the old worker
-shared with a Node.js sibling, and now publishes real AI result events for
-[`services/backend-projection-service`](../backend-projection-service) and
-[`services/notifications-service`](../notifications-service) to react to. See
+shared with a Node.js sibling, and publishes real AI result events for
+[`services/notifications-service`](../notifications-service),
+[`services/appointments-service`](../appointments-service), and
+[`services/companies-service`](../companies-service) to react to (the latter two took
+over these consumers from the now-retired `backend-projection-service` in Phase 12 —
+see `docs/architecture/table-ownership-matrix.md`). See
 [`docs/architecture/target-production-architecture.md`](../../docs/architecture/target-production-architecture.md).
 
 ```
@@ -13,9 +16,9 @@ backend API  --outbox-->  domain.events  --consume-->  ai-service
                                                 (postgres-ai, own tables)
                                                             |
                                               analytics.events <--publish--
-                                               /                        \
-                                notifications-service          backend-projection-service
-                              (rating-updated -> notification)   (recommendation -> projection row)
+                                          /                  |                  \
+                          notifications-service      appointments-service    companies-service
+                        (rating-updated -> notification) (recommendation -> projection row) (insight -> projection row)
 ```
 
 ## What it does

@@ -21,7 +21,6 @@ cp services/outbox-publisher/.env.example services/outbox-publisher/.env.product
 cp services/outbox-publisher/.env.example services/outbox-publisher/.env.production.auth
 cp services/notifications-service/.env.example services/notifications-service/.env.production
 cp services/metrics-service/.env.example services/metrics-service/.env.production
-cp services/backend-projection-service/.env.example services/backend-projection-service/.env.production
 cp services/ai-service/.env.example services/ai-service/.env.production
 cp services/auth-service/.env.example services/auth-service/.env.production
 cp services/users-service/.env.example services/users-service/.env.production
@@ -80,6 +79,11 @@ and `.env.production.reviews` (`reviews_schema`, `HEALTH_PORT=4509`).
 
 `services/auth-service/.env.production` now also needs `RABBITMQ_URL` set —
 since Phase 5 it consumes `company-member.*` into its membership projection.
+Since Phase 12, `services/companies-service/.env.production` also needs
+`RABBITMQ_URL` set (it now consumes `ai.company_insight_created` directly,
+replacing `backend-projection-service`, which has been retired and removed
+from this compose file — port `4400` and its `.env.production` are no longer
+needed).
 
 ## Start
 
@@ -90,7 +94,7 @@ docker compose -f docker/prod/compose.yml up -d --build
 Adds every service in the "Production deployment matrix"
 (`target-production-architecture.md`): `gateway`, `legacy-backend`,
 `outbox-publisher`, `notifications-service`, `metrics-service`,
-`backend-projection-service`, `ai-service`, plus, since Phase 2/3, `auth-service`,
+`ai-service`, plus, since Phase 2/3, `auth-service`,
 `outbox-publisher-auth`, `users-service`, since Phase 4, `companies-service`,
 `outbox-publisher-companies`, and since Phase 5, `company-members-service`,
 `outbox-publisher-company-members`, since Phase 6, `specialists-service`,

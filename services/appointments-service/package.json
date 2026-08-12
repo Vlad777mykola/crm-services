@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Owns appointment lifecycle (appointments_schema: appointments, appointment_status_history, local projections fed by company.*/company-member.*/service.*/specialist-service.*/review.* events, processed_events, outbox_events). Serves POST/GET /companies/:companyId/appointments, PATCH .../appointments/:appointmentId, POST .../complete, GET /appointments/me, GET /appointments/:appointmentId/status-history, POST /appointments/:appointmentId/cancel. See docs/architecture/microservices-extraction-checklist.md Phase 9.",
+  "description": "Owns appointment lifecycle (appointments_schema: appointments, appointment_status_history, local projections fed by company.*/company-member.*/service.*/specialist-service.*/review.* events, appointment_recommendation_projections (moved from backend-projection-service in Phase 12), processed_events, outbox_events). Serves POST/GET /companies/:companyId/appointments, PATCH .../appointments/:appointmentId, POST .../complete, GET /appointments/me, GET /appointments/:appointmentId/status-history, POST /appointments/:appointmentId/cancel. See docs/architecture/microservices-extraction-checklist.md Phase 9 and Phase 12.",
   "scripts": {
     "dev": "tsx watch src/main.ts",
     "build": "tsc",

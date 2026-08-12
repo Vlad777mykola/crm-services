@@ -175,23 +175,6 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  backend-projection-service:
-    build:
-      context: ../../services/backend-projection-service
-      dockerfile: Dockerfile
-    env_file:
-      - ../../services/backend-projection-service/.env.production
-    environment:
-      NODE_ENV: production
-    expose:
-      - '4400'
-    depends_on:
-      postgres:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
-    restart: unless-stopped
-
   # Extracted in Phase 2 - the gateway routes /auth/* here instead of
   # legacy-backend. Owns auth_schema in the shared `postgres` above.
   auth-service:

@@ -28,6 +28,10 @@ all explicitly **not implemented** (confirmed not to exist in legacy either).
 - `appointment_company_projection` — fed by `company.created`/`.updated`.
 - `appointment_service_projection` — fed by `service.created`/`.updated`.
 - `appointment_service_specialist_projection` — fed by `specialist-service.assigned`/`.removed`.
+- `appointment_recommendation_projections` — moved here from
+  `backend-projection-service` in Phase 12; fed by
+  `ai.appointment_recommendation_created`. AI-derived, not source-of-truth;
+  safe to drop and rebuild.
 - `processed_events`, `outbox_events`.
 
 No data migration — every table starts empty; the four projections backfill
@@ -40,7 +44,13 @@ anything created after this service goes live).
 `company-member.removed`, `service.created`, `service.updated`,
 `specialist-service.assigned`, `specialist-service.removed` — all purely to
 keep the four local projections warm. **No cross-schema SQL** for any of
-these (Task 9.3).
+these (Task 9.3). Also consumes `ai.appointment_recommendation_created` (from
+`analytics.events`, published by `ai-service`) to feed
+`appointment_recommendation_projections` — moved from
+`backend-projection-service` in Phase 12 (see
+`docs/architecture/table-ownership-matrix.md`). No HTTP route exposes this
+projection yet; it existed in the old service purely as a write target with
+no confirmed reader.
 
 ## Published events
 
