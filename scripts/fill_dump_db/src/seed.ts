@@ -385,6 +385,76 @@ export async function seedDatabase(): Promise<void> {
   console.log('[fill_dump_db] created 4 service specialist assignments');
 
   // ---------------------------------------------------------------------
+  // Appointments-service projections (normally fed by RabbitMQ events).
+  // Direct SQL seed must mirror them or POST /appointments returns 404 and
+  // booking/management UIs see empty specialist lists.
+  // ---------------------------------------------------------------------
+  await insertRow('appointments_schema', 'appointment_company_projection', {
+    companyId: dentalId,
+    name: 'Bright Smile Dental',
+  });
+  await insertRow('appointments_schema', 'appointment_company_projection', {
+    companyId: beautyId,
+    name: 'Glow Beauty Studio',
+  });
+  await insertRow('appointments_schema', 'appointment_membership_projection', {
+    companyId: dentalId,
+    userId: uid('owner.dental@example.com'),
+    role: 'owner',
+  });
+  await insertRow('appointments_schema', 'appointment_membership_projection', {
+    companyId: dentalId,
+    userId: uid('manager.dental@example.com'),
+    role: 'manager',
+  });
+  await insertRow('appointments_schema', 'appointment_membership_projection', {
+    companyId: beautyId,
+    userId: uid('owner.beauty@example.com'),
+    role: 'owner',
+  });
+  await insertRow('appointments_schema', 'appointment_service_projection', {
+    serviceId: teethCleaningId,
+    companyId: dentalId,
+    name: 'Teeth Cleaning',
+    status: 'published',
+  });
+  await insertRow('appointments_schema', 'appointment_service_projection', {
+    serviceId: teethWhiteningId,
+    companyId: dentalId,
+    name: 'Teeth Whitening',
+    status: 'published',
+  });
+  await insertRow('appointments_schema', 'appointment_service_projection', {
+    serviceId: haircutId,
+    companyId: beautyId,
+    name: 'Haircut & Styling',
+    status: 'published',
+  });
+  await insertRow('appointments_schema', 'appointment_service_projection', {
+    serviceId: manicureId,
+    companyId: beautyId,
+    name: 'Manicure',
+    status: 'published',
+  });
+  await insertRow('appointments_schema', 'appointment_service_specialist_projection', {
+    serviceId: teethCleaningId,
+    specialistProfileId: olenaId,
+  });
+  await insertRow('appointments_schema', 'appointment_service_specialist_projection', {
+    serviceId: teethWhiteningId,
+    specialistProfileId: olenaId,
+  });
+  await insertRow('appointments_schema', 'appointment_service_specialist_projection', {
+    serviceId: haircutId,
+    specialistProfileId: ninaId,
+  });
+  await insertRow('appointments_schema', 'appointment_service_specialist_projection', {
+    serviceId: manicureId,
+    specialistProfileId: ninaId,
+  });
+  console.log('[fill_dump_db] created appointments-service projections (companies, memberships, services, assignments)');
+
+  // ---------------------------------------------------------------------
   // Appointments - one of each AppointmentStatus (3x completed: 2 reviewed, 1 not)
   // ---------------------------------------------------------------------
   const pendingAppointmentId = await insertQualified('appointments_schema', 'appointments', {

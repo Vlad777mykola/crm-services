@@ -1,22 +1,107 @@
 [
   {
     "name": "frontend",
-    "pid": 12136,
-    "rootPid": 12136
+    "pid": 21032,
+    "rootPid": 21032
+  },
+  {
+    "name": "auth",
+    "pid": 12876,
+    "rootPid": 12876
+  },
+  {
+    "name": "users",
+    "pid": 24540,
+    "rootPid": 24540
   },
   {
     "name": "companies",
-    "pid": 18460,
-    "rootPid": 18460
+    "pid": 2500,
+    "rootPid": 2500
   },
   {
-    "name": "frontend",
-    "pid": 13040,
-    "rootPid": 13040
+    "name": "company-members",
+    "pid": 8752,
+    "rootPid": 8752
   },
   {
-    "name": "companies",
-    "pid": 13972,
-    "rootPid": 13972
+    "name": "specialists",
+    "pid": 13076,
+    "rootPid": 13076
+  },
+  {
+    "name": "company-specialists",
+    "pid": 152,
+    "rootPid": 152
+  },
+  {
+    "name": "services-catalog",
+    "pid": 21904,
+    "rootPid": 21904
+  },
+  {
+    "name": "appointments",
+    "pid": 22276,
+    "rootPid": 22276
+  },
+  {
+    "name": "reviews",
+    "pid": 24436,
+    "rootPid": 24436
+  },
+  {
+    "name": "dashboard",
+    "pid": 21976,
+    "rootPid": 21976
+  },
+  {
+    "name": "notifications",
+    "pid": 12192,
+    "rootPid": 12192
+  },
+  {
+    "name": "outbox-auth",
+    "pid": 24440,
+    "rootPid": 24440
+  },
+  {
+    "name": "outbox-users",
+    "pid": 23772,
+    "rootPid": 23772
+  },
+  {
+    "name": "outbox-companies",
+    "pid": 15476,
+    "rootPid": 15476
+  },
+  {
+    "name": "outbox-company-members",
+    "pid": 14804,
+    "rootPid": 14804
+  },
+  {
+    "name": "outbox-specialists",
+    "pid": 7192,
+    "rootPid": 7192
+  },
+  {
+    "name": "outbox-company-specialists",
+    "pid": 3912,
+    "rootPid": 3912
+  },
+  {
+    "name": "outbox-services-catalog",
+    "pid": 2592,
+    "rootPid": 2592
+  },
+  {
+    "name": "outbox-appointments",
+    "pid": 24512,
+    "rootPid": 24512
+  },
+  {
+    "name": "outbox-reviews",
+    "pid": 19960,
+    "rootPid": 19960
   }
 ]
