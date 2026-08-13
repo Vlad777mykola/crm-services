@@ -3,6 +3,7 @@
  * Never touches dev :5432 / :4001 / :5173.
  */
 import { execSync } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -11,7 +12,10 @@ import {
   EXTRA_WORKERS,
   VERIFY_FRONTEND_PORT,
   VERIFY_GATEWAY_PORT,
+  VERIFY_POSTGRES_PORT,
   VERIFY_PROJECT,
+  VERIFY_RABBITMQ_MGMT_PORT,
+  VERIFY_RABBITMQ_PORT,
   verifyAppPort,
 } from '../dev/port-registry.mjs';
 import {
@@ -43,6 +47,122 @@ const SCHEMA_OWNERS = [
   'reviews',
   'notifications',
 ];
+
+const EXPECTED_SCHEMAS = [
+  'auth_schema',
+  'users_schema',
+  'companies_schema',
+  'company_members_schema',
+  'specialists_schema',
+  'company_specialists_schema',
+  'services_schema',
+  'appointments_schema',
+  'reviews_schema',
+  'notifications_schema',
+];
+
+function dockerComposeExec(args, inherit = false) {
+  return execSync(`docker compose -p ${VERIFY_PROJECT} -f "${COMPOSE_FILE}" ${args}`, {
+    cwd: ROOT,
+    encoding: 'utf8',
+    stdio: inherit ? 'inherit' : 'pipe',
+  });
+}
+
+function bootstrapPostgresAi() {
+  const sqlPath = path.join(ROOT, 'services/ai-service/src/db/migrations/001_init.sql');
+  const sql = fs.readFileSync(sqlPath, 'utf8');
+  execSync(`docker compose -p ${VERIFY_PROJECT} -f "${COMPOSE_FILE}" exec -T postgres-ai psql -U ai -d ai`, {
+    cwd: ROOT,
+    input: sql,
+    stdio: ['pipe', 'inherit', 'inherit'],
+  });
+  console.log('✓ postgres-ai bootstrap (001_init.sql)');
+}
+
+function checkRedis() {
+  try {
+    const out = dockerComposeExec('exec -T redis redis-cli ping').trim();
+    if (out !== 'PONG') {
+      console.error('✗ redis ping');
+      return false;
+    }
+    console.log('✓ redis (internal)');
+    return true;
+  } catch {
+    console.error('✗ redis ping');
+    return false;
+  }
+}
+
+function verifyDatabaseSchemas() {
+  try {
+    const out = dockerComposeExec(
+      'exec -T postgres psql -U postgres -d crm -t -A -c "SELECT schema_name FROM information_schema.schemata WHERE schema_name LIKE \'%_schema\'"',
+    );
+    const found = new Set(out.trim().split('\n').filter(Boolean));
+    const missing = EXPECTED_SCHEMAS.filter((s) => !found.has(s));
+    if (missing.length > 0) {
+      console.error(`✗ postgres schemas missing: ${missing.join(', ')}`);
+      return false;
+    }
+    console.log(`✓ postgres schemas (${EXPECTED_SCHEMAS.length} microservice schemas on :${VERIFY_POSTGRES_PORT})`);
+    return true;
+  } catch (err) {
+    console.error('✗ postgres schema verification', err);
+    return false;
+  }
+}
+
+async function checkRabbitmqTopology() {
+  const auth = Buffer.from('crm:crm_local_only').toString('base64');
+  try {
+    const res = await fetch(`http://localhost:${VERIFY_RABBITMQ_MGMT_PORT}/api/exchanges/%2F/domain.events`, {
+      headers: { Authorization: `Basic ${auth}` },
+    });
+    if (!res.ok) {
+      console.error('✗ rabbitmq exchange domain.events');
+      return false;
+    }
+    const queuesRes = await fetch(`http://localhost:${VERIFY_RABBITMQ_MGMT_PORT}/api/queues`, {
+      headers: { Authorization: `Basic ${auth}` },
+    });
+    if (!queuesRes.ok) {
+      console.error('✗ rabbitmq queues API');
+      return false;
+    }
+    const queues = await queuesRes.json();
+    const names = new Set(queues.map((q) => q.name));
+    if (!names.has('users-service.q')) {
+      console.error('✗ rabbitmq queue users-service.q (auth→outbox→users path)');
+      return false;
+    }
+    console.log(`✓ rabbitmq topology (:${VERIFY_RABBITMQ_PORT} AMQP, users-service.q bound)`);
+    return true;
+  } catch {
+    console.error('✗ rabbitmq topology');
+    return false;
+  }
+}
+
+function printStartupMatrix() {
+  console.log('\n--- verify startup matrix (isolated ports) ---');
+  console.log(`  postgres        :${VERIFY_POSTGRES_PORT}`);
+  console.log(`  postgres-ai     :25433`);
+  console.log(`  rabbitmq        :${VERIFY_RABBITMQ_PORT} (mgmt :${VERIFY_RABBITMQ_MGMT_PORT})`);
+  console.log(`  gateway         :${VERIFY_GATEWAY_PORT}`);
+  console.log(`  frontend        :${VERIFY_FRONTEND_PORT}`);
+  for (const id of SCHEMA_OWNERS) {
+    console.log(`  ${SERVICES[id].label.padEnd(22)} :${verifyAppPort(SERVICES[id].port)}`);
+  }
+  console.log(`  ${SERVICES.dashboard.label.padEnd(22)} :${verifyAppPort(SERVICES.dashboard.port)}`);
+  for (const id of Object.keys(OUTBOX)) {
+    console.log(`  outbox-${id.padEnd(16)} :${verifyAppPort(OUTBOX[id].healthPort)}`);
+  }
+  console.log(`  metrics-service       :${verifyAppPort(EXTRA_WORKERS.metrics.devPort)}`);
+  console.log(`  ai-service            :${verifyAppPort(EXTRA_WORKERS.ai.devPort)}`);
+  console.log('--- all components reported ready ---\n');
+}
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -157,10 +277,23 @@ async function main() {
   console.log('[verify:startup] starting isolated docker/verify stack…');
   dockerCompose('up -d --wait');
 
-  console.log(`✓ postgres :25432`);
-  console.log(`✓ rabbitmq :25672`);
+  console.log(`✓ postgres :${VERIFY_POSTGRES_PORT}`);
+  console.log(`✓ rabbitmq :${VERIFY_RABBITMQ_PORT}`);
   console.log(`✓ postgres-ai :25433`);
   console.log(`✓ gateway :${VERIFY_GATEWAY_PORT}`);
+
+  if (!checkRedis()) {
+    await runCleanup();
+    process.exit(1);
+  }
+
+  try {
+    bootstrapPostgresAi();
+  } catch (err) {
+    console.error('✗ postgres-ai bootstrap', err);
+    await runCleanup();
+    process.exit(1);
+  }
 
   console.log('\nServices (schema owners)');
   for (const id of SCHEMA_OWNERS) {
@@ -188,6 +321,11 @@ async function main() {
     process.exit(1);
   }
 
+  if (!verifyDatabaseSchemas()) {
+    await runCleanup();
+    process.exit(1);
+  }
+
   console.log('\nOutboxes');
   for (const id of Object.keys(OUTBOX)) {
     startOutbox(id);
@@ -200,6 +338,11 @@ async function main() {
       await runCleanup();
       process.exit(1);
     }
+  }
+
+  if (!(await checkRabbitmqTopology())) {
+    await runCleanup();
+    process.exit(1);
   }
 
   console.log('\nWorkers');
@@ -266,7 +409,8 @@ async function main() {
     process.exit(1);
   }
 
-  console.log('\n✓ ALL STARTUP CONNECTIONS HEALTHY\n');
+  console.log('\n✓ ALL STARTUP CONNECTIONS HEALTHY');
+  printStartupMatrix();
   await runCleanup();
 }
 

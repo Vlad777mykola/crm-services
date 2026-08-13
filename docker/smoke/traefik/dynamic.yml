@@ -1,0 +1,25 @@
+# Minimal Traefik routes for smoke stack — companies-service on Compose network
+
+http:
+  routers:
+    companies-service-status-history:
+      rule: "PathRegexp(`^/companies/[^/]+/status-history$`)"
+      service: companies-service
+      entryPoints: [web]
+      priority: 78
+    companies-service-by-id:
+      rule: "PathRegexp(`^/companies/[^/]+$`)"
+      service: companies-service
+      entryPoints: [web]
+      priority: 77
+    companies-service-root:
+      rule: "Path(`/companies`)"
+      service: companies-service
+      entryPoints: [web]
+      priority: 77
+
+  services:
+    companies-service:
+      loadBalancer:
+        servers:
+          - url: "http://companies-service:4003"

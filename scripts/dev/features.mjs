@@ -18,6 +18,11 @@ export const features = {
     outboxes: [],
     frontend: true,
   },
+  'companies-members': {
+    services: ['companies', 'company-members'],
+    outboxes: ['companies'],
+    frontend: true,
+  },
   dashboard: {
     requires: ['auth'],
     schemas: [

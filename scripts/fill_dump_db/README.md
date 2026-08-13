@@ -21,19 +21,26 @@ cp .env.example .env   # defaults match compose.infra.yml local Postgres
 
 Make sure Postgres is running (`yarn dev:infra` from the repo root).
 
-**Companies only** (quick `/companies/public` smoke test):
+### Seed test data
+
+**Recommended:** build a dump once, restore when needed.
 
 ```bash
-yarn seed:companies        # 2 published companies in companies_schema
-yarn seed:companies:reset  # wipe + re-insert
+yarn db:seed:full:reset   # full dataset
+yarn db:dump              # snapshot → db/dumps/dev-baseline.dump
+yarn db:restore           # fast reset later
 ```
 
-**Full microservice seed** (every table, test login accounts):
+**Or** explicit seed profiles (no dump):
 
 ```bash
-yarn seed          # insert (fails on duplicate email/slug)
-yarn seed:reset    # truncate seeded tables, then insert fresh data
+yarn db:seed:companies    # minimal public list
+yarn db:seed:full         # everything (fails if data exists)
+yarn db:seed:full:reset   # truncate + full seed
+yarn db:seed:test         # CI fixtures (use DATABASE_URL :15432)
 ```
+
+See [`scripts/db/README.md`](../../scripts/db/README.md) for dump vs seed.
 
 `--reset` runs `TRUNCATE ... RESTART IDENTITY CASCADE` on every table listed in
 `src/reset.ts`. **Never point this at a database you care about.**

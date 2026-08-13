@@ -1,145 +1,88 @@
-# Local microservice dev
+# Local development (`yarn dev`)
 
-Run extracted services on the **host** (`tsx watch`) while **Traefik** (in Docker)
-routes `http://localhost:8080` to `host.docker.internal:<port>` per path.
+Intent-based orchestration: pick a **feature**, tooling resolves services, outboxes, schemas, and infra.
 
-## First-time setup
+```powershell
+yarn dev                    # default: companies (frontend + companies-service)
+yarn dev list               # all features
+yarn dev dashboard          # auth chain + dashboard + schema bootstrap
+yarn dev dashboard --fresh  # wipe DB + seed + start
+yarn dev check              # static preflight (Node, deps, Docker)
+yarn dev status             # infra + tracked PIDs + ports
+yarn dev stop               # tracked PIDs only (safe default)
+yarn dev stop --infra       # also stop docker dev infra
+```
 
-Root `yarn install` only installs the **frontend** workspace. Each microservice has
-its own `node_modules` — run `yarn install:services` once.
-
-**CORS** is configured at the Traefik gateway only (`docker/traefik/cors/dev.middleware.yml`).
-Services do not need a `cors` package or `CORS_ORIGINS` env var.
-
-## How it works
+## Topology
 
 ```text
-Browser (:5173)  →  Traefik gateway (:8080)  →  host.docker.internal
-                                                    ├─ auth-service      :4001  /auth/*
-                                                    ├─ users-service     :4002  /users/me, /users/:id
-                                                    ├─ companies-service :4003  /companies/*
-                                                    └─ … (see service-port-registry.md)
+Browser (:5173)  →  Traefik (:8080)  →  host.docker.internal:<service-port>
 ```
 
-1. **Terminal 1** — infra + gateway (always first):
+1. **Infra** (auto-started unless `--no-infra`): `yarn dev:infra` — Postgres `:5432`, RabbitMQ, Traefik `:8080`
+2. **Feature** resolves dependency graph from `scripts/dev/features.mjs`
+3. **Schemas** — features with `schemas[]` run `db:migrate` before services start
+4. **`--fresh`** — stop tracked processes, `db:reset` + `db:seed` (companies uses fast companies-only seed)
 
-   ```bash
-   yarn dev:infra
-   ```
+## Features
 
-   Starts Postgres `:5432`, RabbitMQ `:5672` (`--profile events`), Traefik `:8080`.
+| Feature | What runs |
+|---------|-----------|
+| `companies` | frontend + companies-service (default) |
+| `companies-members` | frontend + companies + company-members + outbox-companies |
+| `auth` | frontend + auth + users + outbox-auth |
+| `dashboard` | requires auth + dashboard + cross-schema migrate |
+| `core` | auth + companies + dashboard |
+| `full` | all 11 domain services + 9 outboxes + frontend |
 
-2. **Terminal 2** — pick a bundle or single service:
+Legacy: `yarn dev svc auth`, `yarn dev outbox auth`, old bundle names still work.
 
-   ```bash
-   yarn dev:list              # all bundles + ports
-   yarn dev:auth:app          # frontend + auth + users + outbox-auth
-   yarn dev:companies         # frontend + companies-service
-   yarn dev:svc:auth          # only auth-service (:4001)
-   ```
+## Install
 
-3. Frontend always uses `VITE_API_URL=http://localhost:8080` (set by bundle scripts).
-   Paths stay the same as production — only the host is the gateway.
+Yarn workspaces — one install at repo root:
 
-## Port map (host)
-
-| Service | Port | Gateway paths (examples) |
-|---|---|---|
-| gateway (Traefik) | 8080 | all API traffic |
-| auth-service | 4001 | `/auth/*` |
-| users-service | 4002 | `/users/me`, `/users/:id` |
-| companies-service | 4003 | `/companies/*` |
-| company-members-service | 4004 | `/companies/:id/members*` |
-| specialists-service | 4005 | `/specialists/*` |
-| company-specialists-service | 4006 | `/companies/:id/specialists*` |
-| services-catalog-service | 4007 | `/services/*`, `/companies/:id/services*` |
-| appointments-service | 4008 | `/appointments/*`, `/companies/:id/appointments*` |
-| reviews-service | 4009 | `/companies/:id/reviews`, … |
-| notifications-service | 4300 | `/notifications/*` |
-| dashboard-service | 4010 | `/app/summary`, `/companies/:id/summary` |
-
-Outbox publishers (publish domain events to RabbitMQ) use health ports `4501`–`4509`
-and `OUTBOX_SCHEMA` (e.g. `auth_schema`) — see `service-port-registry.md` and
-`services/outbox-publisher/.env.example`.
-
-## Bundles
-
-| Script | What runs | Use for |
-|---|---|---|
-| `yarn dev:auth` | auth + users + outbox-auth | API-only register/login |
-| `yarn dev:auth:app` | + frontend | Login/register in browser |
-| `yarn dev:companies` | frontend + companies | `/companies` public list |
-| `yarn dev:companies:svc` | companies only | curl via gateway |
-| `yarn dev:dashboard:app` | frontend + auth + dashboard | `/app` (`GET /app/summary`) |
-| `yarn dev:dashboard` | auth + dashboard (no frontend) | curl `/app/summary` with token |
-| `yarn dev:companies-members` | companies + members + outbox-companies | create company + member projection |
-
-## Outbox publishers
-
-Outbox instances **do not create tables** — the owning service creates
-`outbox_events` on startup (e.g. `auth-service` creates `auth_schema.outbox_events`).
-
-| Command | Owning service you must also run |
-|---|---|
-| `yarn dev:outbox:auth` | `yarn dev:svc:auth` (or `yarn dev:auth` bundle) |
-| `yarn dev:outbox:companies` | `yarn dev:svc:companies` |
-
-Or use a bundle that starts both:
-
-```bash
-yarn dev:auth          # auth + users + outbox-auth (one terminal)
-yarn dev:auth:app      # + frontend
+```powershell
+yarn install
+# or: yarn install:services  (same — installs all workspaces)
 ```
 
-Standalone outbox in one terminal + owning service in another also works:
+Workspaces: `frontend`, `services/*`, `scripts/fill_dump_db`.
 
-```bash
-# Terminal 2a
-yarn dev:outbox:auth
+## Port map
 
-# Terminal 2b
-yarn dev:svc:auth
+| Service | Port | Gateway paths |
+|---------|------|----------------|
+| gateway | 8080 | all API |
+| auth | 4001 | `/auth/*` |
+| users | 4002 | `/users/*` |
+| companies | 4003 | `/companies/*` |
+| company-members | 4004 | `/companies/:id/members*` |
+| specialists | 4005 | `/specialists/*` |
+| company-specialists | 4006 | company specialist routes |
+| services-catalog | 4007 | `/services/*` |
+| appointments | 4008 | `/appointments/*` |
+| reviews | 4009 | review routes |
+| notifications | 4300 | `/notifications/*` |
+| dashboard | 4010 | `/app/summary` |
+
+Outbox health ports `4501`–`4509`. See `docs/architecture/service-port-registry.md`.
+
+## DB scripts
+
+```powershell
+yarn db:migrate
+yarn db:dump / yarn db:restore
+yarn db:seed:companies | db:seed:full | db:seed:test
+yarn db:reset
 ```
 
-Outbox logs a warning until the table exists, then polls normally.
+See [`scripts/db/README.md`](scripts/db/README.md).
 
-## Auth + users example (register flow)
+## Other environments
 
-Services involved:
-
-1. **auth-service** (`:4001`) — `POST /auth/register` writes identity + outbox row
-2. **outbox-auth** (`:4501`) — reads `auth_schema.outbox_events`, publishes to RabbitMQ
-3. **users-service** (`:4002`) — consumes `auth.user_registered`, creates `users_schema` profile
-
-```bash
-# Terminal 1
-yarn dev:infra
-
-# Terminal 2
-yarn dev:auth:app
-```
-
-Register at http://localhost:5173/register — then `/users/me` should return a profile.
-
-Requires RabbitMQ (`dev:infra` includes `--profile events`).
-
-## First-time setup
-
-`yarn dev:svc:*` and bundles inject local defaults (Postgres, RabbitMQ, JWT secret)
-matching `compose.infra.yml` — **no `.env` copy required** for day-to-day dev.
-
-Optional: copy each service's `.env.example` to `.env` if you need custom values.
-Those files override the injected defaults when present.
-
-## Seed data
-
-```bash
-cd scripts/fill_dump_db && yarn seed:companies    # 2 published companies for /companies/public
-```
-
-See [`fill_dump_db/README.md`](../fill_dump_db/README.md).
-
-## Implementation
-
-Bundle definitions live in [`bundles.mjs`](bundles.mjs); the runner is [`run.mjs`](run.mjs).
-Root `package.json` scripts call `node scripts/dev/run.mjs …`.
+| Mode | Command | Docs |
+|------|---------|------|
+| Verify gate | `yarn verify:startup` | `scripts/verify/README.md` |
+| Integration | `yarn test:integration` | `scripts/test/README.md` |
+| E2E | `yarn test:e2e` | `scripts/test/README.md` |
+| Prod smoke | `yarn smoke:prod` | `scripts/smoke/README.md` |

@@ -38,6 +38,16 @@ EXPOSE 4300
 CMD ["node", "dist/main.js"]
 ```
 
+## Yarn workspaces (monorepo dev)
+
+Local development uses **Yarn Classic v1 workspaces** at the repo root (`frontend`,
+`services/*`, `scripts/fill_dump_db`). Run `yarn install` once from the repo root.
+
+**Docker builds stay per-service:** each `services/<name>/Dockerfile` uses that
+folder as build context (`COPY package.json`, local `yarn install`). Images remain
+standalone deploy units and do not require the monorepo root in the build context.
+See `docs/architecture/dev-orchestration.md` for dev vs verify vs test vs smoke.
+
 ## Required rules
 
 1. **Multi-stage build.** `deps` (install), `build` (compile TypeScript), `production`

@@ -1,32 +1,47 @@
-name: repo-ci
-
-on:
-  push:
-    branches: [main]
-  pull_request:
-
-jobs:
-  verify-and-test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: yarn
-
-      - name: Install
-        run: yarn install --frozen-lockfile
-
-      - name: Lint frontend
-        run: yarn lint
-
-      - name: Typecheck frontend
-        run: yarn typecheck
-
-      - name: Unit tests
-        run: yarn test:unit
-
-      - name: Verify startup (isolated)
-        run: yarn verify:startup
+name: repo-ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: yarn
+
+      - name: Install
+        run: yarn install --frozen-lockfile
+
+      - name: Lint frontend
+        run: yarn lint
+
+      - name: Typecheck frontend
+        run: yarn typecheck
+
+      - name: Unit tests
+        run: yarn test:unit
+
+      - name: Integration tests (isolated docker/test stack)
+        run: yarn test:integration
+
+      - name: E2E smoke (test stack + frontend)
+        run: yarn test:e2e
+
+      - name: Verify startup (isolated)
+        run: yarn verify:startup
+
+  build-prod-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build companies-service production image
+        run: docker compose -p crm-ci-build -f docker/smoke/compose.yml build companies-service

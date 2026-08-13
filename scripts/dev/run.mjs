@@ -1,4 +1,5 @@
 import { execSync } from 'node:child_process';
+import fs from 'node:fs';
 import net from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -11,9 +12,11 @@ import { ensureDevInfra } from './ensure-infra.mjs';
 import { crossEnvLocal, mergeLocalEnv } from './local-dev-env.mjs';
 import { DEV_FRONTEND_PORT, DEV_GATEWAY_PORT } from './port-registry.mjs';
 import { appendTrackedPid, clearTrackedPids, readTrackedPids, spawnTracked } from '../process/spawn.mjs';
+import { registerCleanup, registerSignalHandlers } from '../process/signals.mjs';
 import { terminateTree } from '../process/terminate-tree.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+const BASELINE_DUMP = path.join(ROOT, 'db/dumps/dev-baseline.dump');
 const READINESS_TIMEOUT_MS = 120000;
 const POLL_MS = 500;
 const DEFAULT_FEATURE = 'companies';
@@ -150,6 +153,15 @@ function printList() {
 }
 
 async function runFeature(featureName, options) {
+  registerSignalHandlers();
+  registerCleanup(async () => {
+    for (const entry of readTrackedPids()) {
+      terminateTree(entry.rootPid);
+    }
+    clearTrackedPids();
+    console.log('[dev] stopped tracked processes');
+  });
+
   const { keys, schemaIds } = resolveFeature(featureName);
 
   execSync('node scripts/dev/check.mjs', { cwd: ROOT, stdio: 'inherit' });
@@ -170,12 +182,12 @@ async function runFeature(featureName, options) {
         await sleep(300);
       }
     }
-    if (featureName === 'companies') {
-      console.log('[dev] --fresh: reset + seed public companies only');
-      execSync('yarn workspace @crm/fill-dump-db run seed:companies:reset', {
-        cwd: ROOT,
-        stdio: 'inherit',
-      });
+    if (fs.existsSync(BASELINE_DUMP)) {
+      console.log('[dev] --fresh: restore from db/dumps/dev-baseline.dump');
+      execSync('node scripts/db/restore.mjs --baseline', { cwd: ROOT, stdio: 'inherit' });
+    } else if (featureName === 'companies') {
+      console.log('[dev] --fresh: no baseline dump — seed companies only');
+      execSync('node scripts/db/seed.mjs companies:reset', { cwd: ROOT, stdio: 'inherit' });
     } else {
       execSync('node scripts/db/reset.mjs', { cwd: ROOT, stdio: 'inherit' });
     }
@@ -185,8 +197,8 @@ async function runFeature(featureName, options) {
     execSync('node scripts/db/migrate.mjs', { cwd: ROOT, stdio: 'inherit' });
   }
 
-  if (options.fresh && featureName !== 'companies') {
-    execSync('node scripts/db/seed.mjs', { cwd: ROOT, stdio: 'inherit' });
+  if (options.fresh && featureName !== 'companies' && !fs.existsSync(BASELINE_DUMP)) {
+    execSync('node scripts/db/seed.mjs full', { cwd: ROOT, stdio: 'inherit' });
   }
 
   await preflightPorts(keys);

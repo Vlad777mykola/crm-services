@@ -11,7 +11,16 @@ async function main(): Promise<void> {
 
   await seedMinimalPublishedCompanies();
 
-  console.log('\nDone. Refresh http://localhost:5173/companies (gateway :8080, companies-service :4003).\n');
+  const dbUrl = process.env.DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/crm';
+  if (dbUrl.includes(':15432')) {
+    console.log('\nDone. Test gateway http://localhost:18080/companies/public\n');
+  } else if (dbUrl.includes(':35432')) {
+    console.log('\nDone. Smoke gateway http://localhost:38080/companies/public\n');
+  } else {
+    console.log(
+      '\nDone. Refresh http://localhost:5173/companies (gateway :8080, companies-service :4003).\n',
+    );
+  }
 }
 
 main()

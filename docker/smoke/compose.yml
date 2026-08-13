@@ -1,0 +1,87 @@
+# Minimal prod-parity smoke — builds companies-service production image in Docker.
+# Distinct ports from dev/test/verify. Project: crm-smoke
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: crm_smoke
+    ports:
+      - '35432:5432'
+    volumes:
+      - postgres-smoke-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 15
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: crm
+      RABBITMQ_DEFAULT_PASS: crm_local_only
+    ports:
+      - '35472:5672'
+    volumes:
+      - rabbitmq-smoke-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', 'check_port_connectivity']
+      interval: 5s
+      timeout: 5s
+      retries: 15
+
+  companies-service:
+    build:
+      context: ../../services/companies-service
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: '4003'
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm_smoke
+      RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672
+      JWT_ACCESS_SECRET: dev-access-secret-change-me
+      LOG_LEVEL: info
+    expose:
+      - '4003'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'node -e "fetch(\"http://127.0.0.1:4003/health/ready\").then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"',
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 15s
+
+  gateway:
+    image: traefik:v3.0
+    command:
+      - '--providers.file.directory=/etc/traefik/dynamic'
+      - '--entrypoints.web.address=:8080'
+      - '--ping=true'
+      - '--ping.entryPoint=web'
+    ports:
+      - '38080:8080'
+    volumes:
+      - ./traefik/dynamic.yml:/etc/traefik/dynamic/routes.yml:ro
+    depends_on:
+      companies-service:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:8080/ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres-smoke-data:
+  rabbitmq-smoke-data:

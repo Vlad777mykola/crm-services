@@ -41,6 +41,18 @@ export function testRabbitmqUrl() {
 export const TEST_DATABASE_URL = testDatabaseUrl();
 export const TEST_RABBITMQ_URL = testRabbitmqUrl();
 
+/** Smoke stack — prod Dockerfile in Docker, disposable DB (:35432). */
+export const SMOKE_PROJECT = 'crm-smoke';
+export const SMOKE_POSTGRES_PORT = 35432;
+export const SMOKE_GATEWAY_PORT = 38080;
+export const SMOKE_RABBITMQ_PORT = 35472;
+
+export function smokeDatabaseUrl() {
+  return `postgres://postgres:postgres@localhost:${SMOKE_POSTGRES_PORT}/crm_smoke`;
+}
+
+export const SMOKE_DATABASE_URL = smokeDatabaseUrl();
+
 /** @param {number} devPort */
 export function verifyAppPort(devPort) {
   return devPort + VERIFY_PORT_OFFSET;

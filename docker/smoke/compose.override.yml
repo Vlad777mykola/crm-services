@@ -1,4 +1,5 @@
-# Disposable overrides for yarn smoke:prod — layered on docker/prod/compose.yml
+# Disposable overrides for full docker/prod/compose.yml stack (future full-matrix smoke).
+# Minimal prod-parity smoke uses docker/smoke/compose.yml instead.
 
 services:
   postgres:
