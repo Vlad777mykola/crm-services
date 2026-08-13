@@ -1,3 +1,5 @@
+import type { PoolClient } from 'pg';
+
 import type { EmailLogRepository } from '../db/email-log-repository.js';
 import { NotificationRepository, NotificationType } from '../db/notification-repository.js';
 import type { RecipientRepository } from '../db/recipient-repository.js';
@@ -22,15 +24,14 @@ export interface DomainEventHandlerDeps {
 }
 
 /**
- * Owns both side effects that used to be split across two places: the
- * in-app notification (previously created by backend's in-process
- * notification.subscriber.ts) and the simulated email log (previously
- * backend/src/workers/notifications.worker.ts). Now that this service is
- * the single owner, the backend gates its in-process subscriber off via
- * `IN_PROCESS_NOTIFICATIONS_ENABLED=false` to avoid duplicates - see
- * docs/architecture/service-ownership.md.
+ * Real external SMTP MUST NOT run inside the consumer transaction. Email is
+ * simulated via email_logs until a separate delivery worker exists.
  */
-export async function handleDomainEvent(event: WireEventEnvelope, deps: DomainEventHandlerDeps): Promise<void> {
+export async function handleDomainEvent(
+  client: PoolClient,
+  event: WireEventEnvelope,
+  deps: DomainEventHandlerDeps,
+): Promise<void> {
   const content = buildEmailContent(event);
   const recipientSpec = resolveEmailRecipient(event);
   const notificationType = NOTIFICATION_TYPE_BY_EVENT[event.type];
@@ -42,17 +43,17 @@ export async function handleDomainEvent(event: WireEventEnvelope, deps: DomainEv
 
   const targets =
     recipientSpec.kind === 'user'
-      ? [{ userId: recipientSpec.userId, email: await deps.recipients.getUserEmail(recipientSpec.userId) }]
-      : await deps.recipients.getCompanyManagerUsers(recipientSpec.companyId);
+      ? [{ userId: recipientSpec.userId, email: await deps.recipients.getUserEmail(client, recipientSpec.userId) }]
+      : await deps.recipients.getCompanyManagerUsers(client, recipientSpec.companyId);
 
   for (const target of targets) {
-    await deps.notifications.create(target.userId, notificationType, content.subject, content.body, {
+    await deps.notifications.create(client, target.userId, notificationType, content.subject, content.body, {
       eventType: event.type,
       eventId: event.id,
     });
 
     if (target.email) {
-      await deps.emailLogs.record({
+      await deps.emailLogs.record(client, {
         toEmail: target.email,
         subject: content.subject,
         body: content.body,

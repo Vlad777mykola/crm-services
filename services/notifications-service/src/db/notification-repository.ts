@@ -1,4 +1,4 @@
-import type { Pool } from 'pg';
+import type { Pool, PoolClient } from 'pg';
 
 // Mirrors backend/src/modules/notifications/notification.entity.ts's enum -
 // duplicated deliberately, not imported, so this service never depends on
@@ -31,13 +31,14 @@ export class NotificationRepository {
   constructor(private readonly pool: Pool) {}
 
   async create(
+    client: PoolClient,
     userId: string,
     type: NotificationType,
     title: string,
     body: string | null,
     metadata: Record<string, unknown> | null,
   ): Promise<void> {
-    await this.pool.query(
+    await client.query(
       `INSERT INTO notifications_schema.notifications ("userId", "type", "title", "body", "metadata")
        VALUES ($1, $2, $3, $4, $5)`,
       [userId, type, title, body, metadata ? JSON.stringify(metadata) : null],

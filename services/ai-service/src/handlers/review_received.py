@@ -1,31 +1,53 @@
-"""Handles review.received: rolls the rating into company_daily_stats and
-republishes the recomputed running average so notifications-service can tell
-company managers about it. Direct evolution of the old python-worker's
-company_rating_stats logic, now backed by postgres-ai instead of SQLite."""
+"""Handles review.received: stats DB work + publish/outbox obligation."""
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 import psycopg2.extensions
 
 import logger
-import rabbitmq.publisher as publisher
 from db import repository
+from messaging.direct_publish import PublishPayload
+from outbox.repository import OutboxWrite
 
 
-def handle(conn: psycopg2.extensions.connection, channel: Any, data: dict[str, Any]) -> None:
+@dataclass
+class HandlerResult:
+    direct_publish: list[PublishPayload]
+    outbox_writes: list[OutboxWrite]
+
+
+def handle_db(conn: psycopg2.extensions.connection, data: dict[str, Any]) -> HandlerResult | None:
     company_id = data.get("companyId")
     rating = data.get("rating")
     if not company_id or not isinstance(rating, (int, float)):
         logger.warn("ignoring review.received - missing companyId/rating")
-        return
+        return None
 
     repository.increment_event_count(conn, "review.received", company_id)
     review_count, average_rating = repository.record_daily_review(conn, company_id, rating)
-    publisher.publish_rating_updated(channel, company_id, average_rating, review_count)
-    logger.info(
-        "published analytics.company_rating_updated",
-        company_id=company_id,
-        review_count=review_count,
-        average_rating=average_rating,
+
+    payload = {
+        "companyId": company_id,
+        "averageRating": average_rating,
+        "reviewCount": review_count,
+    }
+
+    return HandlerResult(
+        direct_publish=[
+            PublishPayload(
+                event_type="analytics.company_rating_updated",
+                routing_key="analytics.company_rating_updated",
+                data=payload,
+            )
+        ],
+        outbox_writes=[
+            OutboxWrite(
+                event_type="analytics.company_rating_updated",
+                aggregate_type="company",
+                aggregate_id=company_id,
+                payload=payload,
+            )
+        ],
     )

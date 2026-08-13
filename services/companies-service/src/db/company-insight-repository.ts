@@ -1,4 +1,4 @@
-import type { Pool } from 'pg';
+import type { PoolClient } from 'pg';
 
 export interface CompanyInsightProjection {
   id: string;
@@ -7,12 +7,9 @@ export interface CompanyInsightProjection {
   summary: string;
 }
 
-/** Moved from backend-projection-service in Phase 12 - see README "Known gaps". */
 export class CompanyInsightRepository {
-  constructor(private readonly pool: Pool) {}
-
-  async upsert(projection: CompanyInsightProjection): Promise<void> {
-    await this.pool.query(
+  async upsert(client: PoolClient, projection: CompanyInsightProjection): Promise<void> {
+    await client.query(
       `INSERT INTO companies_schema.company_insight_projections ("id", "companyId", "insightType", "summary")
        VALUES ($1, $2, $3, $4)
        ON CONFLICT ("id") DO NOTHING`,

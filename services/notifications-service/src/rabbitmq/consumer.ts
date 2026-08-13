@@ -1,9 +1,11 @@
 import amqp, { type Channel, type ChannelModel, type ConsumeMessage } from 'amqplib';
+import { declareRetryTopology, handleConsumerFailure } from '@crm/messaging-kit';
 
 import { logger } from '../logger.js';
 import { declareTopology } from './topology.js';
 
 const RECONNECT_MS = 1000;
+const SERVICE_NAME = 'notifications-service';
 
 export interface BindingSpec {
   exchange: string;
@@ -37,6 +39,8 @@ export async function consumeFromRabbitMq(options: ConsumeOptions): Promise<Rabb
 
   async function bindAndConsume(ch: Channel): Promise<void> {
     await declareTopology(ch);
+    await declareRetryTopology(ch, { serviceName: SERVICE_NAME, sourceExchange: 'domain.events' });
+    await declareRetryTopology(ch, { serviceName: SERVICE_NAME, sourceExchange: 'analytics.events' });
     await ch.assertQueue(options.queue, {
       durable: true,
       arguments: { 'x-dead-letter-exchange': options.deadLetterExchange },
@@ -115,10 +119,7 @@ async function handleMessage(
     await onMessage(parsed, msg.fields.routingKey, msg.fields.exchange);
     channel.ack(msg);
   } catch (err) {
-    logger.error(
-      { err, routingKey: msg.fields.routingKey },
-      '[rabbitmq] failed to process message — routing to dead-letter queue',
-    );
-    channel.nack(msg, false, false);
+    logger.error({ err, routingKey: msg.fields.routingKey }, '[rabbitmq] failed to process message — applying retry/parking policy');
+    await handleConsumerFailure(channel, msg, SERVICE_NAME, err);
   }
 }

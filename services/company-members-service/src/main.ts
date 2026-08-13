@@ -1,9 +1,9 @@
 import { createApp } from './app.js';
+import { processInboundEvent } from './consumer/process-inbound-event.js';
 import { createPool } from './db/pool.js';
 import { MemberRepository } from './db/member-repository.js';
 import { ensureCompanyMembersSchema } from './db/schema.js';
 import { env } from './env.js';
-import { handleCompanyCreated, type CompanyCreatedData } from './handlers/company-created.js';
 import { ProcessedEventsRepository } from './idempotency/processed-events-repository.js';
 import { logger } from './logger.js';
 import { MembersService } from './modules/members/members.service.js';
@@ -16,7 +16,7 @@ async function bootstrap(): Promise<void> {
   const pool = createPool();
   await ensureCompanyMembersSchema(pool);
 
-  const processedEvents = new ProcessedEventsRepository(pool);
+  const processedEvents = new ProcessedEventsRepository();
   const members = new MemberRepository(pool);
   const membersService = new MembersService(pool);
 
@@ -27,28 +27,7 @@ async function bootstrap(): Promise<void> {
     bindings: [{ exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'company.created' }],
     onMessage: async (parsedBody) => {
       const envelope = parsedBody as { id: string; type: string; data: Record<string, unknown> };
-
-      const isNewEvent = await processedEvents.markProcessed(envelope.id);
-      if (!isNewEvent) {
-        logger.info({ eventId: envelope.id }, '[company-members-service] already processed - skipping');
-        return;
-      }
-
-      if (envelope.type === 'company.created') {
-        const client = await pool.connect();
-        try {
-          await client.query('BEGIN');
-          await handleCompanyCreated(envelope.data as unknown as CompanyCreatedData, members, client);
-          await client.query('COMMIT');
-        } catch (err) {
-          await client.query('ROLLBACK');
-          throw err;
-        } finally {
-          client.release();
-        }
-        return;
-      }
-      logger.info({ type: envelope.type }, '[company-members-service] no handler for this event type - ignoring');
+      await processInboundEvent({ pool, processedEvents, members }, envelope);
     },
   });
 

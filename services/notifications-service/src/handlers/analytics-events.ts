@@ -1,3 +1,5 @@
+import type { PoolClient } from 'pg';
+
 import { NotificationRepository, NotificationType } from '../db/notification-repository.js';
 import type { RecipientRepository } from '../db/recipient-repository.js';
 import { logger } from '../logger.js';
@@ -13,13 +15,8 @@ export interface AnalyticsEventHandlerDeps {
   notifications: NotificationRepository;
 }
 
-/**
- * Handles results published by services/ai-service on the `analytics.events`
- * exchange. Unrecognized analytics event types are logged and ignored rather
- * than throwing, so a future addition to that exchange doesn't dead-letter
- * every message this service isn't ready to understand yet.
- */
 export async function handleAnalyticsEvent(
+  client: PoolClient,
   envelope: { id: string; type: string; data: Record<string, unknown> },
   deps: AnalyticsEventHandlerDeps,
 ): Promise<void> {
@@ -29,10 +26,11 @@ export async function handleAnalyticsEvent(
   }
 
   const { companyId, averageRating, reviewCount } = envelope.data as AnalyticsCompanyRatingUpdatedEnvelope['data'];
-  const managers = await deps.recipients.getCompanyManagerUsers(companyId);
+  const managers = await deps.recipients.getCompanyManagerUsers(client, companyId);
 
   for (const manager of managers) {
     await deps.notifications.create(
+      client,
       manager.userId,
       NotificationType.COMPANY_RATING_UPDATED,
       `Your average rating is now ${averageRating.toFixed(1)}`,

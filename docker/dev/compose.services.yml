@@ -434,9 +434,29 @@ services:
     environment:
       AI_DATABASE_URL: postgres://ai:ai_password@postgres-ai:5432/ai
       RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672/crm-dev
+      MESSAGING_MODE: direct
       PYTHON_METRICS_PORT: '4200'
     ports:
       - '4200:4200'
+    depends_on:
+      postgres-ai:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  outbox-publisher-ai:
+    profiles: ['python-workers']
+    build:
+      context: ../../services/outbox-publisher
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://ai:ai_password@postgres-ai:5432/ai
+      OUTBOX_SCHEMA: ai_schema
+      RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672/crm-dev
+      HEALTH_PORT: '4510'
+    ports:
+      - '4510:4510'
     depends_on:
       postgres-ai:
         condition: service_healthy

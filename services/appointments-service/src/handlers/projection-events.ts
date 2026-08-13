@@ -99,10 +99,11 @@ export async function handleSpecialistServiceRemoved(
  * unrelated to appointment writes; called directly with the pool.
  */
 export async function handleAiRecommendationCreated(
+  client: PoolClient,
   data: AiRecommendationCreatedData,
   repository: AppointmentRecommendationRepository,
 ): Promise<void> {
-  await repository.upsert({
+  await repository.upsert(client, {
     id: data.recommendationId,
     appointmentId: data.appointmentId,
     companyId: data.companyId,

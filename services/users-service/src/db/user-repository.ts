@@ -1,4 +1,4 @@
-import type { Pool } from 'pg';
+import type { Pool, PoolClient } from 'pg';
 
 export interface UserProfileRow {
   id: string;
@@ -52,12 +52,15 @@ export class UserRepository {
    * overwrites or duplicates the profile - safe alongside the
    * `processed_events` check in the consumer, which is the primary guard.
    */
-  async createProfileIfMissing(input: { userId: string; email: string; name: string }): Promise<void> {
-    await this.pool.query(
+  async createProfileIfMissing(
+    client: PoolClient,
+    input: { userId: string; email: string; name: string },
+  ): Promise<void> {
+    await client.query(
       `INSERT INTO users_schema.users ("id", "email") VALUES ($1, $2) ON CONFLICT ("id") DO NOTHING`,
       [input.userId, input.email],
     );
-    await this.pool.query(
+    await client.query(
       `INSERT INTO users_schema.user_profiles ("userId", "name") VALUES ($1, $2) ON CONFLICT ("userId") DO NOTHING`,
       [input.userId, input.name],
     );

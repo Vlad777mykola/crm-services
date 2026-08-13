@@ -1,14 +1,9 @@
 import { createApp } from './app.js';
+import { processInboundEvent } from './consumer/process-inbound-event.js';
 import { createPool } from './db/pool.js';
 import { MembershipProjectionRepository } from './db/membership-projection-repository.js';
 import { ensureAuthSchema } from './db/schema.js';
 import { env } from './env.js';
-import {
-  handleCompanyMemberAdded,
-  handleCompanyMemberRemoved,
-  type CompanyMemberAddedData,
-  type CompanyMemberRemovedData,
-} from './handlers/company-member-events.js';
 import { ProcessedEventsRepository } from './idempotency/processed-events-repository.js';
 import { logger } from './logger.js';
 import { AuthService } from './modules/auth/auth.service.js';
@@ -22,8 +17,8 @@ async function bootstrap(): Promise<void> {
   await ensureAuthSchema(pool);
 
   const authService = new AuthService(pool);
-  const processedEvents = new ProcessedEventsRepository(pool);
-  const projection = new MembershipProjectionRepository(pool);
+  const processedEvents = new ProcessedEventsRepository();
+  const projection = new MembershipProjectionRepository();
 
   const consumer = await consumeFromRabbitMq({
     url: env.RABBITMQ_URL,
@@ -35,20 +30,7 @@ async function bootstrap(): Promise<void> {
     ],
     onMessage: async (parsedBody) => {
       const envelope = parsedBody as { id: string; type: string; data: Record<string, unknown> };
-
-      const isNewEvent = await processedEvents.markProcessed(envelope.id);
-      if (!isNewEvent) {
-        logger.info({ eventId: envelope.id }, '[auth-service] already processed - skipping');
-        return;
-      }
-
-      if (envelope.type === 'company-member.added') {
-        await handleCompanyMemberAdded(envelope.data as unknown as CompanyMemberAddedData, projection);
-      } else if (envelope.type === 'company-member.removed') {
-        await handleCompanyMemberRemoved(envelope.data as unknown as CompanyMemberRemovedData, projection);
-      } else {
-        logger.info({ type: envelope.type }, '[auth-service] no handler for this event type - ignoring');
-      }
+      await processInboundEvent({ pool, processedEvents, projection }, envelope);
     },
   });
 

@@ -1,9 +1,9 @@
 import { createApp } from './app.js';
+import { processInboundEvent } from './consumer/process-inbound-event.js';
 import { CompanyInsightRepository } from './db/company-insight-repository.js';
 import { createPool } from './db/pool.js';
 import { ensureCompaniesSchema } from './db/schema.js';
 import { env } from './env.js';
-import { handleAiCompanyInsightCreated, type AiCompanyInsightCreatedData } from './handlers/ai-company-insight-created.js';
 import { ProcessedEventsRepository } from './idempotency/processed-events-repository.js';
 import { logger } from './logger.js';
 import { CompaniesService } from './modules/companies/companies.service.js';
@@ -16,32 +16,18 @@ async function bootstrap(): Promise<void> {
   const pool = createPool();
   await ensureCompaniesSchema(pool);
 
-  const processedEvents = new ProcessedEventsRepository(pool);
-  const insights = new CompanyInsightRepository(pool);
+  const processedEvents = new ProcessedEventsRepository();
+  const insights = new CompanyInsightRepository();
   const companiesService = new CompaniesService(pool);
 
   const consumer = await consumeFromRabbitMq({
     url: env.RABBITMQ_URL,
     queue: QUEUE_NAME,
     deadLetterExchange: DOMAIN_EVENTS_DLX,
-    bindings: [
-      // Moved from backend-projection-service in Phase 12.
-      { exchange: ANALYTICS_EVENTS_EXCHANGE, routingKey: 'ai.company_insight_created' },
-    ],
+    bindings: [{ exchange: ANALYTICS_EVENTS_EXCHANGE, routingKey: 'ai.company_insight_created' }],
     onMessage: async (parsedBody) => {
       const envelope = parsedBody as { id: string; type: string; data: Record<string, unknown> };
-
-      const isNewEvent = await processedEvents.markProcessed(envelope.id);
-      if (!isNewEvent) {
-        logger.info({ eventId: envelope.id }, '[companies-service] already processed - skipping');
-        return;
-      }
-
-      if (envelope.type === 'ai.company_insight_created') {
-        await handleAiCompanyInsightCreated(envelope.data as unknown as AiCompanyInsightCreatedData, insights);
-        return;
-      }
-      logger.info({ type: envelope.type }, '[companies-service] no handler for this event type - ignoring');
+      await processInboundEvent({ pool, processedEvents, insights }, envelope);
     },
   });
 

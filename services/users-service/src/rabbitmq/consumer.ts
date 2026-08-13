@@ -1,9 +1,12 @@
 import amqp, { type Channel, type ChannelModel, type ConsumeMessage } from 'amqplib';
+import { declareRetryTopology, handleConsumerFailure } from '@crm/messaging-kit';
 
 import { logger } from '../logger.js';
 import { declareTopology } from './topology.js';
 
 const RECONNECT_MS = 1000;
+const SERVICE_NAME = 'users-service';
+const SOURCE_EXCHANGE = 'domain.events' as const;
 
 export interface BindingSpec {
   exchange: string;
@@ -27,9 +30,6 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/**
- * Declares topology, binds a durable queue with DLX, and reconnects on connection loss.
- */
 export async function consumeFromRabbitMq(options: ConsumeOptions): Promise<RabbitMqConsumer> {
   let connected = false;
   let closed = false;
@@ -39,6 +39,7 @@ export async function consumeFromRabbitMq(options: ConsumeOptions): Promise<Rabb
 
   async function bindAndConsume(ch: Channel): Promise<void> {
     await declareTopology(ch);
+    await declareRetryTopology(ch, { serviceName: SERVICE_NAME, sourceExchange: SOURCE_EXCHANGE });
     await ch.assertQueue(options.queue, {
       durable: true,
       arguments: { 'x-dead-letter-exchange': options.deadLetterExchange },
@@ -117,10 +118,7 @@ async function handleMessage(
     await onMessage(parsed, msg.fields.routingKey, msg.fields.exchange);
     channel.ack(msg);
   } catch (err) {
-    logger.error(
-      { err, routingKey: msg.fields.routingKey },
-      '[rabbitmq] failed to process message — routing to dead-letter queue',
-    );
-    channel.nack(msg, false, false);
+    logger.error({ err, routingKey: msg.fields.routingKey }, '[rabbitmq] failed to process message — applying retry/parking policy');
+    await handleConsumerFailure(channel, msg, SERVICE_NAME, err);
   }
 }

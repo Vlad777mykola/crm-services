@@ -1,4 +1,4 @@
-import type { Pool } from 'pg';
+import type { PoolClient } from 'pg';
 
 export interface CompanyManagerUser {
   userId: string;
@@ -11,15 +11,13 @@ export interface CompanyManagerUser {
  * writes to either table. See docs/architecture/service-ownership.md.
  */
 export class RecipientRepository {
-  constructor(private readonly pool: Pool) {}
-
-  async getUserEmail(userId: string): Promise<string | null> {
-    const { rows } = await this.pool.query<{ email: string }>('SELECT "email" FROM "users" WHERE "id" = $1', [userId]);
+  async getUserEmail(client: PoolClient, userId: string): Promise<string | null> {
+    const { rows } = await client.query<{ email: string }>('SELECT "email" FROM "users" WHERE "id" = $1', [userId]);
     return rows[0]?.email ?? null;
   }
 
-  async getCompanyManagerUsers(companyId: string): Promise<CompanyManagerUser[]> {
-    const { rows } = await this.pool.query<CompanyManagerUser>(
+  async getCompanyManagerUsers(client: PoolClient, companyId: string): Promise<CompanyManagerUser[]> {
+    const { rows } = await client.query<CompanyManagerUser>(
       `SELECT u."id" AS "userId", u."email" AS "email"
        FROM "company_members" cm
        JOIN "users" u ON u."id" = cm."userId"

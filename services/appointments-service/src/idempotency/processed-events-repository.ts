@@ -1,12 +1,10 @@
-import type { Pool } from 'pg';
+import type { PoolClient } from 'pg';
 
 const CONSUMER_NAME = 'appointments-service';
 
 export class ProcessedEventsRepository {
-  constructor(private readonly pool: Pool) {}
-
-  async markProcessed(eventId: string): Promise<boolean> {
-    const { rowCount } = await this.pool.query(
+  async markProcessed(client: PoolClient, eventId: string): Promise<boolean> {
+    const { rowCount } = await client.query(
       `INSERT INTO appointments_schema.processed_events ("event_id", "consumer_name") VALUES ($1, $2) ON CONFLICT DO NOTHING`,
       [eventId, CONSUMER_NAME],
     );

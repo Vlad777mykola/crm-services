@@ -8,6 +8,7 @@ yarn dev list               # all features
 yarn dev dashboard          # auth chain + dashboard + schema bootstrap
 yarn dev dashboard --fresh   # reset + migrate + seed
 yarn dev dashboard --baseline  # team baseline restore + start
+yarn dev companies --no-frontend  # skip UI when :5173 already serving
 yarn dev check              # static preflight (Node, deps, Docker)
 yarn dev status             # infra + tracked PIDs + ports
 yarn dev stop               # tracked PIDs only (safe default)
@@ -23,8 +24,10 @@ Browser (:5173)  →  Traefik (:8080)  →  host.docker.internal:<service-port>
 1. **Infra** (auto-started unless `--no-infra`): `yarn dev:infra` — Postgres `:5432`, RabbitMQ, Traefik `:8080`
 2. **Feature** resolves dependency graph from `scripts/dev/features.mjs`
 3. **Schemas** — features with `schemas[]` run `db:migrate` before services start
-4. **`--fresh`** — stop apps, `db:reset`, `db:migrate`, feature seed profile
+4. **`--fresh`** — stop apps, `db:migrate`, `db:reset`, feature seed profile
 5. **`--baseline`** — stop apps, `db:baseline:restore`, start (migrate forward inside restore)
+
+If a feature port is already in use **and** healthy (e.g. frontend from `yarn dev dashboard`), dev **reuses** it instead of spawning a duplicate. Use `--no-frontend` to skip starting the UI entirely.
 
 ## Features
 

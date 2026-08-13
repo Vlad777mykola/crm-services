@@ -1,57 +1,22 @@
 [
   {
     "name": "frontend",
-    "pid": 2980,
-    "rootPid": 2980
+    "pid": 12136,
+    "rootPid": 12136
   },
   {
     "name": "companies",
-    "pid": 12320,
-    "rootPid": 12320
+    "pid": 18460,
+    "rootPid": 18460
   },
   {
     "name": "frontend",
-    "pid": 8772,
-    "rootPid": 8772
+    "pid": 13040,
+    "rootPid": 13040
   },
   {
     "name": "companies",
-    "pid": 18380,
-    "rootPid": 18380
-  },
-  {
-    "name": "frontend",
-    "pid": 19124,
-    "rootPid": 19124
-  },
-  {
-    "name": "dashboard",
-    "pid": 11964,
-    "rootPid": 11964
-  },
-  {
-    "name": "auth",
-    "pid": 18664,
-    "rootPid": 18664
-  },
-  {
-    "name": "users",
-    "pid": 12708,
-    "rootPid": 12708
-  },
-  {
-    "name": "outbox-auth",
-    "pid": 14844,
-    "rootPid": 14844
-  },
-  {
-    "name": "frontend",
-    "pid": 5520,
-    "rootPid": 5520
-  },
-  {
-    "name": "companies",
-    "pid": 19004,
-    "rootPid": 19004
+    "pid": 13972,
+    "rootPid": 13972
   }
 ]

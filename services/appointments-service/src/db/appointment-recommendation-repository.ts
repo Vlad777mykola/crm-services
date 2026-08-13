@@ -1,4 +1,4 @@
-import type { Pool } from 'pg';
+import type { Pool, PoolClient } from 'pg';
 
 export interface AppointmentRecommendationProjection {
   id: string;
@@ -12,8 +12,8 @@ export interface AppointmentRecommendationProjection {
 export class AppointmentRecommendationRepository {
   constructor(private readonly pool: Pool) {}
 
-  async upsert(projection: AppointmentRecommendationProjection): Promise<void> {
-    await this.pool.query(
+  async upsert(client: PoolClient, projection: AppointmentRecommendationProjection): Promise<void> {
+    await client.query(
       `INSERT INTO appointments_schema.appointment_recommendation_projections ("id", "appointmentId", "companyId", "summary", "confidence")
        VALUES ($1, $2, $3, $4, $5)
        ON CONFLICT ("id") DO NOTHING`,

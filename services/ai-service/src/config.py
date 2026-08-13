@@ -9,6 +9,9 @@ load_dotenv()
 
 AI_DATABASE_URL = os.getenv("AI_DATABASE_URL", "postgres://ai:ai_password@localhost:5433/ai")
 RABBITMQ_URL = os.getenv("RABBITMQ_URL", "amqp://crm:crm_local_only@localhost:5672")
+MESSAGING_MODE = os.getenv("MESSAGING_MODE", "direct").strip().lower()
+if MESSAGING_MODE not in ("direct", "outbox"):
+    raise SystemExit("ai-service configuration invalid — MESSAGING_MODE must be 'direct' or 'outbox'")
 try:
     HEALTH_PORT = int(os.getenv("AI_SERVICE_HEALTH_PORT", "4200"))
 except ValueError:

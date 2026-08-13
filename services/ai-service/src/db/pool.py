@@ -1,5 +1,4 @@
-"""Postgres connection helper - talks only to postgres-ai (AI_DATABASE_URL),
-never main-postgres. See docs/architecture/service-ownership.md."""
+"""Postgres connection helper - talks only to postgres-ai (AI_DATABASE_URL)."""
 from __future__ import annotations
 
 import psycopg2

@@ -32,9 +32,9 @@ import psycopg2.extensions
 
 import config
 import logger
+from consumer.inbox import process_message
 from db import repository, schema
 from db.pool import get_connection
-from handlers import appointment_requested, review_received
 from rabbitmq.consumer import setup_consumer
 
 
@@ -79,26 +79,9 @@ def make_on_message(conn: psycopg2.extensions.connection, channel: "pika.adapter
     def on_message(ch, method, _properties, body: bytes) -> None:
         try:
             envelope: dict[str, Any] = json.loads(body)
-            event_id = envelope.get("id")
-            event_type = envelope.get("type", method.routing_key)
-            data = envelope.get("data", {}) or {}
-
-            if event_id and not repository.mark_processed(conn, event_id, config.CONSUMER_NAME):
-                logger.info("already processed - skipping", event_id=event_id)
-                ch.basic_ack(delivery_tag=method.delivery_tag)
-                return
-
-            if event_type == "review.received":
-                review_received.handle(conn, channel, data)
-            elif event_type == "appointment.requested":
-                appointment_requested.handle(conn, channel, data)
-            elif event_type.startswith("appointment.") and data.get("companyId"):
-                repository.increment_event_count(conn, event_type, data["companyId"])
-            else:
-                logger.info("no handler for this event type - ignoring", event_type=event_type)
-
+            process_message(conn, channel, envelope)
             ch.basic_ack(delivery_tag=method.delivery_tag)
-        except Exception as exc:  # noqa: BLE001 - log and dead-letter rather than crash the consume loop
+        except Exception as exc:  # noqa: BLE001
             logger.error("failed to process message - routing to dead-letter queue", err=str(exc))
             ch.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
 

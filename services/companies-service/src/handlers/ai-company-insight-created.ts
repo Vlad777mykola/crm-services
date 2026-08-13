@@ -1,3 +1,5 @@
+import type { PoolClient } from 'pg';
+
 import type { CompanyInsightRepository } from '../db/company-insight-repository.js';
 
 export interface AiCompanyInsightCreatedData {
@@ -7,12 +9,12 @@ export interface AiCompanyInsightCreatedData {
   summary: string;
 }
 
-/** Mirrors contracts/events/ai.company_insight_created.v1.json. */
 export async function handleAiCompanyInsightCreated(
+  client: PoolClient,
   data: AiCompanyInsightCreatedData,
   repository: CompanyInsightRepository,
 ): Promise<void> {
-  await repository.upsert({
+  await repository.upsert(client, {
     id: data.insightId,
     companyId: data.companyId,
     insightType: data.insightType,

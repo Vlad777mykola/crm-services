@@ -1,20 +1,21 @@
-"""Handles appointment.requested: produces a first-pass recommendation and
-publishes ai.appointment_recommendation_created for
-services/appointments-service to turn into a read-model row in
-appointments_schema (moved here from the now-retired
-services/backend-projection-service in Phase 12). The scoring below is a
-placeholder heuristic, not a trained model - swap `_score` out once there's
-real signal to learn from; the RabbitMQ/Postgres plumbing around it does not
-need to change."""
+"""Handles appointment.requested: recommendation DB work + publish/outbox obligation."""
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 import psycopg2.extensions
 
 import logger
-import rabbitmq.publisher as publisher
 from db import repository
+from messaging.direct_publish import PublishPayload
+from outbox.repository import OutboxWrite
+
+
+@dataclass
+class HandlerResult:
+    direct_publish: list[PublishPayload]
+    outbox_writes: list[OutboxWrite]
 
 
 def _score(data: dict[str, Any]) -> tuple[str, float]:
@@ -25,20 +26,39 @@ def _score(data: dict[str, Any]) -> tuple[str, float]:
     )
 
 
-def handle(conn: psycopg2.extensions.connection, channel: Any, data: dict[str, Any]) -> None:
+def handle_db(conn: psycopg2.extensions.connection, data: dict[str, Any]) -> HandlerResult | None:
     appointment_id = data.get("appointmentId")
     company_id = data.get("companyId")
     if not appointment_id or not company_id:
         logger.warn("ignoring appointment.requested - missing appointmentId/companyId")
-        return
+        return None
 
     repository.increment_event_count(conn, "appointment.requested", company_id)
     summary, confidence = _score(data)
     recommendation_id = repository.create_recommendation(conn, appointment_id, company_id, summary, confidence)
-    publisher.publish_recommendation_created(channel, recommendation_id, appointment_id, company_id, summary, confidence)
-    logger.info(
-        "published ai.appointment_recommendation_created",
-        recommendation_id=recommendation_id,
-        appointment_id=appointment_id,
-        confidence=confidence,
+
+    payload = {
+        "recommendationId": recommendation_id,
+        "appointmentId": appointment_id,
+        "companyId": company_id,
+        "summary": summary,
+        "confidence": confidence,
+    }
+
+    return HandlerResult(
+        direct_publish=[
+            PublishPayload(
+                event_type="ai.appointment_recommendation_created",
+                routing_key="ai.appointment_recommendation_created",
+                data=payload,
+            )
+        ],
+        outbox_writes=[
+            OutboxWrite(
+                event_type="ai.appointment_recommendation_created",
+                aggregate_type="ai_recommendation",
+                aggregate_id=recommendation_id,
+                payload=payload,
+            )
+        ],
     )

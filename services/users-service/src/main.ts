@@ -1,9 +1,9 @@
 import { createApp } from './app.js';
+import { processInboundEvent } from './consumer/process-inbound-event.js';
 import { createPool } from './db/pool.js';
 import { ensureUsersSchema } from './db/schema.js';
 import { UserRepository } from './db/user-repository.js';
 import { env } from './env.js';
-import { handleAuthUserRegistered, type AuthUserRegisteredData } from './handlers/auth-user-registered.js';
 import { ProcessedEventsRepository } from './idempotency/processed-events-repository.js';
 import { logger } from './logger.js';
 import { UsersService } from './modules/users/users.service.js';
@@ -16,7 +16,7 @@ async function bootstrap(): Promise<void> {
   const pool = createPool();
   await ensureUsersSchema(pool);
 
-  const processedEvents = new ProcessedEventsRepository(pool);
+  const processedEvents = new ProcessedEventsRepository();
   const users = new UserRepository(pool);
   const usersService = new UsersService(users);
 
@@ -27,18 +27,7 @@ async function bootstrap(): Promise<void> {
     bindings: [{ exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'auth.user_registered' }],
     onMessage: async (parsedBody) => {
       const envelope = parsedBody as { id: string; type: string; data: Record<string, unknown> };
-
-      const isNewEvent = await processedEvents.markProcessed(envelope.id);
-      if (!isNewEvent) {
-        logger.info({ eventId: envelope.id }, '[users-service] already processed - skipping');
-        return;
-      }
-
-      if (envelope.type === 'auth.user_registered') {
-        await handleAuthUserRegistered(envelope.data as unknown as AuthUserRegisteredData, users);
-        return;
-      }
-      logger.info({ type: envelope.type }, '[users-service] no handler for this event type - ignoring');
+      await processInboundEvent({ pool, processedEvents, users }, envelope);
     },
   });
 

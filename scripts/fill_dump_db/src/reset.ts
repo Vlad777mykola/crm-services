@@ -81,6 +81,15 @@ export const RESETTABLE_APPLICATION_TABLES = [
   'company_specialists_schema.outbox_events',
 ];
 
+async function listExistingResettableTables(): Promise<string[]> {
+  const existing: string[] = [];
+  for (const qualified of RESETTABLE_APPLICATION_TABLES) {
+    const { rows } = await pool.query(`SELECT to_regclass($1::text) IS NOT NULL AS ok`, [qualified]);
+    if (rows[0]?.ok) existing.push(qualified);
+  }
+  return existing;
+}
+
 /** Wipes only companies_schema tables seeded by `seed:companies`. */
 export async function resetMicroserviceSchemas(): Promise<void> {
   await ensureAllMicroserviceSchemas();
@@ -88,16 +97,17 @@ export async function resetMicroserviceSchemas(): Promise<void> {
   console.log('[fill_dump_db] truncated companies_schema.companies (and dependent rows)');
 }
 
-/** Verify every resettable table has zero rows. */
-export async function assertResetComplete(): Promise<void> {
-  for (const qualified of RESETTABLE_APPLICATION_TABLES) {
+/** Verify listed tables are empty (defaults to existing resettable tables). */
+export async function assertResetComplete(tables?: string[]): Promise<void> {
+  const toCheck = tables ?? await listExistingResettableTables();
+  for (const qualified of toCheck) {
     const { rows } = await pool.query(`SELECT COUNT(*)::int AS n FROM ${qualified}`);
     const count = rows[0]?.n ?? 0;
     if (count > 0) {
       throw new Error(`[fill_dump_db] reset incomplete: ${qualified} still has ${count} row(s)`);
     }
   }
-  console.log(`[fill_dump_db] verified ${RESETTABLE_APPLICATION_TABLES.length} table(s) empty`);
+  console.log(`[fill_dump_db] verified ${toCheck.length} table(s) empty`);
 }
 
 /**
@@ -105,10 +115,14 @@ export async function assertResetComplete(): Promise<void> {
  */
 export async function resetAllApplicationState(): Promise<void> {
   await ensureAllMicroserviceSchemas();
-  const tableList = RESETTABLE_APPLICATION_TABLES.join(', ');
-  await pool.query(`TRUNCATE TABLE ${tableList} RESTART IDENTITY CASCADE`);
-  console.log(`[fill_dump_db] truncated ${RESETTABLE_APPLICATION_TABLES.length} application table(s)`);
-  await assertResetComplete();
+  const tables = await listExistingResettableTables();
+  if (tables.length === 0) {
+    console.log('[fill_dump_db] no application tables to truncate yet');
+    return;
+  }
+  await pool.query(`TRUNCATE TABLE ${tables.join(', ')} RESTART IDENTITY CASCADE`);
+  console.log(`[fill_dump_db] truncated ${tables.length} application table(s)`);
+  await assertResetComplete(tables);
 }
 
 /** @deprecated use resetAllApplicationState */

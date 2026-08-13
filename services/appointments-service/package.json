@@ -13,6 +13,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@crm/messaging-kit": "0.0.0",
     "amqplib": "^0.10.9",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",

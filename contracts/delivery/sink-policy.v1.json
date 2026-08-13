@@ -1,0 +1,20 @@
+{
+  "appointment.created": {
+    "rabbitmq": {
+      "logicalDestination": "domain.appointment.created",
+      "enabledFrom": "beginning"
+    }
+  },
+  "auth.user_registered": {
+    "rabbitmq": {
+      "logicalDestination": "domain.auth.user_registered",
+      "enabledFrom": "beginning"
+    }
+  },
+  "ai.appointment_recommendation_created": {
+    "rabbitmq": {
+      "logicalDestination": "analytics.ai.appointment_recommendation_created",
+      "enabledFrom": "beginning"
+    }
+  }
+}

@@ -127,15 +127,49 @@ async function waitReady(port, label) {
   return false;
 }
 
-async function preflightPorts(keys) {
+async function isFrontendServing(port) {
+  try {
+    const res = await fetch(`http://localhost:${port}`);
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+async function isServiceReady(port) {
+  try {
+    const res = await fetch(`http://localhost:${port}/health/ready`);
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Skip spawn when port is already serving a healthy process (e.g. frontend from another feature).
+ * @param {string[]} keys
+ */
+async function resolveSpawnPlan(keys) {
+  const toSpawn = [];
   for (const key of keys) {
     const { port, name } = resolveSpawnSpec(key);
-    if (await portInUse(port)) {
-      console.error(`✗ Port ${port} already in use (${name})`);
-      console.error('  Run: yarn dev stop');
-      process.exit(1);
+    if (!(await portInUse(port))) {
+      toSpawn.push(key);
+      continue;
     }
+    if (key === 'frontend' && (await isFrontendServing(port))) {
+      console.log(`[dev] reusing existing frontend on :${port}`);
+      continue;
+    }
+    if (key !== 'frontend' && (await isServiceReady(port))) {
+      console.log(`[dev] reusing existing ${name} on :${port}`);
+      continue;
+    }
+    console.error(`✗ Port ${port} already in use (${name}) but not responding`);
+    console.error('  Run: yarn dev stop');
+    process.exit(1);
   }
+  return toSpawn;
 }
 
 function printList() {
@@ -147,7 +181,7 @@ function printList() {
     );
   }
   console.log('\n  yarn dev check | status | stop [--infra] [--force-ports]');
-  console.log('  yarn dev <feature> [--fresh] [--baseline] [--no-infra]');
+  console.log('  yarn dev <feature> [--fresh] [--baseline] [--no-infra] [--no-frontend]');
 }
 
 async function stopDevApps(keys) {
@@ -174,7 +208,10 @@ async function runFeature(featureName, options) {
     console.log('[dev] stopped tracked processes');
   });
 
-  const { keys, schemaIds, seedProfile } = resolveFeature(featureName);
+  let { keys, schemaIds, seedProfile } = resolveFeature(featureName);
+  if (options.noFrontend) {
+    keys = keys.filter((k) => k !== 'frontend');
+  }
 
   execSync('node scripts/dev/check.mjs', { cwd: ROOT, stdio: 'inherit' });
 
@@ -188,19 +225,19 @@ async function runFeature(featureName, options) {
     execSync('node scripts/db/baseline-restore.mjs --target dev', { cwd: ROOT, stdio: 'inherit' });
   } else if (options.fresh) {
     await stopDevApps(keys);
-    console.log('[dev] --fresh: reset → migrate → seed');
-    execSync('node scripts/db/reset.mjs --target dev', { cwd: ROOT, stdio: 'inherit' });
+    console.log('[dev] --fresh: migrate → reset → seed');
     execSync('node scripts/db/migrate.mjs --target dev', { cwd: ROOT, stdio: 'inherit' });
+    execSync('node scripts/db/reset.mjs --target dev', { cwd: ROOT, stdio: 'inherit' });
     execSync(`node scripts/db/seed.mjs ${seedProfile} --target dev`, { cwd: ROOT, stdio: 'inherit' });
   } else if (schemaIds.length > 0) {
     execSync('node scripts/db/migrate.mjs --target dev', { cwd: ROOT, stdio: 'inherit' });
   }
 
-  await preflightPorts(keys);
+  const keysToSpawn = await resolveSpawnPlan(keys);
 
   console.log(`\n[dev] feature "${featureName}"\n`);
 
-  for (const key of keys) {
+  for (const key of keysToSpawn) {
     const spec = resolveSpawnSpec(key);
     spawnTracked({
       name: spec.name,
@@ -244,10 +281,11 @@ async function main() {
   const fresh = args.includes('--fresh');
   const baseline = args.includes('--baseline');
   const noInfra = args.includes('--no-infra');
+  const noFrontend = args.includes('--no-frontend');
   const positional = args.filter((a) => !a.startsWith('--'));
 
   if (positional.length === 0) {
-    await runFeature(DEFAULT_FEATURE, { fresh, baseline, noInfra });
+    await runFeature(DEFAULT_FEATURE, { fresh, baseline, noInfra, noFrontend });
     return;
   }
 
@@ -272,7 +310,7 @@ async function main() {
   }
 
   if (features[cmd]) {
-    await runFeature(cmd, { fresh, baseline, noInfra });
+    await runFeature(cmd, { fresh, baseline, noInfra, noFrontend });
     return;
   }
 

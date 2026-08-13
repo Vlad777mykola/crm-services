@@ -1,4 +1,4 @@
-import type { Pool } from 'pg';
+import type { PoolClient } from 'pg';
 
 export interface EmailLogInput {
   toEmail: string;
@@ -12,10 +12,8 @@ export interface EmailLogInput {
 // this service is the logical owner of `email_logs`, see
 // docs/architecture/service-ownership.md.
 export class EmailLogRepository {
-  constructor(private readonly pool: Pool) {}
-
-  async record(input: EmailLogInput): Promise<void> {
-    await this.pool.query(
+  async record(client: PoolClient, input: EmailLogInput): Promise<void> {
+    await client.query(
       `INSERT INTO notifications_schema.email_logs ("toEmail", "subject", "body", "eventType", "eventId")
        VALUES ($1, $2, $3, $4, $5)`,
       [input.toEmail, input.subject, input.body, input.eventType, input.eventId],
