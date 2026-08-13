@@ -1,22 +1,57 @@
 [
   {
-    "name": "dev-companies",
-    "pid": 9884,
-    "rootPid": 9884
-  },
-  {
-    "name": "dev-companies",
-    "pid": 17396,
-    "rootPid": 17396
-  },
-  {
     "name": "frontend",
-    "pid": 14928,
-    "rootPid": 14928
+    "pid": 2980,
+    "rootPid": 2980
   },
   {
     "name": "companies",
-    "pid": 11028,
-    "rootPid": 11028
+    "pid": 12320,
+    "rootPid": 12320
+  },
+  {
+    "name": "frontend",
+    "pid": 8772,
+    "rootPid": 8772
+  },
+  {
+    "name": "companies",
+    "pid": 18380,
+    "rootPid": 18380
+  },
+  {
+    "name": "frontend",
+    "pid": 19124,
+    "rootPid": 19124
+  },
+  {
+    "name": "dashboard",
+    "pid": 11964,
+    "rootPid": 11964
+  },
+  {
+    "name": "auth",
+    "pid": 18664,
+    "rootPid": 18664
+  },
+  {
+    "name": "users",
+    "pid": 12708,
+    "rootPid": 12708
+  },
+  {
+    "name": "outbox-auth",
+    "pid": 14844,
+    "rootPid": 14844
+  },
+  {
+    "name": "frontend",
+    "pid": 5520,
+    "rootPid": 5520
+  },
+  {
+    "name": "companies",
+    "pid": 19004,
+    "rootPid": 19004
   }
 ]

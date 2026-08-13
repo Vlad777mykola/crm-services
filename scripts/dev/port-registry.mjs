@@ -16,6 +16,31 @@ export const VERIFY_RABBITMQ_PORT = 25672;
 export const VERIFY_RABBITMQ_MGMT_PORT = 25673;
 export const VERIFY_POSTGRES_AI_PORT = 25433;
 
+/** Test stack — distinct from dev and verify (dev + 20000 for apps). */
+export const TEST_PROJECT = 'crm-test';
+export const TEST_PORT_OFFSET = 20000;
+export const TEST_FRONTEND_PORT = 25173;
+export const TEST_GATEWAY_PORT = 18080;
+export const TEST_POSTGRES_PORT = 15432;
+export const TEST_RABBITMQ_PORT = 15472;
+export const TEST_RABBITMQ_MGMT_PORT = 15473;
+
+/** @param {number} devPort */
+export function testAppPort(devPort) {
+  return devPort + TEST_PORT_OFFSET;
+}
+
+export function testDatabaseUrl() {
+  return `postgres://postgres:postgres@localhost:${TEST_POSTGRES_PORT}/crm_test`;
+}
+
+export function testRabbitmqUrl() {
+  return `amqp://crm:crm_local_only@localhost:${TEST_RABBITMQ_PORT}`;
+}
+
+export const TEST_DATABASE_URL = testDatabaseUrl();
+export const TEST_RABBITMQ_URL = testRabbitmqUrl();
+
 /** @param {number} devPort */
 export function verifyAppPort(devPort) {
   return devPort + VERIFY_PORT_OFFSET;

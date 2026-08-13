@@ -1,4 +1,4 @@
-# Isolated test stack — distinct ports from dev (:5432) and verify (:25432).
+# Isolated test stack — never uses dev (:5432/:8080/:4001) or verify (:25432/:28080/:14001).
 # Project: crm-test
 
 services:
@@ -10,6 +10,8 @@ services:
       POSTGRES_DB: crm_test
     ports:
       - '15432:5432'
+    volumes:
+      - postgres-test-data:/var/lib/postgresql/data
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 5s
@@ -19,10 +21,13 @@ services:
   rabbitmq:
     image: rabbitmq:3-management-alpine
     ports:
-      - '15672:5672'
+      - '15472:5672'
+      - '15473:15672'
     environment:
       RABBITMQ_DEFAULT_USER: crm
       RABBITMQ_DEFAULT_PASS: crm_local_only
+    volumes:
+      - rabbitmq-test-data:/var/lib/rabbitmq
     healthcheck:
       test: ['CMD', 'rabbitmq-diagnostics', 'check_port_connectivity']
       interval: 5s
@@ -33,11 +38,24 @@ services:
     image: traefik:v3.0
     command:
       - '--providers.file.directory=/etc/traefik/dynamic'
+      - '--providers.file.watch=true'
       - '--entrypoints.web.address=:8080'
+      - '--entrypoints.web.http.middlewares=cors@file'
       - '--ping=true'
+      - '--ping.entryPoint=web'
     ports:
       - '18080:8080'
     volumes:
-      - ../verify/traefik/dynamic.yml:/etc/traefik/dynamic/routes.yml:ro
+      - ../traefik/cors/test.middleware.yml:/etc/traefik/dynamic/cors.middleware.yml:ro
+      - ./traefik/dynamic.yml:/etc/traefik/dynamic/routes.yml:ro
     extra_hosts:
       - 'host.docker.internal:host-gateway'
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:8080/ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres-test-data:
+  rabbitmq-test-data:

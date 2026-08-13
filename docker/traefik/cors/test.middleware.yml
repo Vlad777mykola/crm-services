@@ -1,0 +1,23 @@
+# Test-stack CORS — isolated frontend port :25173
+
+http:
+  middlewares:
+    cors:
+      headers:
+        accessControlAllowCredentials: true
+        accessControlAllowMethods:
+          - GET
+          - HEAD
+          - POST
+          - PATCH
+          - PUT
+          - DELETE
+          - OPTIONS
+        accessControlAllowHeaders:
+          - Content-Type
+          - Authorization
+          - X-Request-Id
+        accessControlAllowOriginList:
+          - 'http://localhost:25173'
+        accessControlMaxAge: 86400
+        addVaryHeader: true

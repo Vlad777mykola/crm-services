@@ -9,6 +9,7 @@
     "seed:reset": "tsx src/index.ts --reset",
     "seed:companies": "tsx src/seed-companies-only.ts",
     "seed:companies:reset": "tsx src/seed-companies-only.ts --reset",
+    "seed:test": "tsx src/seed-test.ts",
     "migrate": "tsx src/migrate-only.ts",
     "reset-only": "tsx src/reset-only.ts",
     "typecheck": "tsc --noEmit"
