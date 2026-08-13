@@ -4,7 +4,7 @@
 
 import { OUTBOX, SERVICES } from './bundles.mjs';
 
-/** @typedef {{ requires?: string[]; schemas?: string[]; services?: string[]; outboxes?: string[]; frontend?: boolean }} FeatureDef */
+/** @typedef {{ requires?: string[]; schemas?: string[]; services?: string[]; outboxes?: string[]; frontend?: boolean; seedProfile?: string }} FeatureDef */
 
 /** @type {Record<string, FeatureDef>} */
 export const features = {
@@ -12,16 +12,19 @@ export const features = {
     services: ['auth', 'users'],
     outboxes: ['auth'],
     frontend: true,
+    seedProfile: 'full',
   },
   companies: {
     services: ['companies'],
     outboxes: [],
     frontend: true,
+    seedProfile: 'companies:reset',
   },
   'companies-members': {
     services: ['companies', 'company-members'],
     outboxes: ['companies'],
     frontend: true,
+    seedProfile: 'full',
   },
   dashboard: {
     requires: ['auth'],
@@ -36,12 +39,14 @@ export const features = {
     ],
     services: ['dashboard'],
     frontend: true,
+    seedProfile: 'full',
   },
   core: {
     requires: ['auth', 'companies', 'dashboard'],
     services: [],
     outboxes: [],
     frontend: true,
+    seedProfile: 'full',
   },
   full: {
     services: [
@@ -69,6 +74,7 @@ export const features = {
       'reviews',
     ],
     frontend: true,
+    seedProfile: 'full',
   },
 };
 
@@ -123,6 +129,7 @@ export function resolveFeature(name) {
     keys,
     schemaIds: [...schemaIds],
     description: name,
+    seedProfile: feature.seedProfile ?? 'full',
   };
 }
 

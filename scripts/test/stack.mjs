@@ -55,26 +55,23 @@ export function downTestStack() {
 }
 
 export function migrateTestDb() {
-  execSync('yarn workspace @crm/fill-dump-db run migrate', {
+  execSync('node scripts/db/migrate.mjs --target test', {
     cwd: ROOT,
     stdio: 'inherit',
-    env: { ...process.env, ...mergeTestEnv() },
   });
 }
 
 export function seedTestCompanies() {
-  execSync('yarn workspace @crm/fill-dump-db run seed:companies:reset', {
+  execSync('node scripts/db/seed.mjs companies:reset --target test', {
     cwd: ROOT,
     stdio: 'inherit',
-    env: { ...process.env, ...mergeTestEnv() },
   });
 }
 
 export function seedTestFixtures() {
-  execSync('yarn workspace @crm/fill-dump-db run seed:test', {
+  execSync('node scripts/db/seed.mjs test --target test', {
     cwd: ROOT,
     stdio: 'inherit',
-    env: { ...process.env, ...mergeTestEnv() },
   });
 }
 
@@ -133,6 +130,11 @@ export function stopSpawnedServices() {
     removeTrackedPid(entry.name);
   }
   spawned.length = 0;
+}
+
+if (process.argv[2] === 'stop-services') {
+  stopSpawnedServices();
+  process.exit(0);
 }
 
 export async function waitHttpOk(url, label) {

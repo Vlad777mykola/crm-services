@@ -1,5 +1,4 @@
 import { execSync } from 'node:child_process';
-import fs from 'node:fs';
 import net from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,7 +15,6 @@ import { registerCleanup, registerSignalHandlers } from '../process/signals.mjs'
 import { terminateTree } from '../process/terminate-tree.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const BASELINE_DUMP = path.join(ROOT, 'db/dumps/dev-baseline.dump');
 const READINESS_TIMEOUT_MS = 120000;
 const POLL_MS = 500;
 const DEFAULT_FEATURE = 'companies';
@@ -149,7 +147,21 @@ function printList() {
     );
   }
   console.log('\n  yarn dev check | status | stop [--infra] [--force-ports]');
-  console.log('  yarn dev <feature> [--fresh] [--no-infra]');
+  console.log('  yarn dev <feature> [--fresh] [--baseline] [--no-infra]');
+}
+
+async function stopDevApps(keys) {
+  for (const entry of readTrackedPids()) {
+    terminateTree(entry.rootPid);
+  }
+  clearTrackedPids();
+  for (const key of keys) {
+    const { port } = resolveSpawnSpec(key);
+    const deadline = Date.now() + 15000;
+    while (Date.now() < deadline && (await portInUse(port))) {
+      await sleep(300);
+    }
+  }
 }
 
 async function runFeature(featureName, options) {
@@ -162,7 +174,7 @@ async function runFeature(featureName, options) {
     console.log('[dev] stopped tracked processes');
   });
 
-  const { keys, schemaIds } = resolveFeature(featureName);
+  const { keys, schemaIds, seedProfile } = resolveFeature(featureName);
 
   execSync('node scripts/dev/check.mjs', { cwd: ROOT, stdio: 'inherit' });
 
@@ -170,35 +182,18 @@ async function runFeature(featureName, options) {
     ensureDevInfra();
   }
 
-  if (options.fresh) {
-    for (const entry of readTrackedPids()) {
-      terminateTree(entry.rootPid);
-    }
-    clearTrackedPids();
-    for (const key of keys) {
-      const { port } = resolveSpawnSpec(key);
-      const deadline = Date.now() + 15000;
-      while (Date.now() < deadline && (await portInUse(port))) {
-        await sleep(300);
-      }
-    }
-    if (fs.existsSync(BASELINE_DUMP)) {
-      console.log('[dev] --fresh: restore from db/dumps/dev-baseline.dump');
-      execSync('node scripts/db/restore.mjs --baseline', { cwd: ROOT, stdio: 'inherit' });
-    } else if (featureName === 'companies') {
-      console.log('[dev] --fresh: no baseline dump — seed companies only');
-      execSync('node scripts/db/seed.mjs companies:reset', { cwd: ROOT, stdio: 'inherit' });
-    } else {
-      execSync('node scripts/db/reset.mjs', { cwd: ROOT, stdio: 'inherit' });
-    }
-  }
-
-  if (schemaIds.length > 0) {
-    execSync('node scripts/db/migrate.mjs', { cwd: ROOT, stdio: 'inherit' });
-  }
-
-  if (options.fresh && featureName !== 'companies' && !fs.existsSync(BASELINE_DUMP)) {
-    execSync('node scripts/db/seed.mjs full', { cwd: ROOT, stdio: 'inherit' });
+  if (options.baseline) {
+    await stopDevApps(keys);
+    console.log('[dev] --baseline: restore team baseline');
+    execSync('node scripts/db/baseline-restore.mjs --target dev', { cwd: ROOT, stdio: 'inherit' });
+  } else if (options.fresh) {
+    await stopDevApps(keys);
+    console.log('[dev] --fresh: reset → migrate → seed');
+    execSync('node scripts/db/reset.mjs --target dev', { cwd: ROOT, stdio: 'inherit' });
+    execSync('node scripts/db/migrate.mjs --target dev', { cwd: ROOT, stdio: 'inherit' });
+    execSync(`node scripts/db/seed.mjs ${seedProfile} --target dev`, { cwd: ROOT, stdio: 'inherit' });
+  } else if (schemaIds.length > 0) {
+    execSync('node scripts/db/migrate.mjs --target dev', { cwd: ROOT, stdio: 'inherit' });
   }
 
   await preflightPorts(keys);
@@ -247,11 +242,12 @@ async function runFeature(featureName, options) {
 async function main() {
   const args = process.argv.slice(2);
   const fresh = args.includes('--fresh');
+  const baseline = args.includes('--baseline');
   const noInfra = args.includes('--no-infra');
   const positional = args.filter((a) => !a.startsWith('--'));
 
   if (positional.length === 0) {
-    await runFeature(DEFAULT_FEATURE, { fresh, noInfra });
+    await runFeature(DEFAULT_FEATURE, { fresh, baseline, noInfra });
     return;
   }
 
@@ -276,7 +272,7 @@ async function main() {
   }
 
   if (features[cmd]) {
-    await runFeature(cmd, { fresh, noInfra });
+    await runFeature(cmd, { fresh, baseline, noInfra });
     return;
   }
 

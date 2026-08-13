@@ -18,13 +18,22 @@ services:
       timeout: 5s
       retries: 15
 
+  db-tools:
+    image: postgres:16-alpine
+    profiles: ['tools']
+    volumes:
+      - ../../db:/db
+    entrypoint: ['']
+
   rabbitmq:
     image: rabbitmq:3-management-alpine
     environment:
       RABBITMQ_DEFAULT_USER: crm
       RABBITMQ_DEFAULT_PASS: crm_local_only
+      RABBITMQ_DEFAULT_VHOST: crm-smoke
     ports:
       - '35472:5672'
+      - '35473:15672'
     volumes:
       - rabbitmq-smoke-data:/var/lib/rabbitmq
     healthcheck:
@@ -41,7 +50,7 @@ services:
       NODE_ENV: production
       PORT: '4003'
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm_smoke
-      RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672
+      RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672/crm-smoke
       JWT_ACCESS_SECRET: dev-access-secret-change-me
       LOG_LEVEL: info
     expose:

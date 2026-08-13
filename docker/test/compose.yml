@@ -26,6 +26,7 @@ services:
     environment:
       RABBITMQ_DEFAULT_USER: crm
       RABBITMQ_DEFAULT_PASS: crm_local_only
+      RABBITMQ_DEFAULT_VHOST: crm-test
     volumes:
       - rabbitmq-test-data:/var/lib/rabbitmq
     healthcheck:
@@ -33,6 +34,13 @@ services:
       interval: 5s
       timeout: 5s
       retries: 15
+
+  db-tools:
+    image: postgres:16-alpine
+    profiles: ['tools']
+    volumes:
+      - ../../db:/db
+    entrypoint: ['']
 
   gateway:
     image: traefik:v3.0

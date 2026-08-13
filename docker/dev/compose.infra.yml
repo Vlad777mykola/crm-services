@@ -49,6 +49,7 @@ services:
       # see services/outbox-publisher/.env.example and docs/architecture.
       RABBITMQ_DEFAULT_USER: crm
       RABBITMQ_DEFAULT_PASS: crm_local_only
+      RABBITMQ_DEFAULT_VHOST: crm-dev
     volumes:
       - rabbitmq-data:/var/lib/rabbitmq
     healthcheck:
@@ -56,6 +57,13 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  db-tools:
+    image: postgres:16-alpine
+    profiles: ['tools']
+    volumes:
+      - ../../db:/db
+    entrypoint: ['']
 
   # Dedicated Postgres for ai-service - never shares a database or
   # credentials with the main `postgres` above.

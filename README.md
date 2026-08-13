@@ -39,12 +39,14 @@ Gateway: `http://localhost:8080` · Frontend: `http://localhost:5173`
 
 See [`scripts/dev/README.md`](scripts/dev/README.md) for features, `yarn dev stop`, and DB commands.
 
-### Database (migrate / dump / seed)
+### Database (migrate / backup / seed / baseline)
 
 ```bash
-yarn db:migrate
-yarn db:dump && yarn db:restore    # fast dev reset from snapshot
-yarn db:seed:full:reset             # or explicit seed profiles
+yarn db:migrate --target dev
+yarn db:backup --target dev
+yarn db:restore --target dev --file db/backups/my.dump
+yarn db:baseline:pull && yarn db:baseline:restore --target dev
+yarn dev dashboard --fresh      # deterministic reset + seed
 ```
 
 Profiles: `db:seed:companies`, `db:seed:full`, `db:seed:test`. See [`scripts/db/README.md`](scripts/db/README.md).

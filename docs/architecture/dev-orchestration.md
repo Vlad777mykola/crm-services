@@ -18,7 +18,8 @@ Dev uses **host services + Docker infra**. Verify/test/smoke use **isolated Dock
 | Command | Role |
 |---------|------|
 | `db:migrate` | Schemas only |
-| `db:dump` / `db:restore` | Binary snapshot (`db/dumps/`) — preferred dev reset |
+| `db:backup` / `db:restore` | Personal snapshots (`db/backups/`) |
+| `db:baseline:*` | Team sanitized baseline |
 | `db:seed:*` | Explicit profiles only (`companies`, `full`, `test`) |
 
 Details: [`scripts/db/README.md`](../../scripts/db/README.md).

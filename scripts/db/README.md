@@ -1,63 +1,61 @@
 # Database tooling (`yarn db:*`)
 
-Three **separate** concerns:
+Four separate concerns:
 
-```text
-db:migrate     → schema/tables only (no rows)
-db:dump/restore → snapshot binary (fast repeat dev state)
-db:seed:*      → explicit profiles for special data (isolated, opt-in)
-```
+| Command family | Purpose |
+|----------------|---------|
+| `db:migrate` | Structure source of truth |
+| `db:seed:*` | Deterministic scenarios |
+| `db:backup` / `db:restore` | Personal snapshots (`db/backups/`, gitignored) |
+| `db:baseline:*` | Sanitized team artifact |
 
-## How data gets into Postgres today
+All destructive commands use `--target` (`dev`, `test`, `verify`, `smoke`) and enforce target-idle safety.
 
-| Layer | What it does | When it runs |
-|-------|----------------|--------------|
-| **Services on startup** | Each service runs `ensure*Schema()` | Every `yarn dev` service start |
-| **`yarn db:migrate`** | `fill_dump_db` `ensureAllMicroserviceSchemas()` | Feature with `schemas[]`, test/smoke before seed |
-| **`yarn db:restore`** | `pg_restore` from `db/dumps/*.dump` | `--fresh` if baseline exists; manual |
-| **`yarn db:seed:*`** | TypeScript inserts via `fill_dump_db` | Only when you ask |
-
-There is **no** automatic full seed on normal `yarn dev` — only migrate when a feature needs schemas.
-
-## Dump / restore (recommended for dev reset)
+## Schema
 
 ```powershell
-yarn dev:infra
-yarn db:seed:full:reset    # once: build dataset you like
-yarn db:dump               # → db/dumps/dev-baseline.dump (gitignored)
-
-# Later — fast reset
-yarn db:restore
-# or
-yarn dev dashboard --fresh   # uses baseline if present
+yarn db:migrate --target dev
+yarn db:reset --target dev          # all application state; preserves structure
 ```
 
-Uses Docker `pg_dump` / `pg_restore` inside the compose postgres container. `DATABASE_URL` port selects stack (`5432` dev, `15432` test, `35432` smoke).
-
-## Seed profiles (isolated)
+## Seeds
 
 ```powershell
-yarn db:seed                  # prints help — no default profile
-yarn db:seed:companies        # 2 published companies
-yarn db:seed:companies:reset  # truncate companies + insert
-yarn db:seed:full             # full dataset + Passw0rd!123 accounts
-yarn db:seed:full:reset       # truncate + full seed
-yarn db:seed:test             # deterministic fixtures (test port :15432)
+yarn db:seed:companies --target dev
+yarn db:seed:full --target dev
+yarn db:seed:test --target test
+yarn db:seed:companies:reset --target dev
+yarn db:seed:full:reset --target dev
 ```
 
-Implementation: `scripts/fill_dump_db/` (TypeScript + `pg`). See [`fill_dump_db/README.md`](fill_dump_db/README.md).
-
-## Other commands
+## Personal backup / restore
 
 ```powershell
-yarn db:reset    # truncate seeded tables only (no re-insert)
-yarn db:migrate  # CREATE SCHEMA/TABLE IF NOT EXISTS
+yarn db:backup --target dev
+yarn db:backup --target dev --name before-refactor
+yarn db:backup:list
+
+yarn db:restore --target dev --file db/backups/before-refactor.dump
 ```
 
-## Environment
+Restore: exact snapshot, auto-backup `{target}-auto-before-restore-*.dump`, drop/recreate, purge RabbitMQ, **no migrate**.
 
-Set `DATABASE_URL` to target a stack (defaults in `scripts/fill_dump_db` → `localhost:5432/crm`).
+## Team baseline
 
-Reference env files: `env/dev/common.env`, `env/test/common.env`, `env/smoke/common.env`.
+```powershell
+yarn db:baseline:create
+yarn db:baseline:pull
+yarn db:baseline:info
+yarn db:baseline:restore --target dev
+```
 
-Dumps: [`db/dumps/README.md`](../../db/dumps/README.md).
+Baseline restore migrates forward once. Publish `dev-baseline-v{N}-{commit}.dump` and set `manifest.artifactUrl`.
+
+## Dev orchestration
+
+```powershell
+yarn dev dashboard --fresh      # reset → migrate → seed
+yarn dev dashboard --baseline   # baseline:restore → start
+```
+
+See [`db/README.md`](../../db/README.md) and [`fill_dump_db/README.md`](fill_dump_db/README.md).

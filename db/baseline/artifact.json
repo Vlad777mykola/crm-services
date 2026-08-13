@@ -1,0 +1,4 @@
+{
+  "urlTemplate": "",
+  "note": "Set manifest.artifactUrl after publish, or BASELINE_ARTIFACT_URL env for db:baseline:pull"
+}

@@ -12,6 +12,7 @@
     "seed:test": "tsx src/seed-test.ts",
     "migrate": "tsx src/migrate-only.ts",
     "reset-only": "tsx src/reset-only.ts",
+    "baseline-prep": "tsx src/baseline-prep.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

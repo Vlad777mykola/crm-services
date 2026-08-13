@@ -2,28 +2,27 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { pgRestoreFromFile } from './lib/pg-exec.mjs';
-import { assertOperationAllowed, BASELINE_DUMP_NAME, parseDatabaseUrl } from './lib/target.mjs';
+import { parseDbCliArgs } from './lib/cli-args.mjs';
+import { restoreWithGate } from './lib/restore-pipeline.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
-const DUMPS_DIR = path.join(ROOT, 'db/dumps');
+const args = parseDbCliArgs(process.argv.slice(2));
 
-const args = process.argv.slice(2);
-const useBaseline = args.includes('--baseline');
-const positional = args.filter((a) => !a.startsWith('--'));
-const name = positional[0] ?? 'dev-baseline.dump';
-const inPath = path.join(DUMPS_DIR, name);
-
-if (!fs.existsSync(inPath)) {
-  console.error(`[db:restore] dump not found: ${inPath}`);
-  console.error('  Create one with: yarn db:dump');
-  console.error('  Or seed manually: yarn db:seed:companies');
+if (!args.file) {
+  console.error('[db:restore] --file is required');
+  console.error('  Example: yarn db:restore --target dev --file db/backups/my.dump');
   process.exit(1);
 }
 
-const parsed = parseDatabaseUrl();
-assertOperationAllowed(parsed, 'restore');
+const dumpPath = path.isAbsolute(args.file) ? args.file : path.join(ROOT, args.file);
+if (!fs.existsSync(dumpPath)) {
+  console.error(`[db:restore] file not found: ${dumpPath}`);
+  process.exit(1);
+}
 
-console.log(`[db:restore] ${inPath} → ${parsed.target.label} :${parsed.port}/${parsed.database}`);
-pgRestoreFromFile(ROOT, parsed, inPath);
-console.log('[db:restore] done');
+await restoreWithGate(ROOT, args.target, dumpPath, {
+  stopApps: args.stopApps,
+  noBackup: args.noBackup,
+  migrateForward: false,
+  action: 'RESTORE',
+});

@@ -23,24 +23,31 @@ Make sure Postgres is running (`yarn dev:infra` from the repo root).
 
 ### Seed test data
 
-**Recommended:** build a dump once, restore when needed.
+**Recommended:** team baseline or explicit fresh:
 
 ```bash
-yarn db:seed:full:reset   # full dataset
-yarn db:dump              # snapshot → db/dumps/dev-baseline.dump
-yarn db:restore           # fast reset later
+yarn db:baseline:pull && yarn db:baseline:restore --target dev
+# or
+yarn dev dashboard --fresh
 ```
 
-**Or** explicit seed profiles (no dump):
+**Personal snapshots:**
+
+```bash
+yarn db:backup --target dev
+yarn db:restore --target dev --file db/backups/my.dump
+```
+
+**Explicit seed profiles:**
 
 ```bash
 yarn db:seed:companies    # minimal public list
 yarn db:seed:full         # everything (fails if data exists)
 yarn db:seed:full:reset   # truncate + full seed
-yarn db:seed:test         # CI fixtures (use DATABASE_URL :15432)
+yarn db:seed:test         # CI fixtures (--target test)
 ```
 
-See [`scripts/db/README.md`](../../scripts/db/README.md) for dump vs seed.
+See [`scripts/db/README.md`](../../scripts/db/README.md).
 
 `--reset` runs `TRUNCATE ... RESTART IDENTITY CASCADE` on every table listed in
 `src/reset.ts`. **Never point this at a database you care about.**

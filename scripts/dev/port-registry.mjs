@@ -35,7 +35,7 @@ export function testDatabaseUrl() {
 }
 
 export function testRabbitmqUrl() {
-  return `amqp://crm:crm_local_only@localhost:${TEST_RABBITMQ_PORT}`;
+  return `amqp://crm:crm_local_only@localhost:${TEST_RABBITMQ_PORT}/crm-test`;
 }
 
 export const TEST_DATABASE_URL = testDatabaseUrl();
@@ -82,7 +82,7 @@ export function verifyAiDatabaseUrl() {
 }
 
 export function verifyRabbitmqUrl() {
-  return `amqp://crm:crm_local_only@localhost:${VERIFY_RABBITMQ_PORT}`;
+  return `amqp://crm:crm_local_only@localhost:${VERIFY_RABBITMQ_PORT}/crm-verify`;
 }
 
 export const JWT_ACCESS_SECRET = 'dev-access-secret-change-me';

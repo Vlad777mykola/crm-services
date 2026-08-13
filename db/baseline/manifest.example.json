@@ -1,0 +1,15 @@
+{
+  "name": "dev-baseline",
+  "version": 0,
+  "createdAt": "",
+  "gitCommit": "",
+  "postgresMajor": 16,
+  "schemaVersion": "",
+  "profile": "full",
+  "sanitized": false,
+  "containsRealUserData": false,
+  "checksumSha256": "",
+  "dumpFile": "team-baseline.dump",
+  "artifactFile": "",
+  "artifactUrl": ""
+}

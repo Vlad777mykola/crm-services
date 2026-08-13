@@ -1,68 +1,191 @@
 import { spawnSync } from 'node:child_process';
-import fs from 'node:fs';
+import path from 'node:path';
 
-function dockerComposeArgs(root, parsed, subcommand) {
-  const args = ['compose'];
-  if (parsed.target.project) args.push('-p', parsed.target.project);
-  for (const file of parsed.target.composeFiles) {
-    args.push('-f', `${root}/${file}`);
+/**
+ * @param {string} root
+ * @param {ReturnType<typeof import('./target.mjs').resolveTarget>} target
+ * @param {string[]} subcommand
+ * @param {Record<string, string>} [containerEnv]
+ */
+function dockerComposeRun(root, target, subcommand, containerEnv = {}) {
+  const args = ['compose', '--profile', 'tools'];
+  if (target.project) args.push('-p', target.project);
+  for (const file of target.composeFiles) {
+    args.push('-f', path.join(root, file));
   }
-  args.push('exec', '-T', parsed.target.service, ...subcommand);
+  args.push('run', '--rm', '--no-deps');
+  for (const [key, value] of Object.entries(containerEnv)) {
+    args.push('-e', `${key}=${value}`);
+  }
+  args.push('db-tools', ...subcommand);
   return args;
 }
 
 /**
- * pg_dump custom-format archive to a local file.
+ * @param {string[]} args
  */
-export function pgDumpToFile(root, parsed, outputPath) {
-  const args = dockerComposeArgs(root, parsed, [
-    'pg_dump',
-    '-U',
-    parsed.user,
-    '-Fc',
-    parsed.database,
-  ]);
-
-  const result = spawnSync('docker', args, {
-    encoding: 'buffer',
-    maxBuffer: 512 * 1024 * 1024,
-  });
-
+function runDocker(args) {
+  const result = spawnSync('docker', args, { encoding: 'utf8' });
   if (result.status !== 0) {
-    throw new Error(result.stderr?.toString() || 'pg_dump failed');
+    const err = [result.stderr, result.stdout].filter(Boolean).join('\n').trim();
+    throw new Error(err || 'docker compose failed');
   }
-
-  fs.writeFileSync(outputPath, result.stdout);
+  return result;
 }
 
 /**
- * pg_restore from a local dump file (stdin).
+ * @param {string} databaseUrl
  */
-export function pgRestoreFromFile(root, parsed, inputPath) {
-  const dump = fs.readFileSync(inputPath);
-  const args = dockerComposeArgs(root, parsed, [
-    'pg_restore',
-    '-U',
-    parsed.user,
-    '-d',
-    parsed.database,
-    '--clean',
-    '--if-exists',
-    '--no-owner',
-    '--no-privileges',
-  ]);
+function parsePgUrl(databaseUrl) {
+  const u = new URL(databaseUrl);
+  return {
+    host: u.hostname,
+    port: u.port || '5432',
+    user: decodeURIComponent(u.username),
+    password: decodeURIComponent(u.password),
+    database: u.pathname.replace(/^\//, ''),
+  };
+}
 
-  const result = spawnSync('docker', args, {
-    input: dump,
-    encoding: 'buffer',
-    maxBuffer: 64 * 1024 * 1024,
-  });
+/**
+ * @param {string} root
+ * @param {ReturnType<typeof import('./target.mjs').resolveTarget>} target
+ * @param {string} adminUrl
+ * @param {string} sql
+ */
+function psqlAdmin(root, target, adminUrl, sql) {
+  const pg = parsePgUrl(adminUrl);
+  runDocker(
+    dockerComposeRun(root, target, [
+      'psql',
+      '-h',
+      pg.host,
+      '-p',
+      pg.port,
+      '-U',
+      pg.user,
+      '-d',
+      pg.database,
+      '-v',
+      'ON_ERROR_STOP=1',
+      '-c',
+      sql,
+    ], { PGPASSWORD: pg.password }),
+  );
+}
 
-  const stderr = result.stderr?.toString() || '';
-  if (stderr) {
+/**
+ * @param {string} root
+ * @param {ReturnType<typeof import('./target.mjs').resolveTarget>} target
+ * @param {string} outputPath
+ */
+export function pgDumpToFile(root, target, outputPath) {
+  const pg = parsePgUrl(target.dockerDatabaseUrl);
+  const normalized = outputPath.replace(/\\/g, '/');
+  const containerOut = normalized.includes('/baseline/')
+    ? `/db/baseline/${path.basename(outputPath)}`
+    : `/db/backups/${path.basename(outputPath)}`;
+  runDocker(
+    dockerComposeRun(root, target, [
+      'pg_dump',
+      '-h',
+      pg.host,
+      '-p',
+      pg.port,
+      '-U',
+      pg.user,
+      '-Fc',
+      '--no-owner',
+      '--no-acl',
+      '-f',
+      containerOut,
+      pg.database,
+    ], { PGPASSWORD: pg.password }),
+  );
+}
+
+/**
+ * @param {string} root
+ * @param {ReturnType<typeof import('./target.mjs').resolveTarget>} target
+ */
+export function terminateConnections(root, target) {
+  const db = target.database;
+  psqlAdmin(
+    root,
+    target,
+    target.dockerAdminUrl,
+    `SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '${db}' AND pid <> pg_backend_pid();`,
+  );
+}
+
+/**
+ * @param {string} root
+ * @param {ReturnType<typeof import('./target.mjs').resolveTarget>} target
+ */
+export function dropAndRecreateDatabase(root, target) {
+  const db = target.database;
+  terminateConnections(root, target);
+  psqlAdmin(root, target, target.dockerAdminUrl, `DROP DATABASE IF EXISTS "${db}";`);
+  psqlAdmin(root, target, target.dockerAdminUrl, `CREATE DATABASE "${db}";`);
+}
+
+/**
+ * @param {string} root
+ * @param {ReturnType<typeof import('./target.mjs').resolveTarget>} target
+ * @param {string} inputPath
+ */
+export function pgRestoreFromFile(root, target, inputPath) {
+  const pg = parsePgUrl(target.dockerDatabaseUrl);
+  const containerIn = inputPath.includes('baseline')
+    ? `/db/baseline/${path.basename(inputPath)}`
+    : `/db/backups/${path.basename(inputPath)}`;
+
+  const result = runDocker(
+    dockerComposeRun(root, target, [
+      'pg_restore',
+      '-h',
+      pg.host,
+      '-p',
+      pg.port,
+      '-U',
+      pg.user,
+      '-d',
+      pg.database,
+      '--no-owner',
+      '--no-acl',
+      '--exit-on-error',
+      containerIn,
+    ], { PGPASSWORD: pg.password }),
+  );
+
+  const stderr = result.stderr || '';
+  if (stderr.trim()) {
     console.warn(stderr.trim());
   }
-  if (result.status !== 0 && result.status !== null) {
+  if (result.status !== 0) {
     throw new Error(stderr || 'pg_restore failed');
   }
+}
+
+/**
+ * @param {string} root
+ * @param {ReturnType<typeof import('./target.mjs').resolveTarget>} target
+ */
+export function verifyDatabaseConnect(root, target) {
+  const pg = parsePgUrl(target.dockerDatabaseUrl);
+  runDocker(
+    dockerComposeRun(root, target, [
+      'psql',
+      '-h',
+      pg.host,
+      '-p',
+      pg.port,
+      '-U',
+      pg.user,
+      '-d',
+      pg.database,
+      '-c',
+      'SELECT 1',
+    ], { PGPASSWORD: pg.password }),
+  );
 }

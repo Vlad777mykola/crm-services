@@ -5,7 +5,7 @@ import { execSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { JWT_ACCESS_SECRET, SMOKE_DATABASE_URL, SMOKE_GATEWAY_PORT, SMOKE_PROJECT } from '../dev/port-registry.mjs';
+import { SMOKE_GATEWAY_PORT, SMOKE_PROJECT } from '../dev/port-registry.mjs';
 import { registerCleanup, registerSignalHandlers, runCleanup } from '../process/signals.mjs';
 import { parsePublicCompanies } from '../test/api-helpers.mjs';
 
@@ -25,26 +25,16 @@ function down() {
 }
 
 function migrateSmokeDb() {
-  execSync('yarn workspace @crm/fill-dump-db run migrate', {
+  execSync('node scripts/db/migrate.mjs --target smoke', {
     cwd: ROOT,
     stdio: 'inherit',
-    env: {
-      ...process.env,
-      DATABASE_URL: SMOKE_DATABASE_URL,
-      JWT_ACCESS_SECRET,
-    },
   });
 }
 
 function seedSmokeCompanies() {
-  execSync('yarn workspace @crm/fill-dump-db run seed:companies:reset', {
+  execSync('node scripts/db/seed.mjs companies:reset --target smoke', {
     cwd: ROOT,
     stdio: 'inherit',
-    env: {
-      ...process.env,
-      DATABASE_URL: SMOKE_DATABASE_URL,
-      JWT_ACCESS_SECRET,
-    },
   });
 }
 

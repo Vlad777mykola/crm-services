@@ -1,16 +1,14 @@
 /**
- * Isolated seed profiles — explicit only; never the default dev path.
- *
- * Profiles:
- *   companies  — 2 published companies (companies_schema)
- *   full       — full dev dataset + login accounts (Passw0rd!123)
- *   test       — deterministic test fixtures (:15432 / seed:test)
+ * Isolated seed profiles — explicit only.
  */
 import { execSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { parseDatabaseUrl } from './lib/target.mjs';
+import { parseDbCliArgs } from './lib/cli-args.mjs';
+import { runDestructiveOperation } from './lib/destructive.mjs';
+import { envForTarget, runFillDumpDb } from './lib/fill-dump.mjs';
+import { printOperationBanner, resolveTarget } from './lib/target.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -22,47 +20,55 @@ const PROFILE_SCRIPTS = {
   test: 'seed:test',
 };
 
+const DESTRUCTIVE_PROFILES = new Set(['companies:reset', 'full:reset']);
+
 function printHelp() {
   console.log(`
-[db:seed] isolated seed profiles (never runs automatically except via explicit flags)
+[db:seed] isolated seed profiles
 
-Profiles:
-  yarn db:seed:companies     insert 2 published companies
-  yarn db:seed:companies:reset truncate companies + insert
-  yarn db:seed:full          full microservice dataset + test logins
-  yarn db:seed:full:reset      truncate seeded tables + full seed
-  yarn db:seed:test            test fixtures (integration/E2E)
-
-Uses DATABASE_URL from env (default dev :5432; test scripts set :15432).
-
-Prefer dump/restore for everyday dev reset:
-  yarn db:dump               snapshot current DB → db/dumps/dev-baseline.dump
-  yarn db:restore              restore from dev-baseline.dump
-  yarn dev dashboard --fresh   restores baseline if dump exists, else seeds
+  yarn db:seed:companies --target dev
+  yarn db:seed:companies:reset --target dev
+  yarn db:seed:full --target dev
+  yarn db:seed:full:reset --target dev
+  yarn db:seed:test --target test
 `);
 }
 
-const profile = process.argv[2];
+const profileArg = process.argv[2];
+const cliArgs = parseDbCliArgs(process.argv.slice(3));
 
-if (!profile || profile === 'help' || profile === '--help') {
+if (!profileArg || profileArg === 'help' || profileArg === '--help') {
   printHelp();
-  process.exit(profile ? 0 : 1);
+  process.exit(profileArg ? 0 : 1);
 }
 
-const scriptKey = profile;
-const yarnScript = PROFILE_SCRIPTS[scriptKey];
-
+const yarnScript = PROFILE_SCRIPTS[profileArg];
 if (!yarnScript) {
-  console.error(`[db:seed] unknown profile "${profile}"`);
+  console.error(`[db:seed] unknown profile "${profileArg}"`);
   printHelp();
   process.exit(1);
 }
 
-const parsed = parseDatabaseUrl();
-console.log(`[db:seed] profile=${profile} target=${parsed.target.label} :${parsed.port}`);
+const target = resolveTarget(cliArgs.target);
+printOperationBanner({ action: `SEED ${profileArg}`, target });
 
-execSync(`yarn workspace @crm/fill-dump-db run ${yarnScript}`, {
-  cwd: ROOT,
-  stdio: 'inherit',
-  env: process.env,
-});
+async function runSeed() {
+  execSync(`yarn workspace @crm/fill-dump-db run ${yarnScript}`, {
+    cwd: ROOT,
+    stdio: 'inherit',
+    env: { ...process.env, ...envForTarget(target.name) },
+  });
+}
+
+if (DESTRUCTIVE_PROFILES.has(profileArg)) {
+  await runDestructiveOperation(
+    target.name,
+    `SEED_${profileArg}`,
+    async () => {
+      await runSeed();
+    },
+    { stopApps: cliArgs.stopApps },
+  );
+} else {
+  await runSeed();
+}

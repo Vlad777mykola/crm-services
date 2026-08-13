@@ -1,12 +1,9 @@
-import { execSync } from 'node:child_process';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { parseDbCliArgs } from './lib/cli-args.mjs';
+import { runFillDumpDb } from './lib/fill-dump.mjs';
+import { printOperationBanner, resolveTarget } from './lib/target.mjs';
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+const args = parseDbCliArgs(process.argv.slice(2));
+const target = resolveTarget(args.target);
 
-console.log('[db:migrate] applying schemas…');
-execSync('yarn workspace @crm/fill-dump-db run migrate', {
-  cwd: ROOT,
-  stdio: 'inherit',
-  env: process.env,
-});
+printOperationBanner({ action: 'MIGRATE', target });
+runFillDumpDb(target.name, 'migrate');
