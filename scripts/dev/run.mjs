@@ -1,118 +1,309 @@
+import { execSync } from 'node:child_process';
+import net from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import concurrently from 'concurrently';
 
 import { BUNDLES, OUTBOX, PREFIX_COLORS, SERVICES } from './bundles.mjs';
-import { crossEnvLocal } from './local-dev-env.mjs';
+import { features, listFeatures, resolveFeature } from './features.mjs';
+import { ensureDevInfra } from './ensure-infra.mjs';
+import { crossEnvLocal, mergeLocalEnv } from './local-dev-env.mjs';
+import { DEV_FRONTEND_PORT, DEV_GATEWAY_PORT } from './port-registry.mjs';
+import { appendTrackedPid, clearTrackedPids, readTrackedPids, spawnTracked } from '../process/spawn.mjs';
+import { terminateTree } from '../process/terminate-tree.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+const READINESS_TIMEOUT_MS = 120000;
+const POLL_MS = 500;
+const DEFAULT_FEATURE = 'companies';
 
-function resolveKey(key) {
+/** Spawn spec for a feature key (env injected in process — no cross-env on Windows). */
+function resolveSpawnSpec(key) {
   if (key === 'frontend') {
     return {
       name: 'frontend',
-      command:
-        'cross-env VITE_API_URL=http://localhost:8080 yarn workspace @crm/frontend dev',
+      command: 'yarn workspace @crm/frontend dev',
       cwd: ROOT,
+      port: DEV_FRONTEND_PORT,
+      env: { VITE_API_URL: `http://localhost:${DEV_GATEWAY_PORT}` },
     };
   }
 
   if (key.startsWith('outbox:')) {
     const id = key.slice('outbox:'.length);
     const outbox = OUTBOX[id];
-    if (!outbox) throw new Error(`Unknown outbox: ${id}. Run: yarn dev:list`);
+    if (!outbox) throw new Error(`Unknown outbox: ${id}`);
     return {
       name: `outbox-${id}`,
-      command: `${crossEnvLocal({ OUTBOX_SCHEMA: outbox.schema, HEALTH_PORT: outbox.healthPort })} yarn dev`,
+      command: 'yarn dev',
       cwd: path.join(ROOT, 'services/outbox-publisher'),
+      port: outbox.healthPort,
+      env: mergeLocalEnv({ OUTBOX_SCHEMA: outbox.schema, HEALTH_PORT: outbox.healthPort }),
     };
   }
 
   const service = SERVICES[key];
-  if (!service) throw new Error(`Unknown service: ${key}. Run: yarn dev:list`);
+  if (!service) throw new Error(`Unknown service: ${key}`);
+  const port = service.port;
+  const envExtra = key === 'notifications' ? { HEALTH_PORT: port } : { PORT: port };
   return {
     name: key,
-    command: `${crossEnvLocal()} yarn dev`,
+    command: 'yarn dev',
     cwd: path.join(ROOT, service.dir),
+    port,
+    env: mergeLocalEnv(envExtra),
   };
 }
 
-/** @param {string[]} keys */
+/** Legacy concurrently helper (cross-env string commands). */
+function resolveKey(key) {
+  const spec = resolveSpawnSpec(key);
+  if (key === 'frontend') {
+    return {
+      name: spec.name,
+      command: `cross-env VITE_API_URL=http://localhost:${DEV_GATEWAY_PORT} yarn workspace @crm/frontend dev`,
+      cwd: spec.cwd,
+      port: spec.port,
+    };
+  }
+  if (key.startsWith('outbox:')) {
+    const id = key.slice('outbox:'.length);
+    const outbox = OUTBOX[id];
+    return {
+      name: `outbox-${id}`,
+      command: `${crossEnvLocal({ OUTBOX_SCHEMA: outbox.schema, HEALTH_PORT: outbox.healthPort })} yarn dev`,
+      cwd: path.join(ROOT, 'services/outbox-publisher'),
+      port: outbox.healthPort,
+    };
+  }
+  const service = SERVICES[key];
+  const port = service.port;
+  const envExtra = key === 'notifications' ? { HEALTH_PORT: port } : { PORT: port };
+  return {
+    name: key,
+    command: `${crossEnvLocal(envExtra)} yarn dev`,
+    cwd: path.join(ROOT, service.dir),
+    port,
+  };
+}
+
 function commandsForKeys(keys) {
-  return keys.map((key) => resolveKey(key));
+  return keys.map((key) => {
+    const r = resolveKey(key);
+    return { name: r.name, command: r.command, cwd: r.cwd };
+  });
+}
+
+function sleep(ms) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+function portInUse(port) {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+    server.once('error', () => resolve(true));
+    server.once('listening', () => server.close(() => resolve(false)));
+    server.listen(port, '127.0.0.1');
+  });
+}
+
+async function waitReady(port, label) {
+  const deadline = Date.now() + READINESS_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    try {
+      const res = await fetch(`http://localhost:${port}/health/ready`);
+      if (res.ok) {
+        console.log(`✓ ${label} :${port}`);
+        return true;
+      }
+    } catch {
+      // retry
+    }
+    await sleep(POLL_MS);
+  }
+  console.error(`✗ ${label} :${port} — readiness timeout`);
+  return false;
+}
+
+async function preflightPorts(keys) {
+  for (const key of keys) {
+    const { port, name } = resolveSpawnSpec(key);
+    if (await portInUse(port)) {
+      console.error(`✗ Port ${port} already in use (${name})`);
+      console.error('  Run: yarn dev stop');
+      process.exit(1);
+    }
+  }
 }
 
 function printList() {
-  console.log('Local microservice dev — run from repo root after yarn dev:infra\n');
-  console.log('Infrastructure (separate terminal, keep running):');
-  console.log('  yarn dev:infra     Postgres + RabbitMQ + Traefik gateway on :8080\n');
-  console.log('Bundles (yarn dev:<name> or yarn dev:run <name>):');
-  for (const [name, bundle] of Object.entries(BUNDLES)) {
-    console.log(`  ${name.padEnd(22)} ${bundle.description}`);
+  console.log(`Features (yarn dev <name>) — default: ${DEFAULT_FEATURE} (public list + frontend)`);
+  for (const name of listFeatures()) {
+    const { keys, schemaIds } = resolveFeature(name);
+    console.log(
+      `  ${name.padEnd(12)} ${keys.join(', ')}${schemaIds.length ? ` | schemas: ${schemaIds.join(',')}` : ''}`,
+    );
   }
-  console.log('\nSingle service (yarn dev:svc:<name> or yarn dev:run svc <name>):');
-  for (const [id, svc] of Object.entries(SERVICES)) {
-    console.log(`  ${id.padEnd(22)} :${svc.port}  ${svc.label}`);
-  }
-  console.log('\nOutbox publisher (yarn dev:outbox:<name> or yarn dev:run outbox <name>):');
-  for (const [id, ob] of Object.entries(OUTBOX)) {
-    console.log(`  ${id.padEnd(22)} health :${ob.healthPort}  ${ob.schema}`);
-  }
-  console.log('\nExamples:');
-  console.log('  yarn dev:auth:app       # login/register in the browser');
-  console.log('  yarn dev:companies      # /companies public list');
-  console.log('  yarn dev:run svc auth   # only auth-service on :4001');
-  console.log('  yarn dev:run outbox auth companies  # two outbox instances\n');
+  console.log('\n  yarn dev check | status | stop [--infra] [--force-ports]');
+  console.log('  yarn dev <feature> [--fresh] [--no-infra]');
 }
 
-async function runCommands(commands) {
-  const { result } = concurrently(commands, {
-    prefix: 'name',
-    prefixColors: PREFIX_COLORS,
-    cwd: ROOT,
-  });
-  await result;
+async function runFeature(featureName, options) {
+  const { keys, schemaIds } = resolveFeature(featureName);
+
+  execSync('node scripts/dev/check.mjs', { cwd: ROOT, stdio: 'inherit' });
+
+  if (!options.noInfra) {
+    ensureDevInfra();
+  }
+
+  if (options.fresh) {
+    for (const entry of readTrackedPids()) {
+      terminateTree(entry.rootPid);
+    }
+    clearTrackedPids();
+    for (const key of keys) {
+      const { port } = resolveSpawnSpec(key);
+      const deadline = Date.now() + 15000;
+      while (Date.now() < deadline && (await portInUse(port))) {
+        await sleep(300);
+      }
+    }
+    if (featureName === 'companies') {
+      console.log('[dev] --fresh: reset + seed public companies only');
+      execSync('yarn workspace @crm/fill-dump-db run seed:companies:reset', {
+        cwd: ROOT,
+        stdio: 'inherit',
+      });
+    } else {
+      execSync('node scripts/db/reset.mjs', { cwd: ROOT, stdio: 'inherit' });
+    }
+  }
+
+  if (schemaIds.length > 0) {
+    execSync('node scripts/db/migrate.mjs', { cwd: ROOT, stdio: 'inherit' });
+  }
+
+  if (options.fresh && featureName !== 'companies') {
+    execSync('node scripts/db/seed.mjs', { cwd: ROOT, stdio: 'inherit' });
+  }
+
+  await preflightPorts(keys);
+
+  console.log(`\n[dev] feature "${featureName}"\n`);
+
+  for (const key of keys) {
+    const spec = resolveSpawnSpec(key);
+    spawnTracked({
+      name: spec.name,
+      command: spec.command,
+      cwd: spec.cwd,
+      env: spec.env,
+      stdio: 'inherit',
+    });
+  }
+
+  await sleep(3000);
+  console.log('\nWaiting for readiness…');
+  for (const key of keys) {
+    const { port, name } = resolveSpawnSpec(key);
+    if (key === 'frontend') {
+      await sleep(2000);
+      try {
+        const res = await fetch(`http://localhost:${port}`);
+        if (!res.ok) throw new Error('bad status');
+        console.log(`✓ frontend :${port}`);
+      } catch {
+        console.error(`✗ frontend :${port}`);
+        process.exit(1);
+      }
+      continue;
+    }
+    if (!(await waitReady(port, name))) {
+      process.exit(1);
+    }
+  }
+
+  console.log(`\nhttp://localhost:${DEV_FRONTEND_PORT}`);
+  console.log(`API: http://localhost:${DEV_GATEWAY_PORT}`);
+  console.log(`Public companies: http://localhost:${DEV_GATEWAY_PORT}/companies/public\n`);
+
+  await new Promise(() => {});
 }
 
 async function main() {
   const args = process.argv.slice(2);
+  const fresh = args.includes('--fresh');
+  const noInfra = args.includes('--no-infra');
+  const positional = args.filter((a) => !a.startsWith('--'));
 
-  if (args.length === 0 || args[0] === 'list') {
+  if (positional.length === 0) {
+    await runFeature(DEFAULT_FEATURE, { fresh, noInfra });
+    return;
+  }
+
+  const cmd = positional[0];
+
+  if (cmd === 'list') {
     printList();
     return;
   }
 
-  const mode = args[0];
-
-  if (mode === 'svc') {
-    const ids = args.slice(1);
-    if (ids.length === 0) {
-      console.error('Usage: yarn dev:run svc <auth|users|companies|...>');
-      process.exit(1);
-    }
-    await runCommands(commandsForKeys(ids));
+  if (cmd === 'check') {
+    execSync('node scripts/dev/check.mjs', { cwd: ROOT, stdio: 'inherit' });
+    return;
+  }
+  if (cmd === 'status') {
+    execSync('node scripts/dev/status.mjs', { cwd: ROOT, stdio: 'inherit' });
+    return;
+  }
+  if (cmd === 'stop') {
+    execSync(`node scripts/dev/stop.mjs ${positional.slice(1).join(' ')}`, { cwd: ROOT, stdio: 'inherit' });
     return;
   }
 
-  if (mode === 'outbox') {
-    const ids = args.slice(1);
-    if (ids.length === 0) {
-      console.error('Usage: yarn dev:run outbox <auth|companies|...>');
-      process.exit(1);
-    }
-    await runCommands(commandsForKeys(ids.map((id) => `outbox:${id}`)));
+  if (features[cmd]) {
+    await runFeature(cmd, { fresh, noInfra });
     return;
   }
 
-  const bundle = BUNDLES[mode];
-  if (!bundle) {
-    console.error(`Unknown bundle "${mode}". Run: yarn dev:list`);
-    process.exit(1);
+  if (cmd === 'svc') {
+    const ids = positional.slice(1);
+    const { result } = concurrently(commandsForKeys(ids), {
+      prefix: 'name',
+      prefixColors: PREFIX_COLORS,
+      cwd: ROOT,
+    });
+    await result;
+    return;
   }
 
-  console.log(`[dev] ${mode}: ${bundle.description}`);
-  await runCommands(commandsForKeys(bundle.keys));
+  if (cmd === 'outbox') {
+    const ids = positional.slice(1);
+    const { result } = concurrently(commandsForKeys(ids.map((id) => `outbox:${id}`)), {
+      prefix: 'name',
+      prefixColors: PREFIX_COLORS,
+      cwd: ROOT,
+    });
+    await result;
+    return;
+  }
+
+  const bundle = BUNDLES[cmd];
+  if (bundle) {
+    console.log(`[dev] legacy bundle ${cmd}`);
+    const { result } = concurrently(commandsForKeys(bundle.keys), {
+      prefix: 'name',
+      prefixColors: PREFIX_COLORS,
+      cwd: ROOT,
+    });
+    await result;
+    return;
+  }
+
+  console.error(`Unknown: ${cmd}. Run: yarn dev list`);
+  process.exit(1);
 }
 
 main().catch((err) => {

@@ -52,7 +52,7 @@ async function bootstrap(): Promise<void> {
     },
   });
 
-  const app = createApp(pool, authService);
+  const app = createApp(pool, authService, consumer);
 
   const server = app.listen(env.PORT, () => {
     logger.info(`[auth-service] listening on :${env.PORT}`);

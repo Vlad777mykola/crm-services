@@ -3,6 +3,8 @@ import amqp, { type Channel, type ChannelModel, type ConsumeMessage } from 'amqp
 import { logger } from '../logger.js';
 import { declareTopology } from './topology.js';
 
+const RECONNECT_MS = 1000;
+
 export interface BindingSpec {
   exchange: string;
   routingKey: string;
@@ -20,41 +22,81 @@ export interface RabbitMqConsumer {
   close: () => Promise<void>;
 }
 
-/**
- * Minimal, single-connection observer: binds a non-durable-critical queue to
- * every message on both exchanges and never publishes back. A failure to
- * process one message logs and drops it (nack without requeue) - losing one
- * metrics data point is preferable to blocking the queue.
- */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** Observer queue with reconnect — drops failed messages (no DLX). */
 export async function consumeFromRabbitMq(options: ConsumeOptions): Promise<RabbitMqConsumer> {
-  const connection: ChannelModel = await amqp.connect(options.url);
-  let connected = true;
-  connection.on('close', () => {
-    connected = false;
-  });
-  connection.on('error', (err: unknown) => logger.warn({ err }, '[metrics-service] RabbitMQ connection error'));
+  let connected = false;
+  let closed = false;
+  let connection: ChannelModel | null = null;
+  let channel: Channel | null = null;
+  let connecting = false;
 
-  const channel = await connection.createChannel();
-  await declareTopology(channel);
-
-  await channel.assertQueue(options.queue, { durable: true });
-  for (const binding of options.bindings) {
-    await channel.bindQueue(options.queue, binding.exchange, binding.routingKey);
+  async function bindAndConsume(ch: Channel): Promise<void> {
+    await declareTopology(ch);
+    await ch.assertQueue(options.queue, { durable: true });
+    for (const binding of options.bindings) {
+      await ch.bindQueue(options.queue, binding.exchange, binding.routingKey);
+    }
+    await ch.prefetch(1);
+    await ch.consume(options.queue, (msg) => {
+      if (!msg) {
+        return;
+      }
+      void handleMessage(ch, msg, options.onMessage);
+    });
   }
 
-  await channel.prefetch(1);
-  await channel.consume(options.queue, (msg) => {
-    if (!msg) {
+  async function connectLoop(): Promise<void> {
+    if (connecting || closed) {
       return;
     }
-    void handleMessage(channel, msg, options.onMessage);
-  });
+    connecting = true;
+    while (!closed) {
+      try {
+        connection = await amqp.connect(options.url);
+        connected = true;
+        connection.on('close', () => {
+          connected = false;
+          channel = null;
+          if (!closed) {
+            logger.warn('[metrics-service] RabbitMQ disconnected — reconnecting');
+            connecting = false;
+            setTimeout(() => void connectLoop(), RECONNECT_MS);
+          }
+        });
+        connection.on('error', (err: unknown) => {
+          logger.warn({ err }, '[metrics-service] RabbitMQ connection error');
+        });
+
+        channel = await connection.createChannel();
+        await bindAndConsume(channel);
+        connecting = false;
+        return;
+      } catch (err) {
+        connected = false;
+        logger.warn({ err }, '[metrics-service] RabbitMQ connect failed — retrying');
+        await sleep(RECONNECT_MS);
+      }
+    }
+    connecting = false;
+  }
+
+  await connectLoop();
 
   return {
     isConnected: () => connected,
     close: async () => {
-      await channel.close().catch(() => {});
-      await connection.close().catch(() => {});
+      closed = true;
+      connected = false;
+      if (channel) {
+        await channel.close().catch(() => {});
+      }
+      if (connection) {
+        await connection.close().catch(() => {});
+      }
     },
   };
 }
@@ -69,7 +111,10 @@ async function handleMessage(
     await onMessage(parsed, msg.fields.routingKey, msg.fields.exchange);
     channel.ack(msg);
   } catch (err) {
-    logger.error({ err, routingKey: msg.fields.routingKey }, '[metrics-service] failed to process message - dropping it');
+    logger.error(
+      { err, routingKey: msg.fields.routingKey },
+      '[metrics-service] failed to process message — dropping it',
+    );
     channel.nack(msg, false, false);
   }
 }

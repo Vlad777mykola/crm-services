@@ -25,6 +25,6 @@ http:
           - Authorization
           - X-Request-Id
         accessControlAllowOriginListRegex:
-          - '^http://localhost:517[0-9]{1,2}$'
+          - '^http://localhost:5173$'
         accessControlMaxAge: 86400
         addVaryHeader: true

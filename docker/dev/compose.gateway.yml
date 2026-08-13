@@ -30,7 +30,7 @@ services:
       - '8080:8080'
       - '8081:8081'
     volumes:
-      - ../../traefik/cors/dev.middleware.yml:/etc/traefik/dynamic/cors.middleware.yml:ro
+      - ../traefik/cors/dev.middleware.yml:/etc/traefik/dynamic/cors.middleware.yml:ro
       - ./traefik/dynamic.host.yml:/etc/traefik/dynamic/routes.yml:ro
     extra_hosts:
       - 'host.docker.internal:host-gateway'

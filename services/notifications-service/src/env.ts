@@ -19,7 +19,25 @@ function loadEnv(): Env {
   const result = envSchema.safeParse(process.env);
 
   if (!result.success) {
-    console.error('Invalid environment variables:', z.flattenError(result.error).fieldErrors);
+    const flat = result.error.flatten();
+    console.error('notifications-service failed to start\n');
+    if (flat.fieldErrors) {
+      const missing = Object.entries(flat.fieldErrors)
+        .filter(([, v]) => v?.includes('Required') || v?.some((x) => x.includes('required')))
+        .map(([k]) => k);
+      const invalid = Object.entries(flat.fieldErrors).filter(
+        ([, v]) => v && !v.some((x) => x.includes('required')),
+      );
+      if (missing.length) {
+        console.error('Missing:');
+        for (const k of missing) console.error(`  ${k}`);
+      }
+      if (invalid.length) {
+        console.error('Invalid:');
+        for (const [k, v] of invalid) console.error(`  ${k}: ${v?.join(', ')}`);
+      }
+    }
+    console.error('Invalid environment variables:', flat.fieldErrors);
     process.exit(1);
   }
 

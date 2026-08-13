@@ -1,0 +1,11 @@
+# Disposable overrides for yarn smoke:prod — layered on docker/prod/compose.yml
+
+services:
+  postgres:
+    ports:
+      - '35432:5432'
+    volumes: []
+
+  gateway:
+    ports:
+      - '38080:80'

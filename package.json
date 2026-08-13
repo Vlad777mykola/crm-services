@@ -3,26 +3,36 @@
   "version": "0.0.0",
   "private": true,
   "workspaces": [
-    "frontend"
+    "frontend",
+    "services/*",
+    "scripts/fill_dump_db"
   ],
   "engines": {
     "node": ">=22.13.0"
   },
   "scripts": {
-    "dev": "node scripts/dev/run.mjs companies:app",
+    "dev": "node scripts/dev/run.mjs",
     "dev:list": "node scripts/dev/run.mjs list",
     "dev:run": "node scripts/dev/run.mjs",
     "dev:infra": "docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.gateway.yml --profile events up",
-
     "install:services": "node scripts/dev/install-services.mjs",
-    "dev:auth": "node scripts/dev/run.mjs auth-users",
-    "dev:auth:app": "node scripts/dev/run.mjs auth-users:app",
-    "dev:companies": "node scripts/dev/run.mjs companies:app",
+    "verify:startup": "node scripts/verify/startup.mjs",
+    "db:migrate": "node scripts/db/migrate.mjs",
+    "db:seed": "node scripts/db/seed.mjs",
+    "db:reset": "node scripts/db/reset.mjs",
+    "test": "yarn test:unit",
+    "test:unit": "yarn workspace @crm/frontend test && node scripts/test/unit.mjs",
+    "test:integration": "node scripts/test/integration.mjs",
+    "test:e2e": "node scripts/test/e2e.mjs",
+    "smoke:prod": "node scripts/smoke/prod.mjs",
+    "dev:auth": "node scripts/dev/run.mjs auth",
+    "dev:auth:app": "node scripts/dev/run.mjs auth",
+    "dev:companies": "node scripts/dev/run.mjs companies",
     "dev:companies:svc": "node scripts/dev/run.mjs companies",
     "dev:companies-members": "node scripts/dev/run.mjs companies-members",
-    "dev:companies-members:app": "node scripts/dev/run.mjs companies-members:app",
+    "dev:companies-members:app": "node scripts/dev/run.mjs companies-members",
     "dev:dashboard": "node scripts/dev/run.mjs dashboard",
-    "dev:dashboard:app": "node scripts/dev/run.mjs dashboard:app",
+    "dev:dashboard:app": "node scripts/dev/run.mjs dashboard",
     "dev:svc:auth": "node scripts/dev/run.mjs svc auth",
     "dev:svc:users": "node scripts/dev/run.mjs svc users",
     "dev:svc:companies": "node scripts/dev/run.mjs svc companies",
@@ -46,7 +56,6 @@
     "build": "yarn workspace @crm/frontend build",
     "lint": "yarn workspace @crm/frontend lint",
     "typecheck": "yarn workspace @crm/frontend typecheck",
-    "test": "yarn workspace @crm/frontend test",
     "prepare": "husky"
   },
   "devDependencies": {
@@ -55,4 +64,3 @@
     "husky": "^9.1.7"
   }
 }
-

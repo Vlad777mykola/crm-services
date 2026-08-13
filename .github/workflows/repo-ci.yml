@@ -1,0 +1,32 @@
+name: repo-ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: yarn
+
+      - name: Install
+        run: yarn install --frozen-lockfile
+
+      - name: Lint frontend
+        run: yarn lint
+
+      - name: Typecheck frontend
+        run: yarn typecheck
+
+      - name: Unit tests
+        run: yarn test:unit
+
+      - name: Verify startup (isolated)
+        run: yarn verify:startup

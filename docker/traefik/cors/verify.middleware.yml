@@ -1,0 +1,23 @@
+# Verify-stack CORS — allows only the isolated frontend port used by yarn verify:startup.
+
+http:
+  middlewares:
+    cors:
+      headers:
+        accessControlAllowCredentials: true
+        accessControlAllowMethods:
+          - GET
+          - HEAD
+          - POST
+          - PATCH
+          - PUT
+          - DELETE
+          - OPTIONS
+        accessControlAllowHeaders:
+          - Content-Type
+          - Authorization
+          - X-Request-Id
+        accessControlAllowOriginList:
+          - 'http://localhost:15173'
+        accessControlMaxAge: 86400
+        addVaryHeader: true

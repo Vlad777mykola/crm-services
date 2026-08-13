@@ -9,14 +9,14 @@ import { requestLogger } from './http/request-logger.js';
 import { createAuthRouter } from './http/routes/auth.routes.js';
 import type { AuthService } from './modules/auth/auth.service.js';
 
-export function createApp(pool: Pool, authService: AuthService): Express {
+export function createApp(pool: Pool, authService: AuthService, consumer?: import('./rabbitmq/consumer.js').RabbitMqConsumer): Express {
   const app = express();
 
   app.use(express.json());
   app.use(cookieParser());
   app.use(requestLogger);
 
-  app.use(createHealthRouter(pool));
+  app.use(createHealthRouter(pool, consumer));
   app.use(createAuthRouter(authService));
 
   app.use(notFoundHandler);

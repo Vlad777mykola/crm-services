@@ -1,0 +1,75 @@
+# Isolated disposable stack for yarn verify:startup — never uses dev :5432/:8080/:4001.
+# Project name: crm-verify (set via -p crm-verify).
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: crm
+    ports:
+      - '25432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 5s
+      timeout: 5s
+      retries: 15
+
+  postgres-ai:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ai
+      POSTGRES_PASSWORD: ai_password
+      POSTGRES_DB: ai
+    ports:
+      - '25433:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ai']
+      interval: 5s
+      timeout: 5s
+      retries: 15
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - '25672:5672'
+      - '25673:15672'
+    environment:
+      RABBITMQ_DEFAULT_USER: crm
+      RABBITMQ_DEFAULT_PASS: crm_local_only
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', 'check_port_connectivity']
+      interval: 5s
+      timeout: 5s
+      retries: 15
+
+  gateway:
+    image: traefik:v3.0
+    command:
+      - '--providers.file.directory=/etc/traefik/dynamic'
+      - '--providers.file.watch=true'
+      - '--entrypoints.web.address=:8080'
+      - '--entrypoints.web.http.middlewares=cors@file'
+      - '--ping=true'
+      - '--ping.entryPoint=web'
+    ports:
+      - '28080:8080'
+    volumes:
+      - ../traefik/cors/verify.middleware.yml:/etc/traefik/dynamic/cors.middleware.yml:ro
+      - ./traefik/dynamic.yml:/etc/traefik/dynamic/routes.yml:ro
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:8080/ping']
+      interval: 5s
+      timeout: 5s
+      retries: 10

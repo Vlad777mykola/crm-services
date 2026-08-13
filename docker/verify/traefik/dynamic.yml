@@ -1,0 +1,229 @@
+# Generated from docker/dev/traefik/dynamic.host.yml via scripts/verify/generate-verify-traefik.mjs
+# Verify ports = dev + 10000 on host.docker.internal
+
+http:
+  routers:
+    auth-service-health-root:
+      rule: "Path(`/health`)"
+      service: auth-service
+      entryPoints: [web]
+      priority: 15
+
+    auth-service:
+      rule: "PathPrefix(`/auth`)"
+      service: auth-service
+      entryPoints: [web]
+      priority: 10
+
+    users-service-me:
+      rule: "Path(`/users/me`)"
+      service: users-service
+      entryPoints: [web]
+      priority: 100
+    users-service-by-id:
+      rule: "PathRegexp(`^/users/[^/]+$`)"
+      service: users-service
+      entryPoints: [web]
+      priority: 50
+
+    company-members-service:
+      rule: "PathRegexp(`^/companies/[^/]+/members`)"
+      service: company-members-service
+      entryPoints: [web]
+      priority: 100
+    services-catalog-service-company-services:
+      rule: "PathRegexp(`^/companies/[^/]+/services`)"
+      service: services-catalog-service
+      entryPoints: [web]
+      priority: 95
+    appointments-service-company-appointments:
+      rule: "PathRegexp(`^/companies/[^/]+/appointments`)"
+      service: appointments-service
+      entryPoints: [web]
+      priority: 90
+    company-specialists-service-requests-create:
+      rule: "PathRegexp(`^/companies/[^/]+/specialists/requests$`)"
+      service: company-specialists-service
+      entryPoints: [web]
+      priority: 89
+    company-specialists-service-requests-list:
+      rule: "PathRegexp(`^/companies/[^/]+/specialist-requests$`)"
+      service: company-specialists-service
+      entryPoints: [web]
+      priority: 88
+    company-specialists-service-list:
+      rule: "PathRegexp(`^/companies/[^/]+/specialists$`)"
+      service: company-specialists-service
+      entryPoints: [web]
+      priority: 87
+    reviews-service-company-reviews:
+      rule: "PathRegexp(`^/companies/[^/]+/reviews$`)"
+      service: reviews-service
+      entryPoints: [web]
+      priority: 80
+    dashboard-service-company-summary:
+      rule: "PathRegexp(`^/companies/[^/]+/summary$`)"
+      service: dashboard-service
+      entryPoints: [web]
+      priority: 79
+    companies-service-status-history:
+      rule: "PathRegexp(`^/companies/[^/]+/status-history$`)"
+      service: companies-service
+      entryPoints: [web]
+      priority: 78
+    companies-service-by-id:
+      rule: "PathRegexp(`^/companies/[^/]+$`)"
+      service: companies-service
+      entryPoints: [web]
+      priority: 77
+    companies-service-root:
+      rule: "Path(`/companies`)"
+      service: companies-service
+      entryPoints: [web]
+      priority: 77
+
+    specialists-service-profile-create:
+      rule: "Path(`/specialists/profile`)"
+      service: specialists-service
+      entryPoints: [web]
+      priority: 100
+    specialists-service-status-history:
+      rule: "Path(`/specialists/me/status-history`)"
+      service: specialists-service
+      entryPoints: [web]
+      priority: 99
+    services-catalog-service-my-services:
+      rule: "Path(`/specialists/me/services`)"
+      service: services-catalog-service
+      entryPoints: [web]
+      priority: 98
+    company-specialists-service-company-requests:
+      rule: "PathRegexp(`^/specialists/me/company-requests`)"
+      service: company-specialists-service
+      entryPoints: [web]
+      priority: 97
+    company-specialists-service-my-companies:
+      rule: "Path(`/specialists/me/companies`)"
+      service: company-specialists-service
+      entryPoints: [web]
+      priority: 96
+    specialists-service-me:
+      rule: "Path(`/specialists/me`)"
+      service: specialists-service
+      entryPoints: [web]
+      priority: 95
+    specialists-service-public:
+      rule: "Path(`/specialists/public`)"
+      service: specialists-service
+      entryPoints: [web]
+      priority: 94
+    reviews-service-specialist-reviews:
+      rule: "PathRegexp(`^/specialists/[^/]+/reviews$`)"
+      service: reviews-service
+      entryPoints: [web]
+      priority: 85
+    specialists-service-by-id:
+      rule: "PathRegexp(`^/specialists/[^/]+$`)"
+      service: specialists-service
+      entryPoints: [web]
+      priority: 84
+
+    reviews-service-service-reviews:
+      rule: "PathRegexp(`^/services/[^/]+/reviews$`)"
+      service: reviews-service
+      entryPoints: [web]
+      priority: 85
+    services-catalog-service-specialists:
+      rule: "PathRegexp(`^/services/[^/]+/specialists`)"
+      service: services-catalog-service
+      entryPoints: [web]
+      priority: 30
+    services-catalog-service-public:
+      rule: "Path(`/services/public`)"
+      service: services-catalog-service
+      entryPoints: [web]
+      priority: 20
+    services-catalog-service-by-id:
+      rule: "PathRegexp(`^/services/[^/]+$`)"
+      service: services-catalog-service
+      entryPoints: [web]
+      priority: 15
+
+    reviews-service-appointment-review:
+      rule: "PathRegexp(`^/appointments/[^/]+/review$`)"
+      service: reviews-service
+      entryPoints: [web]
+      priority: 85
+    appointments-service-me:
+      rule: "Path(`/appointments/me`)"
+      service: appointments-service
+      entryPoints: [web]
+      priority: 80
+    appointments-service-status-history:
+      rule: "PathRegexp(`^/appointments/[^/]+/status-history$`)"
+      service: appointments-service
+      entryPoints: [web]
+      priority: 80
+    appointments-service-cancel:
+      rule: "PathRegexp(`^/appointments/[^/]+/cancel$`)"
+      service: appointments-service
+      entryPoints: [web]
+      priority: 80
+
+    notifications-service:
+      rule: "PathPrefix(`/notifications`)"
+      service: notifications-service
+      entryPoints: [web]
+      priority: 10
+
+    dashboard-service-app-summary:
+      rule: "Path(`/app/summary`)"
+      service: dashboard-service
+      entryPoints: [web]
+      priority: 10
+
+  services:
+    auth-service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:14001"
+    users-service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:14002"
+    companies-service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:14003"
+    company-members-service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:14004"
+    specialists-service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:14005"
+    company-specialists-service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:14006"
+    services-catalog-service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:14007"
+    appointments-service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:14008"
+    reviews-service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:14009"
+    notifications-service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:14300"
+    dashboard-service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:14010"
