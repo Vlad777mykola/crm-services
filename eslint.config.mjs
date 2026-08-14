@@ -1,13 +1,19 @@
 import js from '@eslint/js';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
-import { createArchitectureConfig } from '../../tools/eslint-config-crm/architecture.mjs';
+import { createArchitectureConfig } from './tools/eslint-config-crm/architecture.mjs';
 
+/**
+ * Root architecture ESLint config.
+ * Service workspaces also spread createArchitectureConfig() locally for editor feedback.
+ */
 export default tseslint.config(
-  { ignores: ['dist'] },
   {
+    ignores: ['**/dist/**', '**/node_modules/**', 'frontend/**', 'scripts/fill_dump_db/**'],
+  },
+  {
+    files: ['services/**/*.ts', 'tools/**/*.mjs'],
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
-    files: ['**/*.ts'],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: 'module',
@@ -17,5 +23,5 @@ export default tseslint.config(
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     },
   },
-  ...createArchitectureConfig(),
+  ...createArchitectureConfig({ scope: 'root' }),
 );

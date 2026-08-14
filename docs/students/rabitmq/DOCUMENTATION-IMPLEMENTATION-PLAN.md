@@ -275,6 +275,60 @@ Execute in order; do not attempt everything in one pass:
 
 ---
 
+## Architecture Guardrails (ARCH-1 … ARCH-6)
+
+Documentation teaches invariants; **architecture linting enforces them** in the editor and CI.
+
+### Three layers
+
+```text
+CODE
+  ├─ ESLint (eslint-plugin-crm + no-restricted-imports)
+  ├─ dependency-cruiser (.dependency-cruiser.cjs)
+  └─ check-messaging.mjs (contracts, APIs, queue ownership)
+        ↓
+ci:validate-events
+        ↓
+test:messaging (integration — proves TX/ACK/confirm/retry runtime)
+```
+
+### What ESLint blocks
+
+| Rule | Blocks |
+| ---- | ------ |
+| `no-restricted-imports` | `amqplib`, `kafkajs` in handlers/modules/http/consumer |
+| `crm/no-broker-control-in-handler` | `ack`, `nack`, `reject` in business layers |
+| `crm/no-direct-broker-publish` | `publish`, `sendToQueue`, `import amqplib` in business layers |
+
+Only `rabbitmq/`, `outbox-publisher/`, `messaging-kit/`, `event-delivery/` may touch the broker.
+
+### Commands
+
+```bash
+yarn lint:architecture
+yarn check:messaging
+yarn verify:architecture
+```
+
+See [scripts/architecture/README.md](../../../scripts/architecture/README.md) and [common/21-architecture-guardrails.md](./common/21-architecture-guardrails.md).
+
+### ARCH task tracker
+
+| Task | Description | Status |
+| ---- | ----------- | ------ |
+| ARCH-1 | ESLint `no-restricted-imports` in domain layers | done |
+| ARCH-2 | dependency-cruiser forbidden dependencies | done |
+| ARCH-3 | `check-messaging.mjs` static contract checks | done |
+| ARCH-4 | Custom `eslint-plugin-crm` rules | done |
+| ARCH-5 | Integration tests (`yarn test:messaging`) | existing |
+| ARCH-6 | RFC2 gates (no transport fields in domain outbox) | planned |
+
+### PR rule (extends Step 28)
+
+Messaging PRs must pass `yarn verify:architecture` before merge.
+
+---
+
 ## Frozen architecture context
 
 The messaging architecture stays frozen:

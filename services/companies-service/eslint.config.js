@@ -1,6 +1,7 @@
 import js from '@eslint/js';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
+import { createArchitectureConfig } from '../../tools/eslint-config-crm/architecture.mjs';
 
 export default tseslint.config(
   { ignores: ['dist'] },
@@ -16,4 +17,5 @@ export default tseslint.config(
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     },
   },
+  ...createArchitectureConfig(),
 );

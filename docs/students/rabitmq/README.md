@@ -433,4 +433,6 @@ Kafka is **not** part of the current default runtime.
 
 Implementation plan and task tracker: [DOCUMENTATION-IMPLEMENTATION-PLAN.md](./DOCUMENTATION-IMPLEMENTATION-PLAN.md)
 
-If you change messaging code, update docs in the same PR (Rule 11).
+Architecture guardrails: [21-architecture-guardrails.md](./common/21-architecture-guardrails.md) · `yarn verify:architecture`
+
+If you change messaging code, update docs in the same PR (Rule 11) and pass architecture checks.

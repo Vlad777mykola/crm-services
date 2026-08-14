@@ -139,3 +139,11 @@ Recommended order for students learning RabbitMQ in this repository.
 ## Level 14 — Kafka comparison / readiness
 
 **FUTURE KAFKA** — [20-kafka-readiness.md](./20-kafka-readiness.md)
+
+---
+
+## Level 15 — Architecture guardrails
+
+**CURRENT VERIFIED** — [21-architecture-guardrails.md](./21-architecture-guardrails.md)
+
+Run `yarn verify:architecture` before opening a messaging PR.
