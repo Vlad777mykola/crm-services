@@ -29,6 +29,7 @@ import { SpecialistProfilePage } from '@/pages/specialist/SpecialistProfilePage'
 import { SpecialistServicesPage } from '@/pages/specialist/SpecialistServicesPage';
 import { SpecialistPublicPage } from '@/pages/specialists/SpecialistPublicPage';
 import { SpecialistsListPage } from '@/pages/specialists/SpecialistsListPage';
+import { RabbitMqLabPage } from '@/pages/student/RabbitMqLabPage';
 
 export const router = createBrowserRouter([
   {
@@ -213,6 +214,10 @@ export const router = createBrowserRouter([
             <SpecialistServicesPage />
           </ProtectedRoute>
         ),
+      },
+      {
+        path: '/student/rabbitmq',
+        element: <RabbitMqLabPage />,
       },
     ],
   },

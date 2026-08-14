@@ -18,6 +18,9 @@ export const SERVICES = {
   reviews: { dir: 'services/reviews-service', port: 4009, label: 'reviews-service' },
   notifications: { dir: 'services/notifications-service', port: 4300, label: 'notifications-service' },
   dashboard: { dir: 'services/dashboard-service', port: 4010, label: 'dashboard-service' },
+  // Student/dev-only - see docs/students/rabitmq/lab-service/START-HERE.md.
+  // Never deployed to production; not in compose.services.yml.
+  'rabbitmq-lab': { dir: 'services/rabbitmq-lab-service', port: 4011, label: 'rabbitmq-lab-service' },
 };
 
 /** @type {Record<string, OutboxDef>} */

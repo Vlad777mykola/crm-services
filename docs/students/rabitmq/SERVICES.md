@@ -28,6 +28,7 @@ Last verified against: repository code audit, August 2026.
 | [ai-service](./services/ai-service/) | `analytics.company_rating_updated`, `ai.appointment_recommendation_created` | `appointment.*`, `review.received` | optional (`ai_schema.outbox_events`) | `ai-service.q` | `domain.events`, `analytics.events` | `ai` (postgres-ai) | `MESSAGING_MODE`: direct (default) or outbox |
 | [metrics-service](./services/metrics-service/) | — | all on `domain.events` + `analytics.events` (`#`) | — | `metrics-service.q` | `domain.events`, `analytics.events` | none (in-memory) | Observer only; no idempotency |
 | [outbox-publisher](./services/outbox-publisher/) | publishes pending outbox rows | — | reads `{schema}.outbox_events` | — | all 5 exchanges | per deployment | Separate instance per schema |
+| [rabbitmq-lab-service](./services/rabbitmq-lab-service/) | lab-only `hello` message | its own | none | `student.rabbitmq-lab.hello.q` | `student.rabbitmq-lab.*` (+ read-only `domain.events`/`analytics.events` planned) | none | **Student/dev-only — never deployed to production.** See [lab-service/START-HERE.md](./lab-service/START-HERE.md) |
 
 ---
 
@@ -138,6 +139,7 @@ ai-service (appointment_requested handler)
 | ai-service | [README](./services/ai-service/README.md) · [EVENTS](./services/ai-service/EVENTS.md) |
 | metrics-service | [README](./services/metrics-service/README.md) · [EVENTS](./services/metrics-service/EVENTS.md) |
 | outbox-publisher | [README](./services/outbox-publisher/README.md) · [EVENTS](./services/outbox-publisher/EVENTS.md) |
+| rabbitmq-lab-service | [README](./services/rabbitmq-lab-service/README.md) · [EVENTS](./services/rabbitmq-lab-service/EVENTS.md) · [lab-service syllabus](./lab-service/START-HERE.md) |
 
 ---
 

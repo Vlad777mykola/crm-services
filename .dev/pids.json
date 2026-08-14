@@ -103,5 +103,15 @@
     "name": "outbox-reviews",
     "pid": 19960,
     "rootPid": 19960
+  },
+  {
+    "name": "frontend",
+    "pid": 10100,
+    "rootPid": 10100
+  },
+  {
+    "name": "companies",
+    "pid": 23444,
+    "rootPid": 23444
   }
 ]

@@ -202,6 +202,15 @@ http:
       entryPoints: [web]
       priority: 10
 
+    # ---- RabbitMQ Lab (student/dev-only - see docs/students/rabitmq/lab-service/START-HERE.md) ----
+    # Host loop only: this service is never containerized, so it has no
+    # matching entry in dynamic.container.yml or compose.services.yml.
+    rabbitmq-lab-service:
+      rule: "PathPrefix(`/rabbitmq-lab`)"
+      service: rabbitmq-lab-service
+      entryPoints: [web]
+      priority: 10
+
   services:
     auth-service:
       loadBalancer:
@@ -257,3 +266,8 @@ http:
       loadBalancer:
         servers:
           - url: "http://host.docker.internal:4010"
+
+    rabbitmq-lab-service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:4011"

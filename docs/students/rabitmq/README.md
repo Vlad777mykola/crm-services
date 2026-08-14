@@ -12,7 +12,8 @@ The single complete overview of how asynchronous messaging works in this reposit
 
 | Audience | Start here | Then |
 | -------- | ---------- | ---- |
-| **Students** | [Learning path](./common/01-learning-path.md) | Service `LEARN.md` files |
+| **Students (new to RabbitMQ)** | [RabbitMQ Lab Service — hands-on, isolated](./lab-service/START-HERE.md) | [Learning path](./common/01-learning-path.md), then service `LEARN.md` files |
+| **Students (know RabbitMQ basics)** | [Learning path](./common/01-learning-path.md) | Service `LEARN.md` files |
 | **Developers** | [Add new event](./common/14-add-new-event.md) | Service `DEVELOPER.md` files |
 | **Operators** | [Local development](./common/09-local-development.md) | [Operations](./common/12-operations.md) |
 
