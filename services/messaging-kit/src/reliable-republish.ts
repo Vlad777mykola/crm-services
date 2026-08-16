@@ -66,7 +66,6 @@ export async function handleConsumerFailure(
   serviceName: string,
   error: unknown,
 ): Promise<'acked' | 'channel_closed'> {
-  const failureReason = error instanceof Error ? error.message : String(error);
   const sourceExchange = msg.fields.exchange === 'analytics.events' ? 'analytics.events' : 'domain.events';
   const republish = await reliableRepublish(channel, msg, { serviceName, sourceExchange }, error);
   if (republish.ok) {

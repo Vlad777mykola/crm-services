@@ -1,4 +1,4 @@
-import type { Pool, PoolClient } from 'pg';
+import type { Pool } from 'pg';
 
 import type { EmailLogRepository } from '../db/email-log-repository.js';
 import type { NotificationRepository } from '../db/notification-repository.js';

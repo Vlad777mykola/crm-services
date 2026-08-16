@@ -1,10 +1,9 @@
-import amqp, { type Channel, type ChannelModel, type ConsumeMessage } from 'amqplib';
-import { declareRetryTopology, handleConsumerFailure } from '@crm/messaging-kit';
+import type { Channel, ChannelModel, ConsumeMessage } from 'amqplib';
+import { connectManaged, declareRetryTopology, handleConsumerFailure, type ManagedConnectionContext } from '@crm/messaging-kit';
 
 import { logger } from '../logger.js';
 import { declareTopology } from './topology.js';
 
-const RECONNECT_MS = 1000;
 const SERVICE_NAME = 'users-service';
 const SOURCE_EXCHANGE = 'domain.events' as const;
 
@@ -22,20 +21,30 @@ export interface ConsumeOptions {
 }
 
 export interface RabbitMqConsumer {
+  /** True once the channel/topology/consumer setup has fully completed (not just TCP-connected). */
   isConnected: () => boolean;
+  /** Same as `isConnected()` - prefer this name for new call sites (e.g. health checks). */
+  isReady: () => boolean;
   close: () => Promise<void>;
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
+/**
+ * Declares topology, binds a durable queue with DLX, and consumes it.
+ *
+ * Connection lifecycle (connect/reconnect/backoff/readiness) is owned by
+ * `connectManaged` (@crm/messaging-kit). This module only owns the channel,
+ * topology, prefetch, consume(), and ACK/NACK/retry semantics - and reports
+ * an unexpected channel closure back to the managed lifecycle so a dead
+ * consumer channel always triggers a full reconnect instead of leaving the
+ * service silently stuck (isConnected() only means "fully set up", not
+ * just "TCP connected").
+ */
 export async function consumeFromRabbitMq(options: ConsumeOptions): Promise<RabbitMqConsumer> {
-  let connected = false;
-  let closed = false;
-  let connection: ChannelModel | null = null;
   let channel: Channel | null = null;
-  let connecting = false;
+  let settleFirstReady: (() => void) | null = null;
+  const firstReady = new Promise<void>((resolve) => {
+    settleFirstReady = resolve;
+  });
 
   async function bindAndConsume(ch: Channel): Promise<void> {
     await declareTopology(ch);
@@ -56,55 +65,35 @@ export async function consumeFromRabbitMq(options: ConsumeOptions): Promise<Rabb
     });
   }
 
-  async function connectLoop(): Promise<void> {
-    if (connecting || closed) {
-      return;
-    }
-    connecting = true;
-    while (!closed) {
-      try {
-        connection = await amqp.connect(options.url);
-        connected = true;
-        connection.on('close', () => {
-          connected = false;
-          channel = null;
-          if (!closed) {
-            logger.warn('[rabbitmq] connection closed — reconnecting');
-            connecting = false;
-            setTimeout(() => void connectLoop(), RECONNECT_MS);
-          }
-        });
-        connection.on('error', (err: unknown) => {
-          logger.warn({ err }, '[rabbitmq] connection error');
-        });
+  const managed = connectManaged({
+    url: options.url,
+    serviceName: SERVICE_NAME,
+    logger,
+    setup: async (connection: ChannelModel, lifecycle: ManagedConnectionContext) => {
+      const ch = await connection.createChannel();
+      channel = ch;
+      ch.once('close', () => {
+        if (channel !== ch) {
+          return;
+        }
+        channel = null;
+        lifecycle.invalidate(new Error(`${SERVICE_NAME} consumer channel closed unexpectedly`));
+      });
+      await bindAndConsume(ch);
+      settleFirstReady?.();
+      settleFirstReady = null;
+    },
+    onDisconnected: () => {
+      channel = null;
+    },
+  });
 
-        channel = await connection.createChannel();
-        await bindAndConsume(channel);
-        connecting = false;
-        return;
-      } catch (err) {
-        connected = false;
-        logger.warn({ err }, '[rabbitmq] connect failed — retrying');
-        await sleep(RECONNECT_MS);
-      }
-    }
-    connecting = false;
-  }
-
-  await connectLoop();
+  await firstReady;
 
   return {
-    isConnected: () => connected,
-    close: async () => {
-      closed = true;
-      connected = false;
-      if (channel) {
-        await channel.close().catch(() => {});
-      }
-      if (connection) {
-        await connection.close().catch(() => {});
-      }
-    },
+    isConnected: () => managed.isReady(),
+    isReady: () => managed.isReady(),
+    close: () => managed.close(),
   };
 }
 
@@ -119,6 +108,9 @@ async function handleMessage(
     channel.ack(msg);
   } catch (err) {
     logger.error({ err, routingKey: msg.fields.routingKey }, '[rabbitmq] failed to process message — applying retry/parking policy');
+    // handleConsumerFailure() may close `channel` when republish fails; the
+    // `close` listener above is the single source of truth for reacting to
+    // that, so its return value is intentionally not re-checked here.
     await handleConsumerFailure(channel, msg, SERVICE_NAME, err);
   }
 }

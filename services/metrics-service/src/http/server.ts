@@ -20,7 +20,7 @@ export function startHttpServer(port: number, store: RabbitMqMetricsStore, consu
     }
 
     if (req.url === '/health/ready' || req.url === '/health' || req.url === '/') {
-      const ready = consumer.isConnected();
+      const ready = consumer.isReady();
       res.writeHead(ready ? 200 : 503, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ status: ready ? 'ok' : 'not-ready', ...store.snapshot() }));
       return;

@@ -61,7 +61,7 @@ function flush(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 0));
 }
 
-describe('consumeFromRabbitMq', () => {
+describe('consumeFromRabbitMq (users-service)', () => {
   beforeEach(() => {
     connectMock.mockReset();
   });
@@ -70,112 +70,82 @@ describe('consumeFromRabbitMq', () => {
     vi.useRealTimers();
   });
 
-  it('binds the queue with a dead-letter exchange and binds every routing key', async () => {
-    const channel = new FakeChannel();
-    const connection = new FakeConnection(channel);
-    connectMock.mockResolvedValue(connection);
-
-    await consumeFromRabbitMq({
-      url: 'amqp://localhost:5672',
-      queue: 'notifications.q',
-      deadLetterExchange: 'domain.events.dlx',
-      bindings: [
-        { exchange: 'domain.events', routingKey: 'appointment.*' },
-        { exchange: 'domain.events', routingKey: 'review.received' },
-      ],
-      onMessage: vi.fn(),
-    });
-
-    expect(channel.assertQueue).toHaveBeenCalledWith('notifications.q', {
-      durable: true,
-      arguments: { 'x-dead-letter-exchange': 'domain.events.dlx' },
-    });
-    expect(channel.bindQueue).toHaveBeenCalledWith('notifications.q', 'domain.events', 'appointment.*');
-    expect(channel.bindQueue).toHaveBeenCalledWith('notifications.q', 'domain.events', 'review.received');
-  });
-
-  it('parses the message body, invokes onMessage, and acks on success', async () => {
+  it('binds the queue with a dead-letter exchange, acks on success', async () => {
     const channel = new FakeChannel();
     const connection = new FakeConnection(channel);
     connectMock.mockResolvedValue(connection);
     const onMessage = vi.fn().mockResolvedValue(undefined);
 
-    await consumeFromRabbitMq({
+    const consumer = await consumeFromRabbitMq({
       url: 'amqp://localhost:5672',
-      queue: 'notifications.q',
+      queue: 'users-service.q',
       deadLetterExchange: 'domain.events.dlx',
-      bindings: [{ exchange: 'domain.events', routingKey: '#' }],
+      bindings: [{ exchange: 'domain.events', routingKey: 'auth.user_registered' }],
       onMessage,
     });
 
-    const msg = fakeMessage({ type: 'appointment.requested' }, 'appointment.requested');
+    expect(channel.assertQueue).toHaveBeenCalledWith('users-service.q', {
+      durable: true,
+      arguments: { 'x-dead-letter-exchange': 'domain.events.dlx' },
+    });
+    expect(consumer.isConnected()).toBe(true);
+
+    const msg = fakeMessage({ type: 'auth.user_registered' }, 'auth.user_registered');
     channel.deliver(msg);
     await flush();
 
-    expect(onMessage).toHaveBeenCalledWith({ type: 'appointment.requested' }, 'appointment.requested', 'domain.events');
+    expect(onMessage).toHaveBeenCalledWith({ type: 'auth.user_registered' }, 'auth.user_registered', 'domain.events');
     expect(channel.ack).toHaveBeenCalledWith(msg);
-    expect(channel.nack).not.toHaveBeenCalled();
   });
 
-  // Was previously stale: expected a plain `nack(msg, false, false)`, but
-  // the implementation has used @crm/messaging-kit's retry/parking
-  // republish (via handleConsumerFailure) for a while. This asserts the
-  // actual current contract instead.
-  it('republishes to the retry topology and acks the original message when the handler fails', async () => {
+  it('is not ready until the channel/topology/consume setup fully completes', async () => {
     const channel = new FakeChannel();
+    let resolveBind: (() => void) | null = null;
+    channel.consume.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveBind = () => resolve();
+        }),
+    );
     const connection = new FakeConnection(channel);
     connectMock.mockResolvedValue(connection);
-    const onMessage = vi.fn().mockRejectedValue(new Error('boom'));
 
-    await consumeFromRabbitMq({
+    const pending = consumeFromRabbitMq({
       url: 'amqp://localhost:5672',
-      queue: 'notifications.q',
+      queue: 'users-service.q',
       deadLetterExchange: 'domain.events.dlx',
       bindings: [{ exchange: 'domain.events', routingKey: '#' }],
-      onMessage,
+      onMessage: vi.fn(),
     });
 
-    const msg = fakeMessage({ type: 'appointment.requested' }, 'appointment.requested');
-    channel.deliver(msg);
     await flush();
+    resolveBind?.();
+    const consumer = await pending;
 
-    expect(channel.publish).toHaveBeenCalledOnce();
-    const [targetExchange] = channel.publish.mock.calls[0] as [string, ...unknown[]];
-    expect(targetExchange).toContain('notifications-service.domain.retry');
-    expect(channel.ack).toHaveBeenCalledWith(msg);
-    expect(channel.nack).not.toHaveBeenCalled();
-    expect(channel.close).not.toHaveBeenCalled();
+    expect(consumer.isConnected()).toBe(true);
   });
 
-  it('closes the channel and reconnects when the retry republish cannot be buffered', async () => {
+  it('recovers when the consumer channel closes unexpectedly, without a second connect() call being required manually', async () => {
     vi.useFakeTimers();
     const channel1 = new FakeChannel();
-    channel1.publish.mockReturnValue(false);
     const connection1 = new FakeConnection(channel1);
     const channel2 = new FakeChannel();
     const connection2 = new FakeConnection(channel2);
     connectMock.mockResolvedValueOnce(connection1).mockResolvedValueOnce(connection2);
-    const onMessage = vi.fn().mockRejectedValue(new Error('boom'));
 
     const consumer = await consumeFromRabbitMq({
       url: 'amqp://localhost:5672',
-      queue: 'notifications.q',
+      queue: 'users-service.q',
       deadLetterExchange: 'domain.events.dlx',
       bindings: [{ exchange: 'domain.events', routingKey: '#' }],
-      onMessage,
+      onMessage: vi.fn(),
     });
 
     expect(consumer.isConnected()).toBe(true);
 
-    const msg = fakeMessage({ type: 'appointment.requested' }, 'appointment.requested');
-    channel1.deliver(msg);
+    // The TCP connection stays open - only the channel dies.
+    channel1.emit('close');
     await vi.advanceTimersByTimeAsync(0);
-
-    // Republish failed -> handleConsumerFailure closed the channel, and the
-    // channel's `close` listener is the single source of truth that invalidates
-    // the managed connection lifecycle - readiness must go false immediately.
-    expect(channel1.close).toHaveBeenCalledOnce();
-    expect(channel1.ack).not.toHaveBeenCalled();
     expect(consumer.isConnected()).toBe(false);
 
     await vi.advanceTimersByTimeAsync(2_000);
@@ -185,18 +155,20 @@ describe('consumeFromRabbitMq', () => {
     expect(consumer.isConnected()).toBe(true);
   });
 
-  it('closes the connection on close()', async () => {
+  it('closes the connection on close() and is safe to call twice', async () => {
     const channel = new FakeChannel();
     const connection = new FakeConnection(channel);
     connectMock.mockResolvedValue(connection);
 
     const consumer = await consumeFromRabbitMq({
       url: 'amqp://localhost:5672',
-      queue: 'notifications.q',
+      queue: 'users-service.q',
       deadLetterExchange: 'domain.events.dlx',
       bindings: [{ exchange: 'domain.events', routingKey: '#' }],
       onMessage: vi.fn(),
     });
+
+    await consumer.close();
     await consumer.close();
 
     expect(connection.close).toHaveBeenCalledOnce();

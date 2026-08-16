@@ -5,12 +5,13 @@ module.exports = {
       name: 'no-cross-service-imports',
       severity: 'error',
       comment:
-        'Microservices must not import each other\'s implementation. Use contracts/events and RabbitMQ instead.',
+        'Microservices must not import each other\'s implementation. Use contracts/events and RabbitMQ instead. Shared infrastructure under services/ (messaging-kit, outbox-publisher, event-delivery) is allowed.',
       from: {
         path: '^services/([^/]+)/',
       },
       to: {
-        path: '^services/(?!\\1)[^/]+/src/',
+        path: '^services/(?!$1/)[^/]+/src/',
+        pathNot: '^services/(messaging-kit|outbox-publisher|event-delivery)/',
       },
     },
     {
@@ -21,7 +22,7 @@ module.exports = {
         path: '^services/([^/]+)/src/(modules|handlers)/',
       },
       to: {
-        path: '^services/\\1/src/rabbitmq/',
+        path: '^services/$1/src/rabbitmq/',
       },
     },
     {

@@ -2,7 +2,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 const servicesDir = path.join(root, 'services');
 const contractsDir = path.join(root, 'contracts/events');
 
@@ -12,6 +12,7 @@ const AMQP_ALLOWED_PATH_PATTERNS = [
   /[\\/]messaging-kit[\\/]/,
   /[\\/]outbox-publisher[\\/]/,
   /[\\/]event-delivery[\\/]/,
+  /[\\/]rabbitmq-lab-service[\\/]/,
 ];
 
 /** @type {Map<string, string>} */

@@ -1,4 +1,4 @@
-import type { Pool, PoolClient } from 'pg';
+import type { Pool } from 'pg';
 
 import type { AppointmentRecommendationRepository } from '../db/appointment-recommendation-repository.js';
 import type { ProjectionsRepository } from '../db/projections-repository.js';

@@ -1,9 +1,10 @@
-import amqp, { type Channel, type ChannelModel, type ConsumeMessage } from 'amqplib';
+import type { Channel, ChannelModel, ConsumeMessage } from 'amqplib';
+import { connectManaged, type ManagedConnectionContext } from '@crm/messaging-kit';
 
 import { logger } from '../logger.js';
 import { declareTopology } from './topology.js';
 
-const RECONNECT_MS = 1000;
+const SERVICE_NAME = 'metrics-service';
 
 export interface BindingSpec {
   exchange: string;
@@ -18,21 +19,25 @@ export interface ConsumeOptions {
 }
 
 export interface RabbitMqConsumer {
+  /** True once the channel/topology/consumer setup has fully completed (not just TCP-connected). */
   isConnected: () => boolean;
+  /** Same as `isConnected()` - prefer this name for new call sites (e.g. health checks). */
+  isReady: () => boolean;
   close: () => Promise<void>;
 }
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/** Observer queue with reconnect — drops failed messages (no DLX). */
+/**
+ * Observer queue: reuses `connectManaged` for connection lifecycle (same as
+ * the retry/DLX consumers), but keeps its own message-failure semantics -
+ * failed messages are dropped (`nack(msg, false, false)`), not routed
+ * through the retry/parking topology in @crm/messaging-kit.
+ */
 export async function consumeFromRabbitMq(options: ConsumeOptions): Promise<RabbitMqConsumer> {
-  let connected = false;
-  let closed = false;
-  let connection: ChannelModel | null = null;
   let channel: Channel | null = null;
-  let connecting = false;
+  let settleFirstReady: (() => void) | null = null;
+  const firstReady = new Promise<void>((resolve) => {
+    settleFirstReady = resolve;
+  });
 
   async function bindAndConsume(ch: Channel): Promise<void> {
     await declareTopology(ch);
@@ -49,55 +54,35 @@ export async function consumeFromRabbitMq(options: ConsumeOptions): Promise<Rabb
     });
   }
 
-  async function connectLoop(): Promise<void> {
-    if (connecting || closed) {
-      return;
-    }
-    connecting = true;
-    while (!closed) {
-      try {
-        connection = await amqp.connect(options.url);
-        connected = true;
-        connection.on('close', () => {
-          connected = false;
-          channel = null;
-          if (!closed) {
-            logger.warn('[metrics-service] RabbitMQ disconnected — reconnecting');
-            connecting = false;
-            setTimeout(() => void connectLoop(), RECONNECT_MS);
-          }
-        });
-        connection.on('error', (err: unknown) => {
-          logger.warn({ err }, '[metrics-service] RabbitMQ connection error');
-        });
+  const managed = connectManaged({
+    url: options.url,
+    serviceName: SERVICE_NAME,
+    logger,
+    setup: async (connection: ChannelModel, lifecycle: ManagedConnectionContext) => {
+      const ch = await connection.createChannel();
+      channel = ch;
+      ch.once('close', () => {
+        if (channel !== ch) {
+          return;
+        }
+        channel = null;
+        lifecycle.invalidate(new Error(`${SERVICE_NAME} consumer channel closed unexpectedly`));
+      });
+      await bindAndConsume(ch);
+      settleFirstReady?.();
+      settleFirstReady = null;
+    },
+    onDisconnected: () => {
+      channel = null;
+    },
+  });
 
-        channel = await connection.createChannel();
-        await bindAndConsume(channel);
-        connecting = false;
-        return;
-      } catch (err) {
-        connected = false;
-        logger.warn({ err }, '[metrics-service] RabbitMQ connect failed — retrying');
-        await sleep(RECONNECT_MS);
-      }
-    }
-    connecting = false;
-  }
-
-  await connectLoop();
+  await firstReady;
 
   return {
-    isConnected: () => connected,
-    close: async () => {
-      closed = true;
-      connected = false;
-      if (channel) {
-        await channel.close().catch(() => {});
-      }
-      if (connection) {
-        await connection.close().catch(() => {});
-      }
-    },
+    isConnected: () => managed.isReady(),
+    isReady: () => managed.isReady(),
+    close: () => managed.close(),
   };
 }
 

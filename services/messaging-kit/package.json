@@ -11,12 +11,16 @@
     "./errors": "./src/errors.ts",
     "./retry": "./src/retry.ts"
   },
+  "scripts": {
+    "test": "vitest run"
+  },
   "dependencies": {
     "amqplib": "^0.10.9"
   },
   "devDependencies": {
     "@types/amqplib": "^0.10.7",
     "@types/node": "^26.1.2",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "vitest": "^4.1.10"
   }
 }

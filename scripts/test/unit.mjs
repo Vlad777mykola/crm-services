@@ -8,6 +8,24 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const SERVICES_DIR = path.join(ROOT, 'services');
+const TEST_FILE_PATTERN = /\.(test|spec)\.(c|m)?[jt]sx?$/;
+
+/**
+ * @param {string} dir
+ * @returns {boolean}
+ */
+function hasTestFiles(dir) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (entry.name === 'node_modules' || entry.name === 'dist') continue;
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      if (hasTestFiles(full)) return true;
+      continue;
+    }
+    if (TEST_FILE_PATTERN.test(entry.name)) return true;
+  }
+  return false;
+}
 
 let failed = false;
 
@@ -18,6 +36,11 @@ for (const name of fs.readdirSync(SERVICES_DIR).sort()) {
 
   const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
   if (!pkg.scripts?.test) continue;
+
+  if (!hasTestFiles(dir)) {
+    console.log(`[test:unit] ${name} (no tests, skipping)`);
+    continue;
+  }
 
   console.log(`[test:unit] ${name}`);
   try {

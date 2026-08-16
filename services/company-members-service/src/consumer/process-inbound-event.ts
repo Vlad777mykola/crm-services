@@ -1,4 +1,4 @@
-import type { Pool, PoolClient } from 'pg';
+import type { Pool } from 'pg';
 
 import type { MemberRepository } from '../db/member-repository.js';
 import { handleCompanyCreated, type CompanyCreatedData } from '../handlers/company-created.js';

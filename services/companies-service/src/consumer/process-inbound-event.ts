@@ -1,4 +1,4 @@
-import type { Pool, PoolClient } from 'pg';
+import type { Pool } from 'pg';
 
 import type { CompanyInsightRepository } from '../db/company-insight-repository.js';
 import {

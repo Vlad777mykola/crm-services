@@ -14,7 +14,7 @@ export function createHealthRouter(pool: Pool, consumer: RabbitMqConsumer): Rout
     pool
       .query('SELECT 1')
       .then(() => {
-        if (!consumer.isConnected()) throw new Error('RabbitMQ is not connected');
+        if (!consumer.isReady()) throw new Error('RabbitMQ is not connected');
         res.status(200).json({ status: 'ok' });
       })
       .catch(() => res.status(503).json({ status: 'not-ready' }));
