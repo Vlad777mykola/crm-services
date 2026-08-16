@@ -10,6 +10,7 @@ crm-services/
 │   ├── openapi/                      # REST contract
 │   └── events/                       # shared event JSON schemas
 ├── services/
+│   ├── messaging-kit/                # @crm/messaging-kit — connectManaged, retry topology, handleConsumerFailure (shared by Node consumers)
 │   ├── auth-service/                 # (Phase 2) identity, sessions, JWT issuance - owns auth_schema
 │   ├── users-service/                # (Phase 2) user profiles - owns users_schema, consumer-only until Phase 3
 │   ├── notifications-service/        # consumes domain/analytics events, sends emails + in-app notifications
@@ -53,7 +54,8 @@ flowchart LR
     OB[(outbox_events)]
     OP[outbox-publisher]
     RMQ[rabbitmq]
-    DLQ[dead letter queues]
+    RETRY[retry tiers + parking queues]
+    DLQ[dead letter queues inspection]
   end
 
   subgraph nodeWorkers [Node Services]
@@ -79,7 +81,8 @@ flowchart LR
   RMQ --> NS
   RMQ --> MS
   RMQ --> AI
-  RMQ -->|failed messages| DLQ
+  RMQ -->|failed messages| RETRY
+  RETRY -->|exhausted retries| DLQ
   NS -->|MVP write| PG
   AI --> PGAI
   AI -->|publish ai results| RMQ
@@ -118,18 +121,38 @@ move to Kubernetes/AWS EKS:
 | gateway | `traefik:v3.0` (no custom image) | — | none | none |
 | frontend | `frontend/dist` | static hosting (GitHub Pages, later S3+CloudFront) | none | none |
 | backend-api | `backend/Dockerfile` | `node dist/main.js` | main-postgres | none (HTTP only) |
-| auth-service | `services/auth-service/Dockerfile` | `node dist/main.js` | auth_schema | none (HTTP + own outbox only) |
+| auth-service | `services/auth-service/Dockerfile`¹ | `node dist/main.js` | auth_schema | consumer (`company-member.*`) + outbox publisher via `outbox-publisher-auth` |
 | outbox-publisher-auth | `services/outbox-publisher/Dockerfile` (redeployed, Q8) | `node dist/main.js` | auth_schema.outbox_events only | publisher |
-| users-service | `services/users-service/Dockerfile` | `node dist/main.js` | users_schema | consumer |
+| users-service | `services/users-service/Dockerfile`¹ | `node dist/main.js` | users_schema | consumer |
 | outbox-publisher | `services/outbox-publisher/Dockerfile` | `node dist/main.js` | outbox_events only | publisher |
-| notifications-service | `services/notifications-service/Dockerfile` | `node dist/main.js` | main-postgres (MVP) | consumer |
-| metrics-service | `services/metrics-service/Dockerfile` | `node dist/main.js` | none | observer |
+| notifications-service | `services/notifications-service/Dockerfile`¹ | `node dist/main.js` | main-postgres (MVP) | consumer |
+| metrics-service | `services/metrics-service/Dockerfile`¹ | `node dist/main.js` | none | observer |
 | ai-service | `services/ai-service/Dockerfile` | `python src/main.py` | postgres-ai | consumer + publisher |
 | rabbitmq | managed broker | — | — | infrastructure |
 | redis | managed cache | — | — | reserved, unused today |
+
+¹ **Workspace Docker:** services marked ¹ import `@crm/messaging-kit`. Per-service
+Docker build context may not resolve that package — use repo-root workspace build
+([workspace-docker-build.md](./workspace-docker-build.md)). Host dev (`yarn dev`) uses
+Yarn workspaces and does not hit this gap.
+
+## Node consumer messaging stack (RFC1)
+
+Node consumers share **`@crm/messaging-kit`** for infrastructure only:
+
+- `connectManaged()` — TCP reconnect, `setup()`, `invalidate()`, `isReady()`
+- `declareRetryTopology()` + `handleConsumerFailure()` — finite retry tiers + parking
+
+Channel topology, prefetch, `consume()`, and inbox transactions stay in each
+`services/*/src/rabbitmq/consumer.ts`. Student detail:
+[docs/students/rabitmq/common/22-connection-lifecycle.md](../students/rabitmq/common/22-connection-lifecycle.md).
+
+`outbox-publisher` and `ai-service` keep their own connection lifecycle.
+`rabbitmq-lab-service` is dev-only with a local educational copy (not messaging-kit).
 
 ## Future (post-MVP)
 
 - Split notifications tables into a notifications-service-owned Postgres instance.
 - Add `services/future-cpp-service/` for CPU-bound processing (image/file processing, device gateway).
-- Add advanced retry/backoff tuning on top of the basic dead-letter queues introduced now.
+- Wire workspace-aware Docker builds into `docker/prod` and `docker/smoke` for all messaging-kit consumers.
+- Tune retry tier TTLs and parking replay runbooks per environment (tiers exist; tuning is operational).

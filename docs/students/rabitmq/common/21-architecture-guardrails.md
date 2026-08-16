@@ -77,6 +77,8 @@ INFRASTRUCTURE (rabbitmq/, outbox-publisher)
 RabbitMQ broker
 ```
 
+`@crm/messaging-kit` `connectManaged()` lives in the infrastructure layer for Node consumers (TCP reconnect + readiness). Channel topology, consume, and ACK/retry stay in each `rabbitmq/consumer.ts`. See [22-connection-lifecycle.md](./22-connection-lifecycle.md).
+
 ---
 
 ## What linting cannot prove
@@ -84,7 +86,7 @@ RabbitMQ broker
 - Inbox transaction ordering at runtime
 - Publisher confirms accepted by broker
 - Retry tier progression timing
-- Reconnect after broker outage
+- Reconnect after broker outage (`connectManaged` + `invalidate()` — see [rabitmq/common/22-connection-lifecycle.md](../rabitmq/common/22-connection-lifecycle.md))
 
 Use integration tests and local verification for those.
 

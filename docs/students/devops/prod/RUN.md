@@ -35,7 +35,7 @@ yarn smoke:prod
 
 **Flow:**
 
-1. Build `companies-service` image from `services/companies-service/Dockerfile`
+1. Build `companies-service` image from `services/companies-service/Dockerfile` (standalone context — **may fail** if `@crm/messaging-kit` cannot be resolved; see [DEPLOY-STRATEGY.md](./DEPLOY-STRATEGY.md#docker-builds-and-messaging-kit))
 2. Start minimal stack (Postgres `:35432`, gateway `:38080`)
 3. Migrate + seed companies
 4. `GET http://localhost:38080/companies/public`
@@ -172,11 +172,24 @@ Add `-v` only if you intend to **destroy volumes** (data loss).
 ## Build individual prod image (without full stack)
 
 ```powershell
+# Standalone — works only for services without @crm/messaging-kit
+docker build -f services/outbox-publisher/Dockerfile -t crm-outbox-publisher services/outbox-publisher
+
+# companies-service imports @crm/messaging-kit — standalone build may fail:
 docker build -f services/companies-service/Dockerfile -t crm-companies-service services/companies-service
+
 docker build -f frontend/Dockerfile -t crm-frontend .
 ```
 
 Service Dockerfiles use multi-stage: `yarn build` → `node dist/main.js`.
+
+For messaging-kit consumers, prefer full compose build from repo root once workspace-aware images are wired, or dev on host via `yarn dev` (workspace-linked).
+
+---
+
+## Docker builds and messaging-kit
+
+Node consumers (auth, users, companies, company-members, appointments, notifications, metrics) import `@crm/messaging-kit`. Per-service Docker build context does not include the workspace package today. Track workspace-root image builds as part of prod hardening. Details: [../../../docs/students/rabitmq/common/22-connection-lifecycle.md](../../../docs/students/rabitmq/common/22-connection-lifecycle.md).
 
 ---
 

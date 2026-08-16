@@ -10,6 +10,8 @@ yarn dev:companies    # optional — real company events for graduation exercise
 yarn dev:rabbitmq-lab
 ```
 
+From repo root, `yarn install` links workspace packages used by other services (`@crm/messaging-kit`). The lab itself does not import messaging-kit — it keeps its own `connectManaged` copy for teaching.
+
 Student UI (when `VITE_ENABLE_RABBITMQ_LAB=true` in frontend): http://localhost:5173/student/rabbitmq
 
 ## HTTP API (direct or via gateway `/rabbitmq-lab` prefix)
@@ -33,6 +35,15 @@ Student UI (when `VITE_ENABLE_RABBITMQ_LAB=true` in frontend): http://localhost:
 | POST | `/api/lab/order` | Transactional outbox lab |
 | POST | `/api/lab/idempotency` | Inbox / idempotency lab |
 | POST | `/api/lab/reset` | Purge student queues only |
+
+## Production contrast
+
+Real CRM consumers use `@crm/messaging-kit`:
+
+- `connectManaged()` — TCP reconnect, `setup()`, `invalidate()`, `isReady()`
+- `handleConsumerFailure()` — finite retry tiers + parking
+
+The lab intentionally does **not** import that package. See [docs/students/rabitmq/common/22-connection-lifecycle.md](../../docs/students/rabitmq/common/22-connection-lifecycle.md).
 
 ## Docs
 

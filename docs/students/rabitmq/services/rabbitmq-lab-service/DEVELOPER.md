@@ -31,9 +31,19 @@ that pattern, not because this service needs one for its own correctness.
 ## Consumer architecture
 
 `consumeStudentQueue()` (`src/rabbitmq/consumer.ts`): `prefetch(1)`, manual
-ACK after the handler resolves, NACK without requeue on failure. Same shape
-as `services/metrics-service/src/rabbitmq/consumer.ts`, deliberately not
-shared as a package — see the comment in `src/rabbitmq/connection.ts`.
+ACK after the handler resolves, NACK without requeue on failure in early labs.
+Same ACK/NACK *shape* as `metrics-service`, deliberately not shared as a package.
+
+## Connection lifecycle (lab vs production)
+
+**Production CRM services** use `@crm/messaging-kit` `connectManaged()` —
+see [common/22-connection-lifecycle.md](../../common/22-connection-lifecycle.md).
+
+**This lab** keeps an educational copy in `src/rabbitmq/connection.ts` with
+the same ideas (reconnect, `onConnect` callback, readiness) so students see
+the pattern without importing production shared code. The lab does **not**
+use `handleConsumerFailure` / tier retry topology on the main student queues
+(those are taught in dedicated lab HTTP routes and in production docs).
 
 ## Repository/database transaction rules
 
@@ -69,8 +79,9 @@ one transaction) using a lab-only schema, purely for teaching.
 
 ## Error/retry rules
 
-Current: NACK without requeue on handler failure (no DLX/retry/parking yet —
-LAB-06).
+- Student queue labs: NACK without requeue on handler failure (no tier topology on those queues)
+- Dedicated lab routes teach DLX, retry tiers, parking separately
+- Production tier retry: `@crm/messaging-kit` — not imported here
 
 ## What not to do
 
@@ -84,6 +95,7 @@ LAB-06).
   `docker/prod/*.yml`
 - ❌ Import another service's `src/**` (blocked by `no-cross-service-imports`
   in `.dependency-cruiser.cjs` and by `yarn check:rabbitmq-lab`)
+- ❌ Import `@crm/messaging-kit` — lab teaches the pattern locally
 - ❌ Do an immediate `nack(requeue=true)` loop on failure
 
 ## Code review checklist

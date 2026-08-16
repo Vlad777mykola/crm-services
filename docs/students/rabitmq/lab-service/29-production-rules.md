@@ -118,9 +118,11 @@ intentionally does not implement:
 - Publisher confirms + manual acknowledgements (partially implemented —
   manual ACK/NACK exists in `src/rabbitmq/consumer.ts`; publisher confirms
   are a later lesson)
-- Bounded retries + parking queues (not implemented yet — see the
-  Implementation order table in [START-HERE.md](./START-HERE.md))
+- Bounded retries + parking queues (implemented in **production** via
+  `@crm/messaging-kit`; lab teaches DLX/retry via dedicated routes — see
+  [common/22-connection-lifecycle.md](../common/22-connection-lifecycle.md))
 - Monitoring and alerts
 - No destructive purge/reset outside `student.rabbitmq-lab.*`
-- Client reconnect (implemented — `src/rabbitmq/connection.ts`)
+- Client reconnect (implemented — `src/rabbitmq/connection.ts`; production
+  uses `@crm/messaging-kit` `connectManaged`)
 - Deliberate queue type selection (classic/quorum/stream)

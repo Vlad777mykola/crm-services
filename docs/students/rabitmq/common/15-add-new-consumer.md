@@ -41,12 +41,13 @@ consumer ACK
 1. Confirm JSON Schema exists in `contracts/events/`
 2. Add binding in `rabbitmq/topology.ts` (or `main.ts` for Python)
 3. Declare queue with DLX: `x-dead-letter-exchange: domain.events.dlx`
-4. Add handler in `handlers/` or `consumer/process-inbound-event.ts`
-5. Implement inbox TX with `processed_events`
-6. Wire handler in consumer message router (switch on `envelope.type`)
-7. Add health check for RabbitMQ dependency
-8. Add tests: valid, duplicate, failure
-9. Update `EVENTS.md`, `SERVICES.md`, `TESTING.md`
+4. Call `declareRetryTopology()` in `consumer.ts` (or ensure existing consumer already does)
+5. Add handler in `handlers/` or `consumer/process-inbound-event.ts`
+6. Implement inbox TX with `processed_events`
+7. Wire handler in consumer message router (switch on `envelope.type`)
+8. Add health check: `consumer.isReady()` for RabbitMQ readiness
+9. Add tests: valid, duplicate, failure (and channel-close recovery if touching consumer)
+10. Update `EVENTS.md`, `SERVICES.md`, `TESTING.md`
 
 ---
 

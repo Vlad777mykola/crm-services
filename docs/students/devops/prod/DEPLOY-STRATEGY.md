@@ -56,14 +56,30 @@ Read this **before** [RUN.md](./RUN.md) so you understand *why* prod is set up t
 
 Each folder under `services/` is an **independently deployable unit**:
 
-| Unit | Dockerfile | Port (internal) |
-| ---- | ---------- | --------------- |
-| auth-service | `services/auth-service/Dockerfile` | 4001 |
-| companies-service | `services/companies-service/Dockerfile` | 4003 |
-| outbox-publisher | `services/outbox-publisher/Dockerfile` | 4500+ (per instance) |
-| … | … | see `service-port-registry.md` |
+| Unit | Dockerfile | Port (internal) | Notes |
+| ---- | ---------- | --------------- | ----- |
+| auth-service | `services/auth-service/Dockerfile` | 4001 | `@crm/messaging-kit` — workspace build needed for Docker |
+| companies-service | `services/companies-service/Dockerfile` | 4003 | `@crm/messaging-kit` — workspace build needed for Docker |
+| users-service | `services/users-service/Dockerfile` | 4002 | `@crm/messaging-kit` |
+| outbox-publisher | `services/outbox-publisher/Dockerfile` | 4500+ (per instance) | Standalone image (no messaging-kit) |
+| … | … | see `service-port-registry.md` | |
 
 **Same image, different config:** `outbox-publisher` runs multiple times — one per schema (`auth_schema`, `companies_schema`, …) with different `DATABASE_URL` search_path and `HEALTH_PORT`.
+
+---
+
+## Docker builds and messaging-kit
+
+**CURRENT VERIFIED** runtime uses `@crm/messaging-kit` for Node consumer connection lifecycle and retry helpers. **TARGET** for prod Docker: workspace-aware images.
+
+| Pattern | When | Build context |
+| ------- | ---- | ------------- |
+| Standalone per-service Dockerfile | outbox-publisher, publisher-only services, Python workers | `services/<name>/` |
+| Workspace-aware (needed) | auth, users, companies, company-members, appointments, notifications, metrics | Repo root + `services/messaging-kit` |
+
+Until compose uses workspace-aware builds, `yarn smoke:prod` building `companies-service` from `services/companies-service/Dockerfile` alone may fail with `@crm/messaging-kit: Not found`. Local dev on the host (`yarn dev`, `yarn dev full`) works via Yarn workspaces.
+
+Consumer lifecycle: [../../rabitmq/common/22-connection-lifecycle.md](../../rabitmq/common/22-connection-lifecycle.md).
 
 ---
 

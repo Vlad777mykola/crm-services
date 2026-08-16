@@ -30,25 +30,62 @@ The backend never publishes to RabbitMQ directly from the request path. Instead:
 
 This guarantees an event is never lost just because RabbitMQ was briefly unavailable when the business transaction committed.
 
-## Exchanges and dead-letter queues
+## Exchanges, retry tiers, parking, and dead-letter queues
 
 ```txt
 Exchanges:
   domain.events          (topic, durable) — appointment/review lifecycle events
   analytics.events       (topic, durable) — results published by analytics/AI workers
   commands               (topic, durable) — reserved for future command-style messages
-  domain.events.dlx       (topic, durable) — dead-letter target for domain.events
+  domain.events.dlx       (topic, durable) — dead-letter target for domain queues (inspection)
   commands.dlx            (topic, durable) — dead-letter target for commands
 
-Dead-letter queues:
-  notifications.dead.q
-  ai.dead.q
-  outbox.dead.q
+Per-consumer main queue:
+  {service}.q            — e.g. users-service.q
+
+Retry tier queues (per DB-backed Node consumer, per source exchange):
+  {service}.domain.retry.5s.q | .30s.q | .5m.q
+  {service}.analytics.retry.5s.q | …     — when bound to analytics.events
+
+Parking (after tiers exhaust):
+  {service}.domain.parking.q
+  {service}.analytics.parking.q
+
+Dead-letter / inspection queues (legacy binding, CLI tooling):
+  auth.dead.q, users.dead.q, notifications.dead.q, ai.dead.q, outbox.dead.q, …
 ```
 
-Minimum retry policy (see `services/*/src/rabbitmq/topology.*`):
-- A consumer that cannot process a message acks it away from the main queue (nack without requeue) so it lands on the bound dead-letter queue instead of looping forever.
-- `outbox-publisher` retries with `next_retry_at` backoff and gives up after `MAX_ATTEMPTS`, marking the row `failed` rather than retrying forever.
+Declared by each service's `rabbitmq/topology.ts` + `declareRetryTopology()` in
+`@crm/messaging-kit`. Student detail: [docs/students/rabitmq/common/08-retries-dlq-parking.md](../students/rabitmq/common/08-retries-dlq-parking.md).
+
+## Retry and connection lifecycle policy
+
+See `services/*/src/rabbitmq/consumer.ts` and `services/messaging-kit/`:
+
+- DB-backed consumers that cannot process a message call `handleConsumerFailure()` to republish through finite retry tiers (5s → 30s → 5m) and then to a parking queue, ACKing the original away from the main queue.
+- TCP lifecycle is centralized in `connectManaged()` (`setup`, `invalidate`, exponential backoff reconnect).
+- Unexpected consumer channel closure triggers `invalidate()` and a full reconnect/setup cycle.
+- Readiness endpoints use `isReady()` — true only after topology + `consume()` are active, not merely when TCP is open.
+- `metrics-service` is an observer: failures are NACKed without requeue (no retry topology).
+- `outbox-publisher` retries with `next_retry_at` backoff and gives up after `MAX_ATTEMPTS`, marking the row `failed` rather than retrying forever. Own ConfirmChannel lifecycle (not `connectManaged`).
+
+Full lifecycle doc: [docs/students/rabitmq/common/22-connection-lifecycle.md](../students/rabitmq/common/22-connection-lifecycle.md).
+
+## Shared messaging library (`@crm/messaging-kit`)
+
+Location: `services/messaging-kit/`. Workspace package — not published standalone.
+
+| Export | Role |
+| ------ | ---- |
+| `connectManaged` | TCP connect, reconnect, `isReady()` / `isConnected()` |
+| `declareRetryTopology` | Retry tier + parking queue declarations |
+| `handleConsumerFailure` | Republish to next tier or parking |
+| Correlation / error helpers | `resolveCorrelationId`, error taxonomy |
+
+Consumers import messaging-kit for **infrastructure only**. Business logic stays in
+handlers and inbox transactions. No generic `MessageBus`.
+
+Docker: messaging-kit consumers need workspace-aware image builds — [workspace-docker-build.md](./workspace-docker-build.md).
 
 ## Domain events
 
@@ -80,7 +117,7 @@ Every worker that writes data keeps a `processed_events(event_id, consumer_name,
 4. Otherwise process the message (inside a DB transaction, if the service has one).
 5. Commit.
 6. Ack the message.
-7. On failure, nack without requeue — the message lands on the service's dead-letter queue for inspection.
+7. On failure, `handleConsumerFailure()` applies retry tiers / parking (DB-backed consumers), or NACK without requeue (`metrics-service` observer).
 
 ## Backend API and RabbitMQ
 

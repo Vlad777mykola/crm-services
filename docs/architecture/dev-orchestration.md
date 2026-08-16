@@ -65,7 +65,16 @@ Audit table: `scripts/verify/audit-checklist.md`.
 
 ## Yarn workspaces
 
-Root `yarn install` installs `frontend`, `services/*`, and `scripts/fill_dump_db`. Service **Dockerfiles** keep per-service build context (standalone deploy units) — see `docs/architecture/dockerfile-standard.md`.
+Root `yarn install` installs `frontend`, `services/*` (including `@crm/messaging-kit`),
+and `scripts/fill_dump_db`.
+
+**Docker:** per-service context works for standalone services; messaging-kit consumers
+need repo-root workspace builds — see [workspace-docker-build.md](./workspace-docker-build.md)
+and [dockerfile-standard.md](./dockerfile-standard.md).
+
+**`yarn smoke:prod`** builds `companies-service` from `services/companies-service/Dockerfile`
+today; that image imports `@crm/messaging-kit` and may fail until compose uses a
+workspace-aware build.
 
 ## Key paths
 

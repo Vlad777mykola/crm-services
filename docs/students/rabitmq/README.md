@@ -77,8 +77,9 @@ Example: `POST /auth/register` returns immediately. `auth.user_registered` is wr
 - **Broker:** RabbitMQ 3 (management image in local dev)
 - **Pattern:** Transactional outbox for domain publishers; separate `outbox-publisher` per schema
 - **Exchanges:** `domain.events`, `analytics.events`, `commands` (+ DLX pair)
-- **Consumers:** One queue per consuming service, manual ACK, `processed_events` idempotency
-- **Failure (current):** NACK without requeue → dead-letter queue; outbox publisher retries with backoff
+- **Consumers:** One queue per consuming service, manual ACK, `processed_events` idempotency, `connectManaged` lifecycle (`@crm/messaging-kit`)
+- **Failure (current):** `handleConsumerFailure()` → retry tiers (5s/30s/5m) → parking; metrics-service drops failures; outbox publisher retries with backoff
+- **Readiness:** `isReady()` after full consumer setup — not TCP-only ([22-connection-lifecycle.md](./common/22-connection-lifecycle.md))
 - **Not in runtime:** Kafka, RFC2 `event-delivery` delivery loop
 
 See [SERVICES.md](./SERVICES.md) for the verified per-service matrix.
@@ -214,7 +215,9 @@ Guide: [outbox-publisher service docs](./services/outbox-publisher/README.md).
 6. COMMIT
 7. ACK message
 
-On failure: ROLLBACK → NACK without requeue → dead-letter queue.
+On failure: ROLLBACK → `handleConsumerFailure()` (retry tiers or parking) → ACK original on main queue.
+
+Connection lifecycle: [22-connection-lifecycle.md](./common/22-connection-lifecycle.md).
 
 Details: [Consuming and idempotency](./common/06-consuming-and-idempotency.md).
 
@@ -237,7 +240,8 @@ Duplicate `event_id` for the same `consumer_name` → ACK and skip handler.
 | Action | When | Effect |
 | ------ | ---- | ------ |
 | ACK | After successful DB commit | Message removed from queue |
-| NACK (requeue=false) | Handler/TX failure | Message routed to DLX → dead queue |
+| `handleConsumerFailure()` | Handler/TX failure (DB consumers) | Republish to retry tier or parking; ACK original |
+| NACK (requeue=false) | metrics-service observer failures | Message dropped (no retry topology) |
 
 ACK **after** commit, never before.
 
@@ -247,17 +251,19 @@ ACK **after** commit, never before.
 
 **CURRENT VERIFIED**
 
-- Consumer failure → NACK → `{service}.dead.q` bound to `domain.events.dlx` `#`
+- DB-backed consumer failure → `handleConsumerFailure()` → retry tiers → parking
+- Channel death → `invalidate()` → full reconnect ([22-connection-lifecycle.md](./common/22-connection-lifecycle.md))
+- Dead-letter queues remain for inspection / CLI compatibility
 - Outbox publish failure → increment `attempts`, schedule `next_retry_at`, mark `failed` after `MAX_ATTEMPTS`
-- metrics-service: no DLX; failed messages dropped (observational only)
+- metrics-service: no retry topology; failed messages dropped (observational only)
 
 ---
 
-## 19. Target RFC1 retry model
+## 19. Retry tiers and parking (implemented)
 
-**TARGET RFC1**
+**CURRENT VERIFIED**
 
-`@crm/messaging-kit` provides retry tiers (`5s`, `30s`, `5m`) and parking queues. Node consumers call `handleConsumerFailure()` to republish to the next tier before ACKing away from the main queue.
+`@crm/messaging-kit` provides retry tiers (`5s`, `30s`, `5m`) and parking queues. Node DB-backed consumers call `handleConsumerFailure()` to republish to the next tier before ACKing away from the main queue.
 
 See [Retries, DLQ, parking](./common/08-retries-dlq-parking.md) and [RFC1 target](./common/18-rfc1-target.md).
 
@@ -265,9 +271,7 @@ See [Retries, DLQ, parking](./common/08-retries-dlq-parking.md) and [RFC1 target
 
 ## 20. DLQ / parking queues
 
-**CURRENT VERIFIED:** dead-letter queues per service (`auth.dead.q`, `users.dead.q`, …).
-
-**TARGET RFC1:** finite retry tiers + parking queue per service/exchange (`{service}.domain.parking.q`).
+**CURRENT VERIFIED:** retry tier queues + `{service}.{domain|analytics}.parking.q` per consumer; dead-letter queues (`auth.dead.q`, `users.dead.q`, …) for inspection.
 
 CLI: `scripts/messaging/cli.mjs`, `yarn messaging:dlq:list`.
 

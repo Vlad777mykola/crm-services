@@ -77,10 +77,13 @@ API otherwise: all 10 Express services (`http/health.routes.ts` or, for
 `notifications-service`, inlined in `app.ts`), plus `metrics-service`,
 `outbox-publisher`, and `ai-service` (Python, `main.py`'s
 `make_health_handler`). `/health/ready` checks DB connectivity everywhere a
-DB exists, and RabbitMQ connectivity everywhere a consumer exists (every
-service that owns a consumer follows the same
-`consumer.isConnected()` pattern, most recently added to `companies-service`
-in Phase 12 when it got its first consumer).
+DB exists, and RabbitMQ consumer readiness everywhere a consumer exists.
+Node messaging consumers use **`consumer.isReady()`** — true only after channel,
+topology, and `consume()` are active (`connectManaged` in `@crm/messaging-kit`), not
+merely when TCP to the broker is open. `companies-service` followed this pattern when
+it got its first consumer in Phase 12.
+
+See [22-connection-lifecycle.md](../students/rabitmq/common/22-connection-lifecycle.md).
 
 ## 13.6 — Basic alerts (documented, not wired to a paging tool yet)
 
@@ -91,9 +94,11 @@ wiring it up is future work, not blocking Phase 14/15.
 | Alert | Signal | Suggested threshold |
 |---|---|---|
 | Service down | `/health/live` failing, or the process not scraped by Prometheus for N minutes | 2 consecutive failed scrapes (~1 min at 30s scrape interval) |
-| Service not ready | `/health/ready` returning 503 (DB or RabbitMQ down for that service) | 3 consecutive failures (~1.5 min) |
+| Service not ready | `/health/ready` returning 503 (DB down, or RabbitMQ consumer not `isReady()` — broker down or dead consumer channel) | 3 consecutive failures (~1.5 min) |
 | Queue lag | RabbitMQ per-queue `messages_ready` (RabbitMQ management API/exporter, not `metrics-service` today) growing without draining | > 100 messages ready for > 5 min, or growth rate positive for > 10 min |
-| Dead-letter growth | Messages landing in any `*.dead.q` (`domain.events.dlx`/`commands.dlx` bound queues) | Any message present (dead-lettering should be rare — a poison message or a real bug, not expected steady-state traffic) |
+| Retry tier backlog | Messages stuck on `{service}.domain.retry.*.q` or `{service}.analytics.retry.*.q` | Tier queue depth not draining after TTL elapsed |
+| Parking queue growth | Messages on `{service}.domain.parking.q` (or `analytics` segment) | Any sustained growth — handler failures exhausted retries |
+| Dead-letter growth | Messages on `*.dead.q` (legacy inspection queues) | Any message present — investigate; standard path is tier retry + parking first |
 | DB connection failure | Postgres pool `error` events / repeated `/health/ready` 503s citing DB | Same as "service not ready" above, but distinguishable in logs by the `err` field pino/the Python logger attach |
 | Outbox publish lag | `outbox_events` rows with `status = 'pending'` and `createdAt` older than N minutes, per service's own `outbox_events` table | > 5 min old and still pending (outbox-publisher should drain in seconds under normal load) |
 | RabbitMQ per-type consume errors | `rabbitmq_message_processing_errors_total` (already exposed by `metrics-service`, see `store.ts`) | Any sustained non-zero rate |

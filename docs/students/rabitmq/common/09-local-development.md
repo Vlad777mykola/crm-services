@@ -45,6 +45,8 @@ RABBITMQ_URL=amqp://crm:crm_local_only@localhost:5672/crm-dev
 
 Services read `RABBITMQ_URL` from their `.env` (see each service's `.env.example`).
 
+**Workspace:** run `yarn install` from repo root so `@crm/messaging-kit` resolves for Node consumers. See [22-connection-lifecycle.md](./22-connection-lifecycle.md).
+
 ---
 
 ## Start messaging stack

@@ -22,7 +22,13 @@ Outbox row in same TX as identity creation. Routing: `domain.events` / `auth.use
 
 ## Consuming
 
-Inbox TX: `processed_events` → handler → commit → ACK. Uses `@crm/messaging-kit` retry topology on `domain.events`.
+Inbox TX: `processed_events` → handler → commit → ACK.
+
+- Connection lifecycle: `connectManaged` from `@crm/messaging-kit` (`consumer.ts`)
+- Retry topology on `domain.events` via `declareRetryTopology` + `handleConsumerFailure`
+- Health readiness: `consumer.isReady()` in `health.routes.ts`
+
+See [common/22-connection-lifecycle.md](../../common/22-connection-lifecycle.md).
 
 ## What not to do
 
@@ -32,4 +38,6 @@ See [common/15-add-new-consumer.md](../../common/15-add-new-consumer.md) forbidd
 
 - [ ] New events have contract + outbox routing
 - [ ] Consumer handlers idempotent
+- [ ] `channel.once('close')` → `invalidate()` wired in consumer
+- [ ] Health uses `isReady()` not TCP-only
 - [ ] EVENTS.md and SERVICES.md updated

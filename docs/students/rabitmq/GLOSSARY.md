@@ -24,7 +24,7 @@ Terms used throughout the student and developer documentation.
 | **NACK** | Negative acknowledgment. With `requeue=false`, message goes to DLX. |
 | **Outbox** | `outbox_events` table written in the same DB transaction as the business change. |
 | **Outbox publisher** | `outbox-publisher` service that polls pending outbox rows and publishes to RabbitMQ. |
-| **Parking queue** | **TARGET RFC1** — final destination for messages that exhausted retry tiers. |
+| **Parking queue** | Final destination for messages that exhausted retry tiers (`{service}.domain.parking.q`). **CURRENT** for Node DB-backed consumers. |
 | **Processed events** | Per-consumer table `(event_id, consumer_name, processed_at)` for deduplication. |
 | **Publisher** | Component that sends messages to an exchange. In this repo, usually `outbox-publisher`, not HTTP handlers. |
 | **Queue** | Named buffer bound to an exchange. Each consuming service owns one main queue, e.g. `users-service.q`. |

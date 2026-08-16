@@ -21,9 +21,11 @@
 
 ## Health / readiness
 
-RabbitMQ-connected services include broker connectivity in health checks. Inspect `src/http/health.routes.ts` per service.
+RabbitMQ-connected Node services use **`consumer.isReady()`** in readiness checks — true only after channel, topology, and `consume()` are fully set up (not merely TCP-connected). Inspect `src/http/health.routes.ts` per service.
 
-When broker is down: readiness fails; HTTP API may still serve (depends on service).
+When broker is down or the consumer channel is dead: readiness fails; HTTP API may still serve (depends on service).
+
+See [22-connection-lifecycle.md](./22-connection-lifecycle.md).
 
 ---
 
@@ -34,7 +36,8 @@ Look for:
 - Connection established / reconnecting
 - Event processed / duplicate skipped
 - Validation failure
-- Handler exception → NACK
+- Handler exception → retry tier / parking republish
+- Channel closed unexpectedly → invalidate → reconnecting
 
 ---
 

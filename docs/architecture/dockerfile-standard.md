@@ -43,9 +43,13 @@ CMD ["node", "dist/main.js"]
 Local development uses **Yarn Classic v1 workspaces** at the repo root (`frontend`,
 `services/*`, `scripts/fill_dump_db`). Run `yarn install` once from the repo root.
 
-**Docker builds stay per-service:** each `services/<name>/Dockerfile` uses that
-folder as build context (`COPY package.json`, local `yarn install`). Images remain
-standalone deploy units and do not require the monorepo root in the build context.
+**Docker builds — two patterns:**
+
+1. **Standalone (default):** each `services/<name>/Dockerfile` uses that folder as build context (`COPY package.json`, local `yarn install`). Works for services with **no** workspace-only dependencies.
+2. **Workspace dependency exception:** Node consumers that import `@crm/messaging-kit` depend on the monorepo workspace (`services/messaging-kit/`). Building from the service folder alone cannot resolve that package. Production/smoke images for those services need a **repo-root build context** (or equivalent workspace-aware Dockerfile) until each per-service image is updated.
+
+Messaging-kit consumers need a **repo-root build** (or equivalent workspace-aware Dockerfile) for production images. See [workspace-docker-build.md](./workspace-docker-build.md).
+
 See `docs/architecture/dev-orchestration.md` for dev vs verify vs test vs smoke.
 
 ## Required rules
@@ -64,9 +68,7 @@ See `docs/architecture/dev-orchestration.md` for dev vs verify vs test vs smoke.
 7. **No secrets baked into the image.** All secrets come from environment variables
    at container start (`.env` file locally, Kubernetes `Secret`/AWS Secrets Manager
    later) — never `COPY .env` or hardcoded values in the Dockerfile.
-8. **Build context is the service's own folder**, not the repo root — the comment at
-   the top of the reference Dockerfile states the exact build command; every new
-   service's Dockerfile should include the same kind of comment with its own path.
+8. **Build context is usually the service's own folder** — the comment at the top of each Dockerfile states the standalone build command. **Exception:** services that depend on `@crm/messaging-kit` need a workspace-aware build (repo root context). See the "Workspace dependency exception" note above.
 
 ## Template for new services
 

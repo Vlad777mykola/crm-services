@@ -17,7 +17,7 @@ Management UI → Queues, or `scripts/messaging/cli.mjs`.
 
 - No active consumer on queue in Management UI
 - Service logs show connection errors
-- Readiness endpoint reports RabbitMQ unhealthy
+- Readiness endpoint reports RabbitMQ unhealthy when `isReady()` is false (not just TCP down)
 
 ### Replay (dev)
 
@@ -44,7 +44,7 @@ See [13-production-rules.md](./13-production-rules.md).
 
 ## Retry / parking queues
 
-**TARGET RFC1** — per-service retry and parking queues. Document in service `OPERATIONS.md` when verified.
+**CURRENT VERIFIED** — Node DB-backed consumers declare tier + parking queues via `declareRetryTopology()`. Monitor parking queue depth per service. See [08-retries-dlq-parking.md](./08-retries-dlq-parking.md) and [22-connection-lifecycle.md](./22-connection-lifecycle.md).
 
 ---
 

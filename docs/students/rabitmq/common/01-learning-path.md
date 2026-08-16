@@ -88,13 +88,21 @@ Recommended order for students learning RabbitMQ in this repository.
 
 ---
 
+## Level 7b — Connection lifecycle / readiness
+
+**Read:** [22-connection-lifecycle.md](./22-connection-lifecycle.md)
+
+**Inspect:** `services/messaging-kit/src/connect-managed.ts`, `services/users-service/src/rabbitmq/consumer.ts`
+
+**Exercise:** Explain why `isReady()` differs from `isConnected()` and what happens when a channel closes after `handleConsumerFailure()`.
+
+---
+
 ## Level 8 — Retries / DLQ / parking
 
-**CURRENT:** dead-letter queues.
+**CURRENT:** retry tiers + parking via `handleConsumerFailure()` — [08-retries-dlq-parking.md](./08-retries-dlq-parking.md)
 
-**TARGET RFC1:** retry tiers + parking — [08-retries-dlq-parking.md](./08-retries-dlq-parking.md)
-
-**Inspect:** `services/messaging-kit/src/retry.ts`
+**Inspect:** `services/messaging-kit/src/retry.ts`, `services/messaging-kit/src/reliable-republish.ts`
 
 ---
 

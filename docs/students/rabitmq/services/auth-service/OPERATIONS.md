@@ -18,4 +18,4 @@ Readiness: fails when RabbitMQ unreachable (`src/http/health.routes.ts`).
 
 Managed RabbitMQ, TLS, secrets. Monitor `auth-service.q` depth and `auth.dead.q` growth. Alert on outbox `failed` rows in `auth_schema.outbox_events`.
 
-**TARGET RFC1:** retry/parking queues per `messaging-kit` naming.
+**TARGET RFC1 (implemented in runtime):** retry/parking queues per `messaging-kit` naming; readiness via `isReady()`. See [common/22-connection-lifecycle.md](../../common/22-connection-lifecycle.md).

@@ -69,9 +69,13 @@ These events are **published** but have **no consumer binding** in appointments-
 
 ---
 
-## TARGET RFC1 retry topology
+## CURRENT retry topology
 
-Per service: `{service}.domain.retry.5s.q`, `30s`, `5m`, `{service}.domain.parking.q` — declared by `declareRetryTopology()` in `@crm/messaging-kit`.
+**CURRENT VERIFIED** — Node DB-backed consumers.
+
+Per service: `{service}.domain.retry.5s.q`, `30s`, `5m`, `{service}.domain.parking.q` — declared by `declareRetryTopology()` in `@crm/messaging-kit`. Analytics consumers use `analytics` in the name segment.
+
+See [08-retries-dlq-parking.md](./08-retries-dlq-parking.md) and [22-connection-lifecycle.md](./22-connection-lifecycle.md).
 
 ---
 

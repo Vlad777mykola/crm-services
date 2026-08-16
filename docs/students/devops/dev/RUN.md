@@ -16,6 +16,8 @@ yarn install
 yarn dev check
 ```
 
+`yarn install` links workspace packages including `@crm/messaging-kit` (`services/messaging-kit/`). Consumers import it at dev time via Yarn workspaces — no separate build step unless you run outside the monorepo layout.
+
 **Expected output:**
 
 ```text

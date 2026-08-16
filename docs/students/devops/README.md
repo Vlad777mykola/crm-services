@@ -39,7 +39,7 @@ crm-services/
 └── db/                 Migrations and seeds
 ```
 
-**Important rule:** services talk to each other through **RabbitMQ events**, not by importing each other's source code.
+**Important rule:** services talk to each other through **RabbitMQ events**, not by importing each other's source code. Node consumers share **`@crm/messaging-kit`** for connection lifecycle and retry helpers only — not business logic.
 
 ---
 

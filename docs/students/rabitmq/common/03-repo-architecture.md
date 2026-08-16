@@ -11,8 +11,9 @@
 1. **Domain services** write business data + `outbox_events` in one DB transaction.
 2. **`outbox-publisher`** (per schema) polls and publishes to RabbitMQ.
 3. **Consumers** read from dedicated queues, deduplicate via `processed_events`, process in a DB transaction, then ACK.
-4. **`ai-service`** can publish analytics results directly or via outbox (`MESSAGING_MODE`).
-5. **`metrics-service`** observes all traffic on both exchanges (in-memory counters).
+4. **`connectManaged`** (`@crm/messaging-kit`) owns TCP reconnect + readiness; each service owns channel/topology/consume/ACK/retry.
+5. **`ai-service`** can publish analytics results directly or via outbox (`MESSAGING_MODE`).
+6. **`metrics-service`** observes all traffic on both exchanges (in-memory counters).
 
 ---
 
@@ -27,6 +28,7 @@
 | Observer | metrics-service | `#` bindings, no side effects |
 | Infrastructure | outbox-publisher | Polls DB, publishes |
 | No messaging | dashboard-service | HTTP only |
+| Student lab | rabbitmq-lab-service | Isolated namespace; own lifecycle copy |
 
 Full matrix: [SERVICES.md](../SERVICES.md)
 
@@ -38,15 +40,20 @@ Each service owns a Postgres schema with its tables, including `outbox_events` a
 
 ---
 
-## Shared library
+## Shared library (`@crm/messaging-kit`)
 
-`@crm/messaging-kit` (`services/messaging-kit/`) provides:
+`services/messaging-kit/` provides:
 
-- Retry topology declaration (**TARGET RFC1** wiring in consumers)
-- `handleConsumerFailure()` for tier progression
-- Correlation ID helpers
+| Module | Purpose |
+| ------ | ------- |
+| `connectManaged()` | TCP lifecycle, `setup()`, `invalidate()`, `isReady()` / `isConnected()` |
+| `declareRetryTopology()` | Retry tier + parking queues |
+| `handleConsumerFailure()` | Tier progression + parking republish |
+| Correlation helpers | `resolveCorrelationId`, error taxonomy |
 
-Services still declare base topology independently (no shared topology package import for deployability).
+Services still declare **base** topology independently (no shared topology package import for deployability).
+
+Connection lifecycle details: [22-connection-lifecycle.md](./22-connection-lifecycle.md).
 
 ---
 

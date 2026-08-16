@@ -338,3 +338,16 @@ The messaging architecture stays frozen:
 3. **Kafka optional when needed** — not part of the current default runtime.
 
 Do not redesign this in documentation or code unless explicitly requested.
+
+---
+
+## Changelog (August 2026)
+
+Documentation updated for RabbitMQ connection lifecycle refactor:
+
+- New [common/22-connection-lifecycle.md](./common/22-connection-lifecycle.md) — `connectManaged`, `setup()`, `invalidate()`, `isReady()` vs `isConnected()`
+- [06-consuming-and-idempotency.md](./common/06-consuming-and-idempotency.md), [08-retries-dlq-parking.md](./common/08-retries-dlq-parking.md) — tier retry + parking as **CURRENT** for Node DB consumers
+- [18-rfc1-target.md](./common/18-rfc1-target.md) — lifecycle + retry items marked implemented
+- Per-service `DEVELOPER.md` / `OPERATIONS.md` for messaging consumers
+- [devops/prod/DEPLOY-STRATEGY.md](../devops/prod/DEPLOY-STRATEGY.md) — `@crm/messaging-kit` Docker build gap
+- `services/rabbitmq-lab-service/README.md` — lab vs production lifecycle contrast

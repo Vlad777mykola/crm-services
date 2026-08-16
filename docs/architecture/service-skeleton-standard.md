@@ -54,7 +54,8 @@ services/<service-name>/
     rabbitmq/
       topology.ts           -- exchange/queue/binding declarations (matches existing
                               services/*/src/rabbitmq/topology.ts pattern)
-      consumer.ts
+      consumer.ts           -- channel + consume + ACK/retry; delegates TCP lifecycle
+                              to @crm/messaging-kit connectManaged (see below)
       publisher.ts          (if this service publishes)
     outbox/
       outbox.service.ts      -- recordOutboxEvent(), mirrors
@@ -84,6 +85,33 @@ services/<service-name>/
 - Contracts come from `contracts/events/` and `contracts/openapi.yaml` only — never
   from importing another service's TypeScript types.
 
+## RabbitMQ consumer pattern (Node services with a queue)
+
+**CURRENT VERIFIED** — DB-backed consumers follow one template:
+
+| Responsibility | Where |
+| --- | --- |
+| TCP connect, reconnect backoff, `isReady()` | `@crm/messaging-kit` `connectManaged()` |
+| Channel, topology, prefetch, `consume()` | `src/rabbitmq/consumer.ts` |
+| Retry tiers + parking | `declareRetryTopology()` + `handleConsumerFailure()` |
+| Inbox TX + idempotency | `src/consumer/process-inbound-event.ts` |
+| Business handler | `src/handlers/` or `modules/` |
+
+Required wiring in `consumer.ts`:
+
+1. `connectManaged({ setup })` — in `setup`, create channel, declare topology, bind, consume.
+2. `channel.once('close')` → `lifecycle.invalidate()` — dead channel always triggers full reconnect.
+3. On handler failure → `handleConsumerFailure()` (not raw `nack` to DLX on main queue).
+4. Health `/health/ready` → `consumer.isReady()` (not TCP-only).
+
+**Observer exception:** `metrics-service` uses `connectManaged` but NACKs without retry topology.
+
+**Not in messaging-kit:** `outbox-publisher` (ConfirmChannel + confirms), `ai-service` (Python),
+`rabbitmq-lab-service` (educational local copy).
+
+Detail: [docs/students/rabitmq/common/22-connection-lifecycle.md](../students/rabitmq/common/22-connection-lifecycle.md),
+[event-driven-model.md](./event-driven-model.md).
+
 ## Middleware baseline (every service, no exceptions)
 
 Every service — HTTP-facing or consumer-only — includes:
@@ -95,7 +123,7 @@ Every service — HTTP-facing or consumer-only — includes:
 | Error handler | `http/error-handler.ts` | Mirrors `backend/src/common/middleware/errorHandler.ts` — consistent JSON error envelope across every service |
 | 404 handler | `http/not-found-handler.ts` | Mirrors `backend/src/common/middleware/notFoundHandler.ts` |
 | `GET /health/live` | `http/health-server.ts` or mounted route | Process-alive check, never touches DB (matches `backend/src/modules/health/health.routes.ts` and every existing worker service) |
-| `GET /health/ready` | same | Touches DB/broker connection; returns 503 if not ready |
+| `GET /health/ready` | same | Touches DB/broker; for RabbitMQ consumers checks `consumer.isReady()` (full setup, not TCP-only) |
 | `X-Request-Id` propagation | request logger + any outbound calls this service makes | Carries the id through to logs and, where applicable, into published event `correlationId` |
 
 This is a deliberately small baseline — not full tracing/observability (that's Phase
@@ -132,8 +160,9 @@ Table: variable name, purpose, example/default.
     yarn dev
 
 ## Docker run
+    # Standalone — only if service does NOT import @crm/messaging-kit
     docker build -f services/<service-name>/Dockerfile -t crm-<service-name> services/<service-name>
-    docker run -p <port>:<port> --env-file .env crm-<service-name>
+    # Messaging-kit consumers: see workspace-docker-build.md (repo root context)
 
 ## Health endpoints
 GET /health/live

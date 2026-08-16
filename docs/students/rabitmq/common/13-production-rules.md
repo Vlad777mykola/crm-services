@@ -36,8 +36,10 @@
 
 ## Failure handling
 
-- Finite retries (**TARGET RFC1** tiers + parking)
-- DLQ inspection runbooks
+- Finite retries + parking via `handleConsumerFailure()` (**CURRENT** for Node DB-backed consumers)
+- `connectManaged` reconnect after channel death (**CURRENT** — see [22-connection-lifecycle.md](./22-connection-lifecycle.md))
+- Readiness = `isReady()` after full consumer setup, not TCP-only (**CURRENT**)
+- DLQ / parking inspection runbooks
 - Outbox `failed` rows monitored and alertable
 
 ---

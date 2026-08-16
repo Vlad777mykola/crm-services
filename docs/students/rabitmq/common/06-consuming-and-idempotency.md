@@ -20,7 +20,9 @@ message on {service}.q
   → ACK
 ```
 
-On error: ROLLBACK → NACK (requeue=false) → dead-letter queue.
+On handler failure: ROLLBACK → `handleConsumerFailure()` (retry tiers or parking) → ACK original away from main queue.
+
+Connection lifecycle: [22-connection-lifecycle.md](./22-connection-lifecycle.md).
 
 ---
 
@@ -55,7 +57,7 @@ Messages can be redelivered. Idempotency makes duplicates safe. Never assume a m
 
 ## metrics-service exception
 
-**CURRENT VERIFIED:** No `processed_events`, no DB. In-memory counters only. Failures NACK without requeue; no DLX.
+**CURRENT VERIFIED:** No `processed_events`, no DB. In-memory counters only. Failures `nack(msg, false, false)` without retry topology. Still uses `connectManaged` for reconnect/readiness.
 
 ---
 
@@ -68,18 +70,16 @@ Messages can be redelivered. Idempotency makes duplicates safe. Never assume a m
 
 ---
 
-## Failure example
+## Failure example (DB-backed consumers)
 
 1. Handler throws mid-transaction
 2. ROLLBACK (no processed_events row, no business change)
-3. NACK without requeue
-4. Message lands on `{service}.dead.q`
+3. `handleConsumerFailure()` republishes to `users-service.domain.retry.5s.q` (first tier)
+4. Original message ACKed on main queue
+5. After tiers exhaust → `users-service.domain.parking.q`
+6. If republish fails → channel may close → `invalidate()` → full reconnect ([22-connection-lifecycle.md](./22-connection-lifecycle.md))
 
----
-
-## TARGET RFC1
-
-Retry tiers before parking via `@crm/messaging-kit` `handleConsumerFailure()`. See [08-retries-dlq-parking.md](./08-retries-dlq-parking.md).
+Legacy dead-letter queues (`{service}.dead.q`) still exist for topology compatibility; standard failure path is tier retry + parking, not immediate DLX nack.
 
 ---
 
