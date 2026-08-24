@@ -29,5 +29,8 @@ yarn-error.log*
 # Coverage / test artifacts
 coverage/
 
+# Local dev runtime state
+.dev/
+
 # Docker volumes mounted for local dev (if any land here)
 docker/volumes/

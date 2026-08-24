@@ -16,26 +16,70 @@ const DEV_PORTS = [
   5173,
 ];
 
-function portOwner(port) {
+function portOwners(port) {
   try {
     if (process.platform === 'win32') {
       const out = execSync(`netstat -ano | findstr :${port}`, { encoding: 'utf8' });
-      const line = out.split('\n').find((l) => l.includes('LISTENING'));
-      if (!line) return null;
-      return Number(line.trim().split(/\s+/).pop());
+      return [
+        ...new Set(
+          out
+            .split('\n')
+            .filter((line) => line.includes('LISTENING'))
+            .map((line) => Number(line.trim().split(/\s+/).pop()))
+            .filter((pid) => pid > 0),
+        ),
+      ];
     }
-    const out = execSync(`lsof -ti :${port}`, { encoding: 'utf8' }).trim();
-    return out ? Number(out.split('\n')[0]) : null;
+    const out = execSync(`lsof -tiTCP:${port} -sTCP:LISTEN`, { encoding: 'utf8' }).trim();
+    return out
+      ? [
+          ...new Set(
+            out
+              .split('\n')
+              .map((pid) => Number(pid))
+              .filter((pid) => pid > 0),
+          ),
+        ]
+      : [];
   } catch {
-    return null;
+    return [];
   }
 }
 
 function killPort(port) {
-  const pid = portOwner(port);
-  if (pid) {
+  for (const pid of portOwners(port)) {
     console.log(`[dev stop] killing port :${port} pid ${pid}`);
     terminateTree(pid);
+  }
+}
+
+function forceKillPid(pid) {
+  try {
+    if (process.platform === 'win32') {
+      execSync(`taskkill /PID ${pid} /T /F`, { stdio: 'ignore' });
+    } else {
+      try {
+        process.kill(-pid, 'SIGKILL');
+      } catch {
+        process.kill(pid, 'SIGKILL');
+      }
+    }
+  } catch {
+    // process may already be gone
+  }
+}
+
+async function forceKillPort(port) {
+  killPort(port);
+  if (await waitPortFree(port, 2500)) return;
+
+  for (const pid of portOwners(port)) {
+    console.log(`[dev stop] force killing port :${port} pid ${pid}`);
+    forceKillPid(pid);
+  }
+
+  if (!(await waitPortFree(port, 2500))) {
+    console.warn(`[dev stop] port :${port} is still in use`);
   }
 }
 
@@ -73,14 +117,14 @@ async function main() {
   if (forcePorts) {
     console.warn('[dev stop] --force-ports: killing listeners on known dev ports');
     for (const port of DEV_PORTS) {
-      killPort(port);
+      await forceKillPort(port);
     }
   }
 
   if (stopInfra) {
     console.log('[dev stop] docker compose down (dev infra)…');
     execSync(
-      'docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.gateway.yml --profile events down',
+      'docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.gateway.yml --profile events down --remove-orphans',
       { cwd: ROOT, stdio: 'inherit' },
     );
   }

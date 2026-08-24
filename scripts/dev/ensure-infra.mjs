@@ -9,7 +9,7 @@ const COMPOSE_GATEWAY = path.join(ROOT, 'docker/dev/compose.gateway.yml');
 export function ensureDevInfra() {
   console.log('[dev] ensuring dev infrastructure (postgres, rabbitmq, traefik)…');
   execSync(
-    `docker compose -f "${COMPOSE_INFRA}" -f "${COMPOSE_GATEWAY}" --profile events up -d --wait`,
+    `docker compose -f "${COMPOSE_INFRA}" -f "${COMPOSE_GATEWAY}" --profile events up -d --wait --remove-orphans`,
     { cwd: ROOT, stdio: 'inherit' },
   );
   console.log('✓ Postgres, RabbitMQ, Traefik healthy');

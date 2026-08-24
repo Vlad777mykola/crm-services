@@ -305,7 +305,7 @@ async function main() {
     return;
   }
   if (cmd === 'stop') {
-    execSync(`node scripts/dev/stop.mjs ${positional.slice(1).join(' ')}`, { cwd: ROOT, stdio: 'inherit' });
+    execSync(`node scripts/dev/stop.mjs ${args.slice(1).join(' ')}`, { cwd: ROOT, stdio: 'inherit' });
     return;
   }
 
