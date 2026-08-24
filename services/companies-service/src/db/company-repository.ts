@@ -1,34 +1,8 @@
-import type { Pool, PoolClient } from 'pg';
+import type { DataSource, EntityManager } from 'typeorm';
+import { In } from 'typeorm';
 
-export type CompanyStatus = 'draft' | 'published' | 'suspended';
-
-export interface CompanyRow {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  category: string | null;
-  website: string | null;
-  phone: string | null;
-  email: string | null;
-  status: CompanyStatus;
-  isRemoteSupported: boolean;
-  city: string | null;
-  address: string | null;
-  createdByUserId: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface StatusHistoryRow {
-  id: string;
-  companyId: string;
-  fromStatus: string | null;
-  toStatus: string;
-  changedByUserId: string | null;
-  reason: string | null;
-  createdAt: Date;
-}
+import { CompanyEntity, type CompanyRow, type CompanyStatus } from './entities/company.entity.js';
+import { CompanyStatusHistoryEntity, type StatusHistoryRow } from './entities/company-status-history.entity.js';
 
 function slugify(name: string): string {
   const base = name
@@ -40,23 +14,24 @@ function slugify(name: string): string {
 }
 
 export class CompanyRepository {
-  constructor(private readonly pool: Pool) {}
+  constructor(private readonly dataSource: DataSource) {}
 
-  async generateUniqueSlug(client: PoolClient, name: string): Promise<string> {
+  async generateUniqueSlug(manager: EntityManager, name: string): Promise<string> {
+    const repository = manager.getRepository(CompanyEntity);
     const base = slugify(name);
     let candidate = base;
     let suffix = 2;
 
     while (true) {
-      const { rows } = await client.query('SELECT 1 FROM companies_schema.companies WHERE "slug" = $1', [candidate]);
-      if (rows.length === 0) return candidate;
+      const exists = await repository.exists({ where: { slug: candidate } });
+      if (!exists) return candidate;
       candidate = `${base}-${suffix}`;
       suffix += 1;
     }
   }
 
   async insert(
-    client: PoolClient,
+    manager: EntityManager,
     input: {
       name: string;
       slug: string;
@@ -71,54 +46,25 @@ export class CompanyRepository {
       createdByUserId: string;
     },
   ): Promise<CompanyRow> {
-    const { rows } = await client.query<CompanyRow>(
-      `INSERT INTO companies_schema.companies
-         ("name", "slug", "description", "category", "website", "phone", "email",
-          "status", "isRemoteSupported", "city", "address", "createdByUserId")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'draft', $8, $9, $10, $11)
-       RETURNING *`,
-      [
-        input.name,
-        input.slug,
-        input.description,
-        input.category,
-        input.website,
-        input.phone,
-        input.email,
-        input.isRemoteSupported,
-        input.city,
-        input.address,
-        input.createdByUserId,
-      ],
-    );
-    return rows[0];
+    const repository = manager.getRepository(CompanyEntity);
+    return repository.save(repository.create({ ...input, status: 'draft' }));
   }
 
-  async findById(companyId: string): Promise<CompanyRow | undefined> {
-    const { rows } = await this.pool.query<CompanyRow>('SELECT * FROM companies_schema.companies WHERE "id" = $1', [
-      companyId,
-    ]);
-    return rows[0];
+  async findById(companyId: string): Promise<CompanyRow | null> {
+    return this.dataSource.getRepository(CompanyEntity).findOne({ where: { id: companyId } });
   }
 
-  async findByIdWithClient(client: PoolClient, companyId: string): Promise<CompanyRow | undefined> {
-    const { rows } = await client.query<CompanyRow>('SELECT * FROM companies_schema.companies WHERE "id" = $1', [
-      companyId,
-    ]);
-    return rows[0];
+  async findByIdWithManager(manager: EntityManager, companyId: string): Promise<CompanyRow | null> {
+    return manager.getRepository(CompanyEntity).findOne({ where: { id: companyId } });
   }
 
   async findByIds(companyIds: string[]): Promise<CompanyRow[]> {
     if (companyIds.length === 0) return [];
-    const { rows } = await this.pool.query<CompanyRow>(
-      'SELECT * FROM companies_schema.companies WHERE "id" = ANY($1)',
-      [companyIds],
-    );
-    return rows;
+    return this.dataSource.getRepository(CompanyEntity).find({ where: { id: In(companyIds) } });
   }
 
   async update(
-    client: PoolClient,
+    manager: EntityManager,
     companyId: string,
     patch: Partial<{
       name: string;
@@ -133,16 +79,9 @@ export class CompanyRepository {
       status: CompanyStatus;
     }>,
   ): Promise<CompanyRow> {
-    const columns = Object.keys(patch) as Array<keyof typeof patch>;
-    const setClauses = columns.map((col, i) => `"${col}" = $${i + 2}`);
-    const values = columns.map((col) => patch[col]);
-
-    const { rows } = await client.query<CompanyRow>(
-      `UPDATE companies_schema.companies SET ${setClauses.join(', ')}, "updatedAt" = now()
-       WHERE "id" = $1 RETURNING *`,
-      [companyId, ...values],
-    );
-    return rows[0];
+    const repository = manager.getRepository(CompanyEntity);
+    const existing = await repository.findOneOrFail({ where: { id: companyId } });
+    return repository.save(repository.merge(existing, patch, { updatedAt: new Date() }));
   }
 
   async listPublic(filters: {
@@ -152,55 +91,51 @@ export class CompanyRepository {
     skip: number;
     take: number;
   }): Promise<{ items: CompanyRow[]; total: number }> {
-    const conditions: string[] = [`"status" = 'published'`];
-    const params: unknown[] = [];
+    const query = this.dataSource
+      .getRepository(CompanyEntity)
+      .createQueryBuilder('company')
+      .where('company.status = :status', { status: 'published' })
+      .orderBy('company.createdAt', 'DESC')
+      .take(filters.take)
+      .skip(filters.skip);
 
     if (filters.q) {
-      params.push(`%${filters.q}%`);
-      conditions.push(`("name" ILIKE $${params.length} OR "description" ILIKE $${params.length})`);
+      query.andWhere('(company.name ILIKE :q OR company.description ILIKE :q)', { q: `%${filters.q}%` });
     }
     if (filters.category) {
-      params.push(`%${filters.category}%`);
-      conditions.push(`"category" ILIKE $${params.length}`);
+      query.andWhere('company.category ILIKE :category', { category: `%${filters.category}%` });
     }
     if (filters.city) {
-      params.push(`%${filters.city}%`);
-      conditions.push(`"city" ILIKE $${params.length}`);
+      query.andWhere('company.city ILIKE :city', { city: `%${filters.city}%` });
     }
 
-    const where = conditions.join(' AND ');
-    const { rows: countRows } = await this.pool.query<{ count: string }>(
-      `SELECT COUNT(*) FROM companies_schema.companies WHERE ${where}`,
-      params,
-    );
-
-    params.push(filters.take, filters.skip);
-    const { rows } = await this.pool.query<CompanyRow>(
-      `SELECT * FROM companies_schema.companies WHERE ${where}
-       ORDER BY "createdAt" DESC LIMIT $${params.length - 1} OFFSET $${params.length}`,
-      params,
-    );
-
-    return { items: rows, total: Number(countRows[0].count) };
+    const [items, total] = await query.getManyAndCount();
+    return { items, total };
   }
 
   async insertStatusHistory(
-    client: PoolClient,
-    input: { companyId: string; fromStatus: string | null; toStatus: string; changedByUserId: string | null; reason?: string | null },
+    manager: EntityManager,
+    input: {
+      companyId: string;
+      fromStatus: string | null;
+      toStatus: string;
+      changedByUserId: string | null;
+      reason?: string | null;
+    },
   ): Promise<void> {
-    await client.query(
-      `INSERT INTO companies_schema.company_status_history
-         ("companyId", "fromStatus", "toStatus", "changedByUserId", "reason")
-       VALUES ($1, $2, $3, $4, $5)`,
-      [input.companyId, input.fromStatus, input.toStatus, input.changedByUserId, input.reason ?? null],
-    );
+    await manager.getRepository(CompanyStatusHistoryEntity).insert({
+      companyId: input.companyId,
+      fromStatus: input.fromStatus,
+      toStatus: input.toStatus,
+      changedByUserId: input.changedByUserId,
+      reason: input.reason ?? null,
+    });
   }
 
   async listStatusHistory(companyId: string): Promise<StatusHistoryRow[]> {
-    const { rows } = await this.pool.query<StatusHistoryRow>(
-      `SELECT * FROM companies_schema.company_status_history WHERE "companyId" = $1 ORDER BY "createdAt" DESC`,
-      [companyId],
-    );
-    return rows;
+    return this.dataSource.getRepository(CompanyStatusHistoryEntity).find({
+      where: { companyId },
+      order: { createdAt: 'DESC' },
+    });
   }
 }

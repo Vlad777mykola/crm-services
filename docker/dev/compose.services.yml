@@ -29,8 +29,10 @@ services:
   outbox-publisher-auth:
     profiles: ['auth']
     build:
-      context: ../../services/outbox-publisher
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: docker/dev/Dockerfile.node-dev
+      args:
+        SERVICE_PATH: services/outbox-publisher
     environment:
       NODE_ENV: production
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm?options=-c%20search_path%3Dauth_schema
@@ -50,8 +52,10 @@ services:
   auth-service:
     profiles: ['auth']
     build:
-      context: ../../services/auth-service
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: docker/dev/Dockerfile.node-dev
+      args:
+        SERVICE_PATH: services/auth-service
     env_file:
       - ../../services/auth-service/.env
     environment:
@@ -72,8 +76,10 @@ services:
   users-service:
     profiles: ['auth']
     build:
-      context: ../../services/users-service
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: docker/dev/Dockerfile.node-dev
+      args:
+        SERVICE_PATH: services/users-service
     env_file:
       - ../../services/users-service/.env
     environment:
@@ -94,8 +100,10 @@ services:
   outbox-publisher-companies:
     profiles: ['companies']
     build:
-      context: ../../services/outbox-publisher
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: docker/dev/Dockerfile.node-dev
+      args:
+        SERVICE_PATH: services/outbox-publisher
     environment:
       NODE_ENV: production
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm?options=-c%20search_path%3Dcompanies_schema
@@ -114,8 +122,10 @@ services:
   companies-service:
     profiles: ['companies']
     build:
-      context: ../../services/companies-service
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: docker/dev/Dockerfile.node-dev
+      args:
+        SERVICE_PATH: services/companies-service
     env_file:
       - ../../services/companies-service/.env
     environment:
@@ -132,8 +142,10 @@ services:
   outbox-publisher-company-members:
     profiles: ['company-members']
     build:
-      context: ../../services/outbox-publisher
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: docker/dev/Dockerfile.node-dev
+      args:
+        SERVICE_PATH: services/outbox-publisher
     environment:
       NODE_ENV: production
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm?options=-c%20search_path%3Dcompany_members_schema
@@ -152,8 +164,10 @@ services:
   company-members-service:
     profiles: ['company-members']
     build:
-      context: ../../services/company-members-service
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: docker/dev/Dockerfile.node-dev
+      args:
+        SERVICE_PATH: services/company-members-service
     env_file:
       - ../../services/company-members-service/.env
     environment:
@@ -173,8 +187,10 @@ services:
   outbox-publisher-specialists:
     profiles: ['specialists']
     build:
-      context: ../../services/outbox-publisher
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: docker/dev/Dockerfile.node-dev
+      args:
+        SERVICE_PATH: services/outbox-publisher
     environment:
       NODE_ENV: production
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm?options=-c%20search_path%3Dspecialists_schema
@@ -193,8 +209,10 @@ services:
   specialists-service:
     profiles: ['specialists']
     build:
-      context: ../../services/specialists-service
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: docker/dev/Dockerfile.node-dev
+      args:
+        SERVICE_PATH: services/specialists-service
     env_file:
       - ../../services/specialists-service/.env
     environment:
@@ -211,8 +229,10 @@ services:
   outbox-publisher-company-specialists:
     profiles: ['company-specialists']
     build:
-      context: ../../services/outbox-publisher
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: docker/dev/Dockerfile.node-dev
+      args:
+        SERVICE_PATH: services/outbox-publisher
     environment:
       NODE_ENV: production
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm?options=-c%20search_path%3Dcompany_specialists_schema
@@ -231,8 +251,10 @@ services:
   company-specialists-service:
     profiles: ['company-specialists']
     build:
-      context: ../../services/company-specialists-service
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: docker/dev/Dockerfile.node-dev
+      args:
+        SERVICE_PATH: services/company-specialists-service
     env_file:
       - ../../services/company-specialists-service/.env
     environment:
@@ -249,8 +271,10 @@ services:
   outbox-publisher-services-catalog:
     profiles: ['services-catalog']
     build:
-      context: ../../services/outbox-publisher
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: docker/dev/Dockerfile.node-dev
+      args:
+        SERVICE_PATH: services/outbox-publisher
     environment:
       NODE_ENV: production
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm?options=-c%20search_path%3Dservices_schema
@@ -269,8 +293,10 @@ services:
   services-catalog-service:
     profiles: ['services-catalog']
     build:
-      context: ../../services/services-catalog-service
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: docker/dev/Dockerfile.node-dev
+      args:
+        SERVICE_PATH: services/services-catalog-service
     env_file:
       - ../../services/services-catalog-service/.env
     environment:
@@ -287,8 +313,10 @@ services:
   outbox-publisher-appointments:
     profiles: ['appointments']
     build:
-      context: ../../services/outbox-publisher
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: docker/dev/Dockerfile.node-dev
+      args:
+        SERVICE_PATH: services/outbox-publisher
     environment:
       NODE_ENV: production
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm?options=-c%20search_path%3Dappointments_schema
@@ -309,8 +337,10 @@ services:
   appointments-service:
     profiles: ['appointments']
     build:
-      context: ../../services/appointments-service
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: docker/dev/Dockerfile.node-dev
+      args:
+        SERVICE_PATH: services/appointments-service
     env_file:
       - ../../services/appointments-service/.env
     environment:
@@ -330,8 +360,10 @@ services:
   outbox-publisher-reviews:
     profiles: ['reviews']
     build:
-      context: ../../services/outbox-publisher
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: docker/dev/Dockerfile.node-dev
+      args:
+        SERVICE_PATH: services/outbox-publisher
     environment:
       NODE_ENV: production
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/crm?options=-c%20search_path%3Dreviews_schema
@@ -351,8 +383,10 @@ services:
   reviews-service:
     profiles: ['reviews']
     build:
-      context: ../../services/reviews-service
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: docker/dev/Dockerfile.node-dev
+      args:
+        SERVICE_PATH: services/reviews-service
     env_file:
       - ../../services/reviews-service/.env
     environment:
@@ -368,8 +402,10 @@ services:
   dashboard-service:
     profiles: ['dashboard']
     build:
-      context: ../../services/dashboard-service
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: docker/dev/Dockerfile.node-dev
+      args:
+        SERVICE_PATH: services/dashboard-service
     env_file:
       - ../../services/dashboard-service/.env
     environment:
@@ -388,8 +424,10 @@ services:
   notifications-service:
     profiles: ['node-workers']
     build:
-      context: ../../services/notifications-service
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: docker/dev/Dockerfile.node-dev
+      args:
+        SERVICE_PATH: services/notifications-service
     env_file:
       - ../../services/notifications-service/.env
     environment:
@@ -410,8 +448,10 @@ services:
   metrics-service:
     profiles: ['node-workers']
     build:
-      context: ../../services/metrics-service
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: docker/dev/Dockerfile.node-dev
+      args:
+        SERVICE_PATH: services/metrics-service
     environment:
       NODE_ENV: production
       RABBITMQ_URL: amqp://crm:crm_local_only@rabbitmq:5672/crm-dev
@@ -447,8 +487,10 @@ services:
   outbox-publisher-ai:
     profiles: ['python-workers']
     build:
-      context: ../../services/outbox-publisher
-      dockerfile: Dockerfile
+      context: ../..
+      dockerfile: docker/dev/Dockerfile.node-dev
+      args:
+        SERVICE_PATH: services/outbox-publisher
     environment:
       NODE_ENV: production
       DATABASE_URL: postgres://ai:ai_password@postgres-ai:5432/ai

@@ -1,4 +1,4 @@
-import type { Pool } from 'pg';
+import type { DataSource } from 'typeorm';
 
 /**
  * Creates companies_schema and every table this service owns - see
@@ -7,10 +7,10 @@ import type { Pool } from 'pg';
  * per-domain table (per shared-polymorphic-table-audit.md) - this service
  * never writes to legacy's shared `status_history_entries`.
  */
-export async function ensureCompaniesSchema(pool: Pool): Promise<void> {
-  await pool.query(`CREATE SCHEMA IF NOT EXISTS companies_schema`);
+export async function ensureCompaniesSchema(dataSource: DataSource): Promise<void> {
+  await dataSource.query(`CREATE SCHEMA IF NOT EXISTS companies_schema`);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS companies_schema.companies (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       "name" varchar(255) NOT NULL,
@@ -29,11 +29,11 @@ export async function ensureCompaniesSchema(pool: Pool): Promise<void> {
       "updatedAt" timestamptz NOT NULL DEFAULT now()
     )
   `);
-  await pool.query(`
+  await dataSource.query(`
     CREATE INDEX IF NOT EXISTS "IDX_companies_createdByUserId" ON companies_schema.companies ("createdByUserId")
   `);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS companies_schema.company_status_history (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       "companyId" uuid NOT NULL REFERENCES companies_schema.companies ("id") ON DELETE CASCADE,
@@ -44,7 +44,7 @@ export async function ensureCompaniesSchema(pool: Pool): Promise<void> {
       "createdAt" timestamptz NOT NULL DEFAULT now()
     )
   `);
-  await pool.query(`
+  await dataSource.query(`
     CREATE INDEX IF NOT EXISTS "IDX_company_status_history_companyId" ON companies_schema.company_status_history ("companyId")
   `);
 
@@ -52,7 +52,7 @@ export async function ensureCompaniesSchema(pool: Pool): Promise<void> {
   // backend-projection-service in Phase 12 (see table-ownership-matrix.md).
   // Fed by ai.company_insight_created (ai-service, analytics.events
   // exchange). Safe to drop and rebuild; no backfill from the old table.
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS companies_schema.company_insight_projections (
       "id" uuid PRIMARY KEY,
       "companyId" uuid NOT NULL,
@@ -61,11 +61,11 @@ export async function ensureCompaniesSchema(pool: Pool): Promise<void> {
       "createdAt" timestamptz NOT NULL DEFAULT now()
     )
   `);
-  await pool.query(`
+  await dataSource.query(`
     CREATE INDEX IF NOT EXISTS "IDX_company_insight_projections_companyId" ON companies_schema.company_insight_projections ("companyId")
   `);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS companies_schema.processed_events (
       "event_id" uuid NOT NULL,
       "consumer_name" varchar(100) NOT NULL,
@@ -74,7 +74,7 @@ export async function ensureCompaniesSchema(pool: Pool): Promise<void> {
     )
   `);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS companies_schema.outbox_events (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       "eventType" varchar(100) NOT NULL,
@@ -90,13 +90,13 @@ export async function ensureCompaniesSchema(pool: Pool): Promise<void> {
       "publishedAt" timestamptz
     )
   `);
-  await pool.query(`
+  await dataSource.query(`
     CREATE INDEX IF NOT EXISTS "IDX_companies_outbox_events_eventType" ON companies_schema.outbox_events ("eventType")
   `);
-  await pool.query(`
+  await dataSource.query(`
     CREATE INDEX IF NOT EXISTS "IDX_companies_outbox_events_status" ON companies_schema.outbox_events ("status")
   `);
-  await pool.query(`
+  await dataSource.query(`
     CREATE INDEX IF NOT EXISTS "IDX_companies_outbox_events_nextRetryAt" ON companies_schema.outbox_events ("nextRetryAt")
   `);
 }

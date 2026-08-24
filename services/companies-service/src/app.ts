@@ -1,5 +1,5 @@
 import express, { type Express } from 'express';
-import type { Pool } from 'pg';
+import type { DataSource } from 'typeorm';
 
 import { errorHandler } from './http/error-handler.js';
 import { createHealthRouter } from './http/health.routes.js';
@@ -9,13 +9,13 @@ import { createCompaniesRouter } from './http/routes/companies.routes.js';
 import type { CompaniesService } from './modules/companies/companies.service.js';
 import type { RabbitMqConsumer } from './rabbitmq/consumer.js';
 
-export function createApp(pool: Pool, consumer: RabbitMqConsumer, companiesService: CompaniesService): Express {
+export function createApp(dataSource: DataSource, consumer: RabbitMqConsumer, companiesService: CompaniesService): Express {
   const app = express();
 
   app.use(express.json());
   app.use(requestLogger);
 
-  app.use(createHealthRouter(pool, consumer));
+  app.use(createHealthRouter(dataSource, consumer));
   app.use(createCompaniesRouter(companiesService));
 
   app.use(notFoundHandler);

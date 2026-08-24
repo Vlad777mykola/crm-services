@@ -1,19 +1,16 @@
-import type { PoolClient } from 'pg';
+import type { EntityManager } from 'typeorm';
 
-export interface CompanyInsightProjection {
-  id: string;
-  companyId: string;
-  insightType: string;
-  summary: string;
-}
+import { CompanyInsightProjectionEntity } from './entities/company-insight-projection.entity.js';
+import type { CompanyInsightProjection } from './entities/company-insight-projection.entity.js';
 
 export class CompanyInsightRepository {
-  async upsert(client: PoolClient, projection: CompanyInsightProjection): Promise<void> {
-    await client.query(
-      `INSERT INTO companies_schema.company_insight_projections ("id", "companyId", "insightType", "summary")
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT ("id") DO NOTHING`,
-      [projection.id, projection.companyId, projection.insightType, projection.summary],
-    );
+  async upsert(manager: EntityManager, projection: Omit<CompanyInsightProjection, 'createdAt'>): Promise<void> {
+    await manager
+      .createQueryBuilder()
+      .insert()
+      .into(CompanyInsightProjectionEntity)
+      .values(projection)
+      .orIgnore()
+      .execute();
   }
 }

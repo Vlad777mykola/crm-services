@@ -7,7 +7,7 @@ import {
   createCompanyRequestSchema,
   publicCompaniesQuerySchema,
   updateCompanyRequestSchema,
-  type CompanyIdParams,
+  type CompanyIdParamsInput,
   type CreateCompanyRequestInput,
   type PublicCompaniesQueryInput,
   type UpdateCompanyRequestInput,
@@ -48,7 +48,7 @@ export function createCompaniesRouter(companiesService: CompaniesService): Route
 
   router.get('/companies/:companyId', optionalAuth, validate(companyIdParamsSchema, 'params'), async (req, res, next) => {
     try {
-      const { companyId } = req.params as unknown as CompanyIdParams;
+      const { companyId } = req.params as unknown as CompanyIdParamsInput;
       const company = await companiesService.getById(companyId, req.auth?.userId);
       res.status(200).json({ message: 'Company found', data: company });
     } catch (err) {
@@ -62,7 +62,7 @@ export function createCompaniesRouter(companiesService: CompaniesService): Route
     validate(companyIdParamsSchema, 'params'),
     async (req, res, next) => {
       try {
-        const { companyId } = req.params as unknown as CompanyIdParams;
+        const { companyId } = req.params as unknown as CompanyIdParamsInput;
         const history = await companiesService.getStatusHistory(companyId, req.auth!.userId);
         res.status(200).json({ message: 'Company status history', data: history });
       } catch (err) {
@@ -78,7 +78,7 @@ export function createCompaniesRouter(companiesService: CompaniesService): Route
     validate(updateCompanyRequestSchema, 'body'),
     async (req, res, next) => {
       try {
-        const { companyId } = req.params as unknown as CompanyIdParams;
+        const { companyId } = req.params as unknown as CompanyIdParamsInput;
         const company = await companiesService.update(companyId, req.auth!.userId, req.body as UpdateCompanyRequestInput);
         res.status(200).json({ message: 'Company updated', data: company });
       } catch (err) {

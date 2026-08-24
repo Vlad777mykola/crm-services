@@ -1,7 +1,7 @@
 import { createApp } from './app.js';
 import { processInboundEvent } from './consumer/process-inbound-event.js';
 import { CompanyInsightRepository } from './db/company-insight-repository.js';
-import { createPool } from './db/pool.js';
+import { createDataSource } from './db/data-source.js';
 import { ensureCompaniesSchema } from './db/schema.js';
 import { env } from './env.js';
 import { ProcessedEventsRepository } from './idempotency/processed-events-repository.js';
@@ -13,12 +13,13 @@ import { ANALYTICS_EVENTS_EXCHANGE, DOMAIN_EVENTS_DLX } from './rabbitmq/topolog
 const QUEUE_NAME = 'companies-service.q';
 
 async function bootstrap(): Promise<void> {
-  const pool = createPool();
-  await ensureCompaniesSchema(pool);
+  const dataSource = createDataSource();
+  await dataSource.initialize();
+  await ensureCompaniesSchema(dataSource);
 
   const processedEvents = new ProcessedEventsRepository();
   const insights = new CompanyInsightRepository();
-  const companiesService = new CompaniesService(pool);
+  const companiesService = new CompaniesService(dataSource);
 
   const consumer = await consumeFromRabbitMq({
     url: env.RABBITMQ_URL,
@@ -27,11 +28,11 @@ async function bootstrap(): Promise<void> {
     bindings: [{ exchange: ANALYTICS_EVENTS_EXCHANGE, routingKey: 'ai.company_insight_created' }],
     onMessage: async (parsedBody) => {
       const envelope = parsedBody as { id: string; type: string; data: Record<string, unknown> };
-      await processInboundEvent({ pool, processedEvents, insights }, envelope);
+      await processInboundEvent({ dataSource, processedEvents, insights }, envelope);
     },
   });
 
-  const app = createApp(pool, consumer, companiesService);
+  const app = createApp(dataSource, consumer, companiesService);
 
   const server = app.listen(env.PORT, () => {
     logger.info(`[companies-service] listening on :${env.PORT}`);
@@ -40,7 +41,7 @@ async function bootstrap(): Promise<void> {
   function shutdown(signal: string): void {
     logger.info(`[companies-service] received ${signal}, shutting down`);
     server.close(() => {
-      Promise.allSettled([consumer.close(), pool.end()])
+      Promise.allSettled([consumer.close(), dataSource.destroy()])
         .catch((err: unknown) => logger.error({ err }, '[companies-service] error during shutdown'))
         .finally(() => process.exit(0));
     });

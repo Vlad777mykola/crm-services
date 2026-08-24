@@ -1,8 +1,14 @@
 import { z } from 'zod';
 
 import { paginationQuerySchema } from '../../common/pagination.js';
+import type {
+  CompanyIdParams,
+  CreateCompanyRequest,
+  PublicCompaniesQuery,
+  UpdateCompanyRequest,
+} from './companies.contracts.js';
 
-export const createCompanyRequestSchema = z.object({
+export const createCompanyRequestSchema: z.ZodType<CreateCompanyRequest> = z.object({
   name: z.string().min(1),
   description: z.string().nullable().optional(),
   category: z.string().nullable().optional(),
@@ -16,7 +22,7 @@ export const createCompanyRequestSchema = z.object({
 
 export type CreateCompanyRequestInput = z.infer<typeof createCompanyRequestSchema>;
 
-export const updateCompanyRequestSchema = z.object({
+export const updateCompanyRequestSchema: z.ZodType<UpdateCompanyRequest> = z.object({
   name: z.string().min(1).optional(),
   description: z.string().nullable().optional(),
   category: z.string().nullable().optional(),
@@ -32,13 +38,13 @@ export const updateCompanyRequestSchema = z.object({
 
 export type UpdateCompanyRequestInput = z.infer<typeof updateCompanyRequestSchema>;
 
-export const companyIdParamsSchema = z.object({
+export const companyIdParamsSchema: z.ZodType<CompanyIdParams> = z.object({
   companyId: z.string().uuid(),
 });
 
-export type CompanyIdParams = z.infer<typeof companyIdParamsSchema>;
+export type CompanyIdParamsInput = z.infer<typeof companyIdParamsSchema>;
 
-export const publicCompaniesQuerySchema = paginationQuerySchema.extend({
+export const publicCompaniesQuerySchema: z.ZodType<PublicCompaniesQuery> = paginationQuerySchema.extend({
   q: z.string().trim().min(1).optional(),
   category: z.string().trim().min(1).optional(),
   city: z.string().trim().min(1).optional(),

@@ -1,8 +1,9 @@
-import type { Pool } from 'pg';
+import type { DataSource } from 'typeorm';
 
 import { AppError } from '../../errors/AppError.js';
-import type { CompanyRow, StatusHistoryRow } from '../../db/company-repository.js';
 import { CompanyRepository } from '../../db/company-repository.js';
+import type { CompanyRow } from '../../db/entities/company.entity.js';
+import type { StatusHistoryRow } from '../../db/entities/company-status-history.entity.js';
 import { findActiveMembershipRole, listActiveCompanyIdsForUser } from '../../db/legacy-company-members-bridge.js';
 import { recordOutboxEvent } from '../../outbox/outbox-repository.js';
 import { buildPaginationMeta, resolvePagination, type PaginationMeta } from '../../common/pagination.js';
@@ -25,17 +26,14 @@ export interface CompanyMembership {
 export class CompaniesService {
   private readonly companies: CompanyRepository;
 
-  constructor(private readonly pool: Pool) {
-    this.companies = new CompanyRepository(pool);
+  constructor(private readonly dataSource: DataSource) {
+    this.companies = new CompanyRepository(dataSource);
   }
 
   async create(input: CreateCompanyRequestInput, creatorUserId: string): Promise<CompanyRow> {
-    const client = await this.pool.connect();
-    try {
-      await client.query('BEGIN');
-
-      const slug = await this.companies.generateUniqueSlug(client, input.name);
-      const company = await this.companies.insert(client, {
+    return this.dataSource.transaction(async (manager) => {
+      const slug = await this.companies.generateUniqueSlug(manager, input.name);
+      const company = await this.companies.insert(manager, {
         name: input.name,
         slug,
         description: input.description ?? null,
@@ -53,27 +51,21 @@ export class CompaniesService {
       // company.created consumer (Phase 5), not here - see
       // services/company-members-service/src/handlers/company-created.ts.
 
-      await this.companies.insertStatusHistory(client, {
+      await this.companies.insertStatusHistory(manager, {
         companyId: company.id,
         fromStatus: null,
         toStatus: company.status,
         changedByUserId: creatorUserId,
       });
 
-      await recordOutboxEvent(client, {
+      await recordOutboxEvent(manager, {
         type: 'company.created',
         aggregateId: company.id,
         payload: { companyId: company.id, name: company.name, slug: company.slug, createdByUserId: creatorUserId },
       });
 
-      await client.query('COMMIT');
       return company;
-    } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
-    } finally {
-      client.release();
-    }
+    });
   }
 
   async getPublic(
@@ -85,20 +77,15 @@ export class CompaniesService {
   }
 
   async getMyCompanies(userId: string): Promise<CompanyMembership[]> {
-    const client = await this.pool.connect();
-    try {
-      const memberships = await listActiveCompanyIdsForUser(client, userId);
-      if (memberships.length === 0) return [];
+    const memberships = await listActiveCompanyIdsForUser(this.dataSource, userId);
+    if (memberships.length === 0) return [];
 
-      const companies = await this.companies.findByIds(memberships.map((m) => m.companyId));
-      const byId = new Map(companies.map((c) => [c.id, c]));
+    const companies = await this.companies.findByIds(memberships.map((m) => m.companyId));
+    const byId = new Map(companies.map((c) => [c.id, c]));
 
-      return memberships
-        .filter((m) => byId.has(m.companyId))
-        .map((m) => ({ role: m.role, company: byId.get(m.companyId)! }));
-    } finally {
-      client.release();
-    }
+    return memberships
+      .filter((m) => byId.has(m.companyId))
+      .map((m) => ({ role: m.role, company: byId.get(m.companyId)! }));
   }
 
   async getById(companyId: string, requesterUserId: string | undefined): Promise<CompanyRow> {
@@ -113,38 +100,27 @@ export class CompaniesService {
 
     // Draft/suspended companies are only visible to their active members -
     // report "not found" (not 403) so anonymous visitors can't detect existence.
-    const client = await this.pool.connect();
-    try {
-      const role = requesterUserId ? await findActiveMembershipRole(client, companyId, requesterUserId) : undefined;
-      if (!role) {
-        throw new AppError('Company not found', 404);
-      }
-      return company;
-    } finally {
-      client.release();
+    const role = requesterUserId
+      ? await findActiveMembershipRole(this.dataSource, companyId, requesterUserId)
+      : undefined;
+    if (!role) {
+      throw new AppError('Company not found', 404);
     }
+    return company;
   }
 
   private async requireOwnerOrManager(companyId: string, userId: string): Promise<void> {
-    const client = await this.pool.connect();
-    try {
-      const role = await findActiveMembershipRole(client, companyId, userId);
-      if (!role || !['owner', 'manager'].includes(role)) {
-        throw new AppError('You do not have permission to manage this company', 403);
-      }
-    } finally {
-      client.release();
+    const role = await findActiveMembershipRole(this.dataSource, companyId, userId);
+    if (!role || !['owner', 'manager'].includes(role)) {
+      throw new AppError('You do not have permission to manage this company', 403);
     }
   }
 
   async update(companyId: string, requesterUserId: string, patch: UpdateCompanyRequestInput): Promise<CompanyRow> {
     await this.requireOwnerOrManager(companyId, requesterUserId);
 
-    const client = await this.pool.connect();
-    try {
-      await client.query('BEGIN');
-
-      const existing = await this.companies.findByIdWithClient(client, companyId);
+    return this.dataSource.transaction(async (manager) => {
+      const existing = await this.companies.findByIdWithManager(manager, companyId);
       if (!existing) {
         throw new AppError('Company not found', 404);
       }
@@ -161,10 +137,10 @@ export class CompaniesService {
         }
       }
 
-      const updated = await this.companies.update(client, companyId, patch);
+      const updated = await this.companies.update(manager, companyId, patch);
 
       if (updated.status !== fromStatus) {
-        await this.companies.insertStatusHistory(client, {
+        await this.companies.insertStatusHistory(manager, {
           companyId,
           fromStatus,
           toStatus: updated.status,
@@ -172,20 +148,14 @@ export class CompaniesService {
         });
       }
 
-      await recordOutboxEvent(client, {
+      await recordOutboxEvent(manager, {
         type: 'company.updated',
         aggregateId: companyId,
         payload: { companyId, name: updated.name, status: updated.status },
       });
 
-      await client.query('COMMIT');
       return updated;
-    } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
-    } finally {
-      client.release();
-    }
+    });
   }
 
   async getStatusHistory(companyId: string, requesterUserId: string): Promise<StatusHistoryRow[]> {
