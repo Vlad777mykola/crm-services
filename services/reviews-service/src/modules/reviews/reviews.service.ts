@@ -1,4 +1,4 @@
-import type { Pool } from 'pg';
+import type { DataSource } from 'typeorm';
 
 import { findCompletedAppointmentForClient } from '../../db/legacy-appointments-bridge.js';
 import { ReviewRepository, type ReviewRow } from '../../db/review-repository.js';
@@ -9,12 +9,12 @@ import type { CreateReviewInput } from './reviews.schemas.js';
 export class ReviewsService {
   private readonly reviews: ReviewRepository;
 
-  constructor(private readonly pool: Pool) {
-    this.reviews = new ReviewRepository(pool);
+  constructor(private readonly dataSource: DataSource) {
+    this.reviews = new ReviewRepository(dataSource);
   }
 
   async create(appointmentId: string, clientUserId: string, input: CreateReviewInput): Promise<ReviewRow> {
-    const appointment = await findCompletedAppointmentForClient(this.pool, appointmentId, clientUserId);
+    const appointment = await findCompletedAppointmentForClient(this.dataSource, appointmentId, clientUserId);
     if (!appointment) {
       throw new AppError('Appointment not found', 404);
     }
@@ -27,8 +27,8 @@ export class ReviewsService {
       throw new AppError('You have already reviewed this appointment', 409);
     }
 
-    return this.reviews.withTransaction(async (client) => {
-      const review = await this.reviews.create(client, {
+    return this.dataSource.transaction(async (manager) => {
+      const review = await this.reviews.create(manager, {
         appointmentId,
         companyId: appointment.companyId,
         serviceId: appointment.serviceId,
@@ -38,7 +38,7 @@ export class ReviewsService {
         comment: input.comment ?? null,
       });
 
-      await recordOutboxEvent(client, {
+      await recordOutboxEvent(manager, {
         type: 'review.received',
         aggregateId: review.id,
         payload: {

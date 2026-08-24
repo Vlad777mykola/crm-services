@@ -1,6 +1,6 @@
 import { createApp } from './app.js';
 import { processInboundEvent } from './consumer/process-inbound-event.js';
-import { createPool } from './db/pool.js';
+import { createDataSource } from './db/data-source.js';
 import { ensureUsersSchema } from './db/schema.js';
 import { UserRepository } from './db/user-repository.js';
 import { env } from './env.js';
@@ -13,11 +13,12 @@ import { DOMAIN_EVENTS_DLX, DOMAIN_EVENTS_EXCHANGE } from './rabbitmq/topology.j
 const QUEUE_NAME = 'users-service.q';
 
 async function bootstrap(): Promise<void> {
-  const pool = createPool();
-  await ensureUsersSchema(pool);
+  const dataSource = createDataSource();
+  await dataSource.initialize();
+  await ensureUsersSchema(dataSource);
 
   const processedEvents = new ProcessedEventsRepository();
-  const users = new UserRepository(pool);
+  const users = new UserRepository(dataSource);
   const usersService = new UsersService(users);
 
   const consumer = await consumeFromRabbitMq({
@@ -27,11 +28,11 @@ async function bootstrap(): Promise<void> {
     bindings: [{ exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'auth.user_registered' }],
     onMessage: async (parsedBody) => {
       const envelope = parsedBody as { id: string; type: string; data: Record<string, unknown> };
-      await processInboundEvent({ pool, processedEvents, users }, envelope);
+      await processInboundEvent({ dataSource, processedEvents, users }, envelope);
     },
   });
 
-  const app = createApp(pool, consumer, usersService);
+  const app = createApp(dataSource, consumer, usersService);
   const server = app.listen(env.PORT, () => {
     logger.info(`[users-service] listening on :${env.PORT} - consuming auth.user_registered from domain.events`);
   });
@@ -39,7 +40,7 @@ async function bootstrap(): Promise<void> {
   function shutdown(signal: string): void {
     logger.info(`[users-service] received ${signal}, shutting down`);
     server.close(() => {
-      Promise.allSettled([consumer.close(), pool.end()])
+      Promise.allSettled([consumer.close(), dataSource.destroy()])
         .catch((err: unknown) => logger.error({ err }, '[users-service] error during shutdown'))
         .finally(() => process.exit(0));
     });

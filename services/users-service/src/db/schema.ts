@@ -1,4 +1,4 @@
-import type { Pool } from 'pg';
+import type { DataSource } from 'typeorm';
 
 /**
  * Creates users_schema and every table this service owns if they don't
@@ -11,10 +11,10 @@ import type { Pool } from 'pg';
  * service never queries auth-service's schema directly, only reacts to its
  * events.
  */
-export async function ensureUsersSchema(pool: Pool): Promise<void> {
-  await pool.query(`CREATE SCHEMA IF NOT EXISTS users_schema`);
+export async function ensureUsersSchema(dataSource: DataSource): Promise<void> {
+  await dataSource.query(`CREATE SCHEMA IF NOT EXISTS users_schema`);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS users_schema.users (
       "id" uuid PRIMARY KEY,
       "email" varchar(255),
@@ -24,7 +24,7 @@ export async function ensureUsersSchema(pool: Pool): Promise<void> {
     )
   `);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS users_schema.user_profiles (
       "userId" uuid PRIMARY KEY REFERENCES users_schema.users ("id") ON DELETE CASCADE,
       "name" varchar(255) NOT NULL,
@@ -36,7 +36,7 @@ export async function ensureUsersSchema(pool: Pool): Promise<void> {
     )
   `);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS users_schema.processed_events (
       "event_id" uuid NOT NULL,
       "consumer_name" varchar(100) NOT NULL,
@@ -48,7 +48,7 @@ export async function ensureUsersSchema(pool: Pool): Promise<void> {
   // Not used yet in Phase 2 (this service doesn't publish until Phase 3's
   // user.profile_created/updated, if confirmed - see event-catalog.md).
   // Reserved now per Task 2.5.
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS users_schema.outbox_events (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       "eventType" varchar(100) NOT NULL,

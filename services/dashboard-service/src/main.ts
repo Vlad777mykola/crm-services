@@ -1,13 +1,15 @@
 import { createApp } from './app.js';
-import { createPool } from './db/pool.js';
+import { createDataSource } from './db/data-source.js';
 import { env } from './env.js';
 import { logger } from './logger.js';
 import { DashboardService } from './modules/dashboard/dashboard.service.js';
 
 async function bootstrap(): Promise<void> {
-  const pool = createPool();
-  const dashboardService = new DashboardService(pool);
-  const app = createApp(pool, dashboardService);
+  const dataSource = createDataSource();
+  await dataSource.initialize();
+
+  const dashboardService = new DashboardService(dataSource);
+  const app = createApp(dataSource, dashboardService);
 
   const server = app.listen(env.PORT, () => {
     logger.info(`[dashboard-service] listening on :${env.PORT}`);
@@ -16,7 +18,7 @@ async function bootstrap(): Promise<void> {
   function shutdown(signal: string): void {
     logger.info(`[dashboard-service] received ${signal}, shutting down`);
     server.close(() => {
-      pool.end().finally(() => process.exit(0));
+      dataSource.destroy().finally(() => process.exit(0));
     });
   }
 

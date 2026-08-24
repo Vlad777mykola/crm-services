@@ -1,60 +1,35 @@
-import type { Pool, PoolClient } from 'pg';
+import type { DataSource, EntityManager } from 'typeorm';
 
-export type SpecialistStatus = 'draft' | 'published' | 'suspended';
+import {
+  SpecialistProfileEntity,
+  type SpecialistProfileRow,
+  type SpecialistStatus,
+} from './entities/specialist-profile.entity.js';
+import {
+  SpecialistStatusHistoryEntity,
+  type StatusHistoryRow,
+} from './entities/specialist-status-history.entity.js';
 
-export interface SpecialistProfileRow {
-  id: string;
-  userId: string;
-  displayName: string;
-  headline: string | null;
-  bio: string | null;
-  category: string | null;
-  city: string | null;
-  isRemoteSupported: boolean;
-  status: SpecialistStatus;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface StatusHistoryRow {
-  id: string;
-  specialistProfileId: string;
-  fromStatus: string | null;
-  toStatus: string;
-  changedByUserId: string | null;
-  reason: string | null;
-  createdAt: Date;
-}
+export type { SpecialistProfileRow, SpecialistStatus } from './entities/specialist-profile.entity.js';
+export type { StatusHistoryRow } from './entities/specialist-status-history.entity.js';
 
 export class SpecialistRepository {
-  constructor(private readonly pool: Pool) {}
+  constructor(private readonly dataSource: DataSource) {}
 
-  async findByUserId(userId: string): Promise<SpecialistProfileRow | undefined> {
-    const { rows } = await this.pool.query<SpecialistProfileRow>(
-      `SELECT * FROM specialists_schema.specialist_profiles WHERE "userId" = $1 LIMIT 1`,
-      [userId],
-    );
-    return rows[0];
+  async findByUserId(userId: string): Promise<SpecialistProfileRow | null> {
+    return this.dataSource.getRepository(SpecialistProfileEntity).findOne({ where: { userId } });
   }
 
-  async findByUserIdWithClient(client: PoolClient, userId: string): Promise<SpecialistProfileRow | undefined> {
-    const { rows } = await client.query<SpecialistProfileRow>(
-      `SELECT * FROM specialists_schema.specialist_profiles WHERE "userId" = $1 LIMIT 1`,
-      [userId],
-    );
-    return rows[0];
+  async findByUserIdWithManager(manager: EntityManager, userId: string): Promise<SpecialistProfileRow | null> {
+    return manager.getRepository(SpecialistProfileEntity).findOne({ where: { userId } });
   }
 
-  async findById(specialistId: string): Promise<SpecialistProfileRow | undefined> {
-    const { rows } = await this.pool.query<SpecialistProfileRow>(
-      `SELECT * FROM specialists_schema.specialist_profiles WHERE "id" = $1 LIMIT 1`,
-      [specialistId],
-    );
-    return rows[0];
+  async findById(specialistId: string): Promise<SpecialistProfileRow | null> {
+    return this.dataSource.getRepository(SpecialistProfileEntity).findOne({ where: { id: specialistId } });
   }
 
   async insert(
-    client: PoolClient,
+    manager: EntityManager,
     input: {
       userId: string;
       displayName: string;
@@ -65,18 +40,12 @@ export class SpecialistRepository {
       isRemoteSupported: boolean;
     },
   ): Promise<SpecialistProfileRow> {
-    const { rows } = await client.query<SpecialistProfileRow>(
-      `INSERT INTO specialists_schema.specialist_profiles
-         ("userId", "displayName", "headline", "bio", "category", "city", "isRemoteSupported", "status")
-       VALUES ($1, $2, $3, $4, $5, $6, $7, 'draft')
-       RETURNING *`,
-      [input.userId, input.displayName, input.headline, input.bio, input.category, input.city, input.isRemoteSupported],
-    );
-    return rows[0];
+    const repository = manager.getRepository(SpecialistProfileEntity);
+    return repository.save(repository.create({ ...input, status: 'draft' }));
   }
 
   async update(
-    client: PoolClient,
+    manager: EntityManager,
     userId: string,
     patch: Partial<{
       displayName: string;
@@ -88,15 +57,9 @@ export class SpecialistRepository {
       status: SpecialistStatus;
     }>,
   ): Promise<SpecialistProfileRow> {
-    const columns = Object.keys(patch) as Array<keyof typeof patch>;
-    const setClauses = columns.map((col, i) => `"${col}" = $${i + 2}`);
-    const values = columns.map((col) => patch[col]);
-    const { rows } = await client.query<SpecialistProfileRow>(
-      `UPDATE specialists_schema.specialist_profiles SET ${setClauses.join(', ')}, "updatedAt" = now()
-       WHERE "userId" = $1 RETURNING *`,
-      [userId, ...values],
-    );
-    return rows[0];
+    const repository = manager.getRepository(SpecialistProfileEntity);
+    const existing = await repository.findOneOrFail({ where: { userId } });
+    return repository.save(repository.merge(existing, patch, { updatedAt: new Date() }));
   }
 
   async listPublic(filters: {
@@ -107,58 +70,50 @@ export class SpecialistRepository {
     skip: number;
     take: number;
   }): Promise<{ items: SpecialistProfileRow[]; total: number }> {
-    const conditions: string[] = [`"status" = 'published'`];
-    const params: unknown[] = [];
+    const query = this.dataSource
+      .getRepository(SpecialistProfileEntity)
+      .createQueryBuilder('specialist')
+      .where('specialist.status = :status', { status: 'published' })
+      .orderBy('specialist.createdAt', 'DESC')
+      .take(filters.take)
+      .skip(filters.skip);
 
     if (filters.q) {
-      params.push(`%${filters.q}%`);
-      conditions.push(`("displayName" ILIKE $${params.length} OR "headline" ILIKE $${params.length} OR "bio" ILIKE $${params.length})`);
+      query.andWhere(
+        '(specialist.displayName ILIKE :q OR specialist.headline ILIKE :q OR specialist.bio ILIKE :q)',
+        { q: `%${filters.q}%` },
+      );
     }
     if (filters.category) {
-      params.push(`%${filters.category}%`);
-      conditions.push(`"category" ILIKE $${params.length}`);
+      query.andWhere('specialist.category ILIKE :category', { category: `%${filters.category}%` });
     }
     if (filters.city) {
-      params.push(`%${filters.city}%`);
-      conditions.push(`"city" ILIKE $${params.length}`);
+      query.andWhere('specialist.city ILIKE :city', { city: `%${filters.city}%` });
     }
     if (filters.remoteOnly) {
-      conditions.push(`"isRemoteSupported" = true`);
+      query.andWhere('specialist.isRemoteSupported = true');
     }
 
-    const where = conditions.join(' AND ');
-    const { rows: countRows } = await this.pool.query<{ count: string }>(
-      `SELECT COUNT(*) FROM specialists_schema.specialist_profiles WHERE ${where}`,
-      params,
-    );
-
-    params.push(filters.take, filters.skip);
-    const { rows } = await this.pool.query<SpecialistProfileRow>(
-      `SELECT * FROM specialists_schema.specialist_profiles WHERE ${where}
-       ORDER BY "createdAt" DESC LIMIT $${params.length - 1} OFFSET $${params.length}`,
-      params,
-    );
-
-    return { items: rows, total: Number(countRows[0].count) };
+    const [items, total] = await query.getManyAndCount();
+    return { items, total };
   }
 
   async insertStatusHistory(
-    client: PoolClient,
-    input: { specialistProfileId: string; fromStatus: string | null; toStatus: string; changedByUserId: string | null },
+    manager: EntityManager,
+    input: {
+      specialistProfileId: string;
+      fromStatus: string | null;
+      toStatus: string;
+      changedByUserId: string | null;
+    },
   ): Promise<void> {
-    await client.query(
-      `INSERT INTO specialists_schema.specialist_status_history
-         ("specialistProfileId", "fromStatus", "toStatus", "changedByUserId")
-       VALUES ($1, $2, $3, $4)`,
-      [input.specialistProfileId, input.fromStatus, input.toStatus, input.changedByUserId],
-    );
+    await manager.getRepository(SpecialistStatusHistoryEntity).insert(input);
   }
 
   async listStatusHistory(specialistProfileId: string): Promise<StatusHistoryRow[]> {
-    const { rows } = await this.pool.query<StatusHistoryRow>(
-      `SELECT * FROM specialists_schema.specialist_status_history WHERE "specialistProfileId" = $1 ORDER BY "createdAt" DESC`,
-      [specialistProfileId],
-    );
-    return rows;
+    return this.dataSource.getRepository(SpecialistStatusHistoryEntity).find({
+      where: { specialistProfileId },
+      order: { createdAt: 'DESC' },
+    });
   }
 }

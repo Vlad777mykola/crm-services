@@ -6,7 +6,7 @@ import {
   updateUserRequestSchema,
   userIdParamsSchema,
   type UpdateUserRequestInput,
-  type UserIdParams,
+  type UserIdParamsInput,
 } from '../../modules/users/users.schemas.js';
 import { validate } from '../validate.js';
 
@@ -39,7 +39,7 @@ export function createUsersRouter(usersService: UsersService): Router {
 
   router.get('/users/:id', validate(userIdParamsSchema, 'params'), async (req, res, next) => {
     try {
-      const { id } = req.params as unknown as UserIdParams;
+      const { id } = req.params as unknown as UserIdParamsInput;
       const user = await usersService.getById(id);
       res.status(200).json({ message: 'User found', data: user });
     } catch (err) {

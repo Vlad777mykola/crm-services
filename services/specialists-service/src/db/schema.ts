@@ -1,10 +1,10 @@
-import type { Pool } from 'pg';
+import type { DataSource } from 'typeorm';
 
 /** See docs/architecture/microservices-extraction-checklist.md Phase 6 Task 6.2. No backfill. */
-export async function ensureSpecialistsSchema(pool: Pool): Promise<void> {
-  await pool.query(`CREATE SCHEMA IF NOT EXISTS specialists_schema`);
+export async function ensureSpecialistsSchema(dataSource: DataSource): Promise<void> {
+  await dataSource.query(`CREATE SCHEMA IF NOT EXISTS specialists_schema`);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS specialists_schema.specialist_profiles (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       "userId" uuid NOT NULL UNIQUE,
@@ -20,7 +20,7 @@ export async function ensureSpecialistsSchema(pool: Pool): Promise<void> {
     )
   `);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS specialists_schema.specialist_status_history (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       "specialistProfileId" uuid NOT NULL REFERENCES specialists_schema.specialist_profiles ("id") ON DELETE CASCADE,
@@ -31,11 +31,11 @@ export async function ensureSpecialistsSchema(pool: Pool): Promise<void> {
       "createdAt" timestamptz NOT NULL DEFAULT now()
     )
   `);
-  await pool.query(`
+  await dataSource.query(`
     CREATE INDEX IF NOT EXISTS "IDX_specialist_status_history_profileId" ON specialists_schema.specialist_status_history ("specialistProfileId")
   `);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS specialists_schema.processed_events (
       "event_id" uuid NOT NULL,
       "consumer_name" varchar(100) NOT NULL,
@@ -44,7 +44,7 @@ export async function ensureSpecialistsSchema(pool: Pool): Promise<void> {
     )
   `);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS specialists_schema.outbox_events (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       "eventType" varchar(100) NOT NULL,
@@ -60,10 +60,10 @@ export async function ensureSpecialistsSchema(pool: Pool): Promise<void> {
       "publishedAt" timestamptz
     )
   `);
-  await pool.query(`
+  await dataSource.query(`
     CREATE INDEX IF NOT EXISTS "IDX_specialists_outbox_events_status" ON specialists_schema.outbox_events ("status")
   `);
-  await pool.query(`
+  await dataSource.query(`
     CREATE INDEX IF NOT EXISTS "IDX_specialists_outbox_events_nextRetryAt" ON specialists_schema.outbox_events ("nextRetryAt")
   `);
 }

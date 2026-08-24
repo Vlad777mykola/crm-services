@@ -1,16 +1,17 @@
 import { createApp } from './app.js';
-import { createPool } from './db/pool.js';
+import { createDataSource } from './db/data-source.js';
 import { ensureReviewsSchema } from './db/schema.js';
 import { env } from './env.js';
 import { logger } from './logger.js';
 import { ReviewsService } from './modules/reviews/reviews.service.js';
 
 async function bootstrap(): Promise<void> {
-  const pool = createPool();
-  await ensureReviewsSchema(pool);
+  const dataSource = createDataSource();
+  await dataSource.initialize();
+  await ensureReviewsSchema(dataSource);
 
-  const reviewsService = new ReviewsService(pool);
-  const app = createApp(pool, reviewsService);
+  const reviewsService = new ReviewsService(dataSource);
+  const app = createApp(dataSource, reviewsService);
 
   const server = app.listen(env.PORT, () => {
     logger.info(`[reviews-service] listening on :${env.PORT}`);
@@ -19,8 +20,8 @@ async function bootstrap(): Promise<void> {
   function shutdown(signal: string): void {
     logger.info(`[reviews-service] received ${signal}, shutting down`);
     server.close(() => {
-      pool
-        .end()
+      dataSource
+        .destroy()
         .catch((err: unknown) => logger.error({ err }, '[reviews-service] error during shutdown'))
         .finally(() => process.exit(0));
     });

@@ -100,11 +100,11 @@ describe('consumeFromRabbitMq (users-service)', () => {
 
   it('is not ready until the channel/topology/consume setup fully completes', async () => {
     const channel = new FakeChannel();
-    let resolveBind: (() => void) | null = null;
+    const consumeGate: { resolve?: () => void } = {};
     channel.consume.mockImplementation(
       () =>
         new Promise<void>((resolve) => {
-          resolveBind = () => resolve();
+          consumeGate.resolve = () => resolve();
         }),
     );
     const connection = new FakeConnection(channel);
@@ -119,7 +119,10 @@ describe('consumeFromRabbitMq (users-service)', () => {
     });
 
     await flush();
-    resolveBind?.();
+    if (!consumeGate.resolve) {
+      throw new Error('consume promise was not started');
+    }
+    consumeGate.resolve();
     const consumer = await pending;
 
     expect(consumer.isConnected()).toBe(true);

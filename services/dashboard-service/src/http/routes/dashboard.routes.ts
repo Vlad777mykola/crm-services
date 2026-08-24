@@ -3,9 +3,10 @@ import { z } from 'zod';
 
 import { requireAuth } from '../require-auth.js';
 import type { DashboardService } from '../../modules/dashboard/dashboard.service.js';
+import type { CompanyIdParams } from '../../modules/dashboard/dashboard.contracts.js';
 
-const companyIdParamsSchema = z.object({
-  companyId: z.uuid(),
+const companyIdParamsSchema: z.ZodType<CompanyIdParams> = z.object({
+  companyId: z.string().uuid(),
 });
 
 export function createDashboardRouter(dashboardService: DashboardService): Router {

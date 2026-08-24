@@ -1,4 +1,6 @@
-import type { PoolClient } from 'pg';
+import type { EntityManager } from 'typeorm';
+
+import { EmailLogEntity } from './entities/email-log.entity.js';
 
 export interface EmailLogInput {
   toEmail: string;
@@ -9,14 +11,9 @@ export interface EmailLogInput {
 }
 
 // Mirrors backend/src/modules/emails/email-log.entity.ts's table shape -
-// this service is the logical owner of `email_logs`, see
-// docs/architecture/service-ownership.md.
+// this service is the logical owner of `email_logs`.
 export class EmailLogRepository {
-  async record(client: PoolClient, input: EmailLogInput): Promise<void> {
-    await client.query(
-      `INSERT INTO notifications_schema.email_logs ("toEmail", "subject", "body", "eventType", "eventId")
-       VALUES ($1, $2, $3, $4, $5)`,
-      [input.toEmail, input.subject, input.body, input.eventType, input.eventId],
-    );
+  async record(manager: EntityManager, input: EmailLogInput): Promise<void> {
+    await manager.getRepository(EmailLogEntity).insert(input);
   }
 }

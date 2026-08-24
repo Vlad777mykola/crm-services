@@ -1,4 +1,6 @@
-import type { PoolClient } from 'pg';
+import type { EntityManager } from 'typeorm';
+
+import { OutboxEventEntity } from '../db/entities/outbox-event.entity.js';
 
 export const DOMAIN_EVENTS_EXCHANGE = 'domain.events';
 
@@ -12,11 +14,13 @@ export interface RecordOutboxEventInput {
   aggregateId: string;
 }
 
-export async function recordOutboxEvent(client: PoolClient, input: RecordOutboxEventInput): Promise<void> {
-  await client.query(
-    `INSERT INTO reviews_schema.outbox_events
-       ("eventType", "exchange", "routingKey", "aggregateType", "aggregateId", "payload")
-     VALUES ($1, $2, $3, $4, $5, $6)`,
-    [input.type, DOMAIN_EVENTS_EXCHANGE, input.type, 'review', input.aggregateId, input.payload],
-  );
+export async function recordOutboxEvent(manager: EntityManager, input: RecordOutboxEventInput): Promise<void> {
+  await manager.getRepository(OutboxEventEntity).insert({
+    eventType: input.type,
+    exchange: DOMAIN_EVENTS_EXCHANGE,
+    routingKey: input.type,
+    aggregateType: 'review',
+    aggregateId: input.aggregateId,
+    payload: input.payload,
+  });
 }

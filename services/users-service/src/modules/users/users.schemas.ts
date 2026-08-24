@@ -1,12 +1,14 @@
 import { z } from 'zod';
 
-export const userIdParamsSchema = z.object({
+import type { UpdateUserRequest, UserIdParams } from './users.contracts.js';
+
+export const userIdParamsSchema: z.ZodType<UserIdParams> = z.object({
   id: z.string().uuid(),
 });
 
-export type UserIdParams = z.infer<typeof userIdParamsSchema>;
+export type UserIdParamsInput = z.infer<typeof userIdParamsSchema>;
 
-export const updateUserRequestSchema = z.object({
+export const updateUserRequestSchema: z.ZodType<UpdateUserRequest> = z.object({
   name: z.string().min(1).optional(),
   phone: z.string().nullable().optional(),
   city: z.string().nullable().optional(),

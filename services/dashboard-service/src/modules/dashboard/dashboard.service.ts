@@ -1,4 +1,4 @@
-import type { Pool } from 'pg';
+import type { DataSource } from 'typeorm';
 
 import { AppError } from '../../errors/AppError.js';
 
@@ -64,7 +64,7 @@ export interface CompanyDashboardSummary {
  * legacy dashboard.service.ts, but queries each owning service's schema directly.
  */
 export class DashboardService {
-  constructor(private readonly pool: Pool) {}
+  constructor(private readonly dataSource: DataSource) {}
 
   async getAppDashboardSummary(userId: string): Promise<AppDashboardSummary> {
     const [
@@ -143,7 +143,7 @@ export class DashboardService {
   }
 
   private async countUnreadNotifications(userId: string): Promise<number> {
-    const { rows } = await this.pool.query<{ count: string }>(
+    const rows = await this.dataSource.query<Array<{ count: string }>>(
       `SELECT COUNT(*)::text AS count FROM notifications_schema.notifications
        WHERE "userId" = $1 AND "isRead" = false`,
       [userId],
@@ -152,12 +152,12 @@ export class DashboardService {
   }
 
   private async listActiveMemberships(userId: string): Promise<AppDashboardSummary['companies']> {
-    const { rows } = await this.pool.query<{
+    const rows = await this.dataSource.query<Array<{
       id: string;
       name: string;
       status: CompanyStatus;
       role: CompanyMemberRole;
-    }>(
+    }>>(
       `SELECT c."id", c."name", c."status", m."role"
        FROM company_members_schema.company_members m
        INNER JOIN companies_schema.companies c ON c."id" = m."companyId"
@@ -169,7 +169,7 @@ export class DashboardService {
   }
 
   private async findSpecialistByUserId(userId: string): Promise<{ id: string; status: SpecialistProfileStatus } | undefined> {
-    const { rows } = await this.pool.query<{ id: string; status: SpecialistProfileStatus }>(
+    const rows = await this.dataSource.query<Array<{ id: string; status: SpecialistProfileStatus }>>(
       `SELECT "id", "status" FROM specialists_schema.specialist_profiles WHERE "userId" = $1 LIMIT 1`,
       [userId],
     );
@@ -177,7 +177,7 @@ export class DashboardService {
   }
 
   private async countAppointments(userId: string, status: string): Promise<number> {
-    const { rows } = await this.pool.query<{ count: string }>(
+    const rows = await this.dataSource.query<Array<{ count: string }>>(
       `SELECT COUNT(*)::text AS count FROM appointments_schema.appointments
        WHERE "clientUserId" = $1 AND "status" = $2`,
       [userId, status],
@@ -189,17 +189,17 @@ export class DashboardService {
     specialist: { id: string; status: SpecialistProfileStatus },
   ): Promise<NonNullable<AppDashboardSummary['specialist']>> {
     const [pendingCompanyRequests, activeCompanies, assignedServices] = await Promise.all([
-      this.pool.query<{ count: string }>(
+      this.dataSource.query<Array<{ count: string }>>(
         `SELECT COUNT(*)::text AS count FROM company_specialists_schema.company_specialist_requests
          WHERE "specialistProfileId" = $1 AND "status" = 'pending'`,
         [specialist.id],
       ),
-      this.pool.query<{ count: string }>(
+      this.dataSource.query<Array<{ count: string }>>(
         `SELECT COUNT(*)::text AS count FROM company_specialists_schema.company_specialists
          WHERE "specialistProfileId" = $1 AND "status" = 'active'`,
         [specialist.id],
       ),
-      this.pool.query<{ count: string }>(
+      this.dataSource.query<Array<{ count: string }>>(
         `SELECT COUNT(*)::text AS count FROM services_schema.service_specialists
          WHERE "specialistProfileId" = $1`,
         [specialist.id],
@@ -209,9 +209,9 @@ export class DashboardService {
     return {
       id: specialist.id,
       status: specialist.status,
-      pendingCompanyRequests: Number(pendingCompanyRequests.rows[0]?.count ?? 0),
-      activeCompanies: Number(activeCompanies.rows[0]?.count ?? 0),
-      assignedServices: Number(assignedServices.rows[0]?.count ?? 0),
+      pendingCompanyRequests: Number(pendingCompanyRequests[0]?.count ?? 0),
+      activeCompanies: Number(activeCompanies[0]?.count ?? 0),
+      assignedServices: Number(assignedServices[0]?.count ?? 0),
     };
   }
 
@@ -219,7 +219,7 @@ export class DashboardService {
     companyId: string,
     userId: string,
   ): Promise<{ role: CompanyMemberRole } | undefined> {
-    const { rows } = await this.pool.query<{ role: CompanyMemberRole }>(
+    const rows = await this.dataSource.query<Array<{ role: CompanyMemberRole }>>(
       `SELECT "role" FROM company_members_schema.company_members
        WHERE "companyId" = $1 AND "userId" = $2 AND "status" = 'active' LIMIT 1`,
       [companyId, userId],
@@ -228,7 +228,7 @@ export class DashboardService {
   }
 
   private async findCompanyById(companyId: string): Promise<CompanyDashboardSummary['company'] | undefined> {
-    const { rows } = await this.pool.query<{
+    const rows = await this.dataSource.query<Array<{
       id: string;
       name: string;
       slug: string;
@@ -244,7 +244,7 @@ export class DashboardService {
       createdByUserId: string;
       createdAt: Date;
       updatedAt: Date;
-    }>(`SELECT * FROM companies_schema.companies WHERE "id" = $1`, [companyId]);
+    }>>(`SELECT * FROM companies_schema.companies WHERE "id" = $1`, [companyId]);
 
     const row = rows[0];
     if (!row) return undefined;
@@ -257,7 +257,7 @@ export class DashboardService {
   }
 
   private async countCompanyAppointments(companyId: string, status: string): Promise<number> {
-    const { rows } = await this.pool.query<{ count: string }>(
+    const rows = await this.dataSource.query<Array<{ count: string }>>(
       `SELECT COUNT(*)::text AS count FROM appointments_schema.appointments
        WHERE "companyId" = $1 AND "status" = $2`,
       [companyId, status],
@@ -266,7 +266,7 @@ export class DashboardService {
   }
 
   private async countCompanySpecialists(companyId: string, status: string): Promise<number> {
-    const { rows } = await this.pool.query<{ count: string }>(
+    const rows = await this.dataSource.query<Array<{ count: string }>>(
       `SELECT COUNT(*)::text AS count FROM company_specialists_schema.company_specialists
        WHERE "companyId" = $1 AND "status" = $2`,
       [companyId, status],
@@ -275,7 +275,7 @@ export class DashboardService {
   }
 
   private async countCompanySpecialistRequests(companyId: string, status: string): Promise<number> {
-    const { rows } = await this.pool.query<{ count: string }>(
+    const rows = await this.dataSource.query<Array<{ count: string }>>(
       `SELECT COUNT(*)::text AS count FROM company_specialists_schema.company_specialist_requests
        WHERE "companyId" = $1 AND "status" = $2`,
       [companyId, status],
@@ -284,7 +284,7 @@ export class DashboardService {
   }
 
   private async countCompanyMembers(companyId: string): Promise<number> {
-    const { rows } = await this.pool.query<{ count: string }>(
+    const rows = await this.dataSource.query<Array<{ count: string }>>(
       `SELECT COUNT(*)::text AS count FROM company_members_schema.company_members
        WHERE "companyId" = $1 AND "status" = 'active'`,
       [companyId],
@@ -294,7 +294,7 @@ export class DashboardService {
 
   private async countServices(companyId: string, status?: string): Promise<number> {
     if (status) {
-      const { rows } = await this.pool.query<{ count: string }>(
+      const rows = await this.dataSource.query<Array<{ count: string }>>(
         `SELECT COUNT(*)::text AS count FROM services_schema.services
          WHERE "companyId" = $1 AND "status" = $2`,
         [companyId, status],
@@ -302,7 +302,7 @@ export class DashboardService {
       return Number(rows[0]?.count ?? 0);
     }
 
-    const { rows } = await this.pool.query<{ count: string }>(
+    const rows = await this.dataSource.query<Array<{ count: string }>>(
       `SELECT COUNT(*)::text AS count FROM services_schema.services WHERE "companyId" = $1`,
       [companyId],
     );

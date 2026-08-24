@@ -1,4 +1,4 @@
-import type { Pool } from 'pg';
+import type { DataSource } from 'typeorm';
 
 import type { EmailLogRepository } from '../db/email-log-repository.js';
 import type { NotificationRepository } from '../db/notification-repository.js';
@@ -17,7 +17,7 @@ export interface InboundEnvelope {
 }
 
 export interface ProcessInboundEventDeps {
-  pool: Pool;
+  dataSource: DataSource;
   processedEvents: ProcessedEventsRepository;
   recipients: RecipientRepository;
   notifications: NotificationRepository;
@@ -30,35 +30,24 @@ export async function processInboundEvent(
   exchange: string,
   parsedBody: unknown,
 ): Promise<void> {
-  const client = await deps.pool.connect();
-  try {
-    await client.query('BEGIN');
-
-    const isNewEvent = await deps.processedEvents.markProcessed(client, envelope.id);
+  await deps.dataSource.transaction(async (manager) => {
+    const isNewEvent = await deps.processedEvents.markProcessed(manager, envelope.id);
     if (!isNewEvent) {
-      await client.query('COMMIT');
       logger.info({ eventId: envelope.id }, '[notifications-service] already processed - skipping');
       return;
     }
 
     if (exchange === ANALYTICS_EVENTS_EXCHANGE) {
-      await handleAnalyticsEvent(client, envelope, {
+      await handleAnalyticsEvent(manager, envelope, {
         recipients: deps.recipients,
         notifications: deps.notifications,
       });
     } else {
-      await handleDomainEvent(client, parsedBody as WireEventEnvelope, {
+      await handleDomainEvent(manager, parsedBody as WireEventEnvelope, {
         recipients: deps.recipients,
         notifications: deps.notifications,
         emailLogs: deps.emailLogs,
       });
     }
-
-    await client.query('COMMIT');
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
-  } finally {
-    client.release();
-  }
+  });
 }

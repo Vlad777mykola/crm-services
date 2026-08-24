@@ -1,13 +1,13 @@
-import type { Pool } from 'pg';
+import type { DataSource } from 'typeorm';
 
 /**
  * Creates reviews_schema - see docs/architecture/microservices-extraction-checklist.md
  * Phase 10 Task 10.3. No backfill: starts empty.
  */
-export async function ensureReviewsSchema(pool: Pool): Promise<void> {
-  await pool.query(`CREATE SCHEMA IF NOT EXISTS reviews_schema`);
+export async function ensureReviewsSchema(dataSource: DataSource): Promise<void> {
+  await dataSource.query(`CREATE SCHEMA IF NOT EXISTS reviews_schema`);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS reviews_schema.reviews (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       "appointmentId" uuid NOT NULL,
@@ -20,14 +20,14 @@ export async function ensureReviewsSchema(pool: Pool): Promise<void> {
       "createdAt" timestamptz NOT NULL DEFAULT now()
     )
   `);
-  await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS "UQ_reviews_appointmentId" ON reviews_schema.reviews ("appointmentId")`);
-  await pool.query(`CREATE INDEX IF NOT EXISTS "IDX_reviews_companyId" ON reviews_schema.reviews ("companyId")`);
-  await pool.query(`CREATE INDEX IF NOT EXISTS "IDX_reviews_serviceId" ON reviews_schema.reviews ("serviceId")`);
-  await pool.query(`CREATE INDEX IF NOT EXISTS "IDX_reviews_specialistProfileId" ON reviews_schema.reviews ("specialistProfileId")`);
+  await dataSource.query(`CREATE UNIQUE INDEX IF NOT EXISTS "UQ_reviews_appointmentId" ON reviews_schema.reviews ("appointmentId")`);
+  await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_reviews_companyId" ON reviews_schema.reviews ("companyId")`);
+  await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_reviews_serviceId" ON reviews_schema.reviews ("serviceId")`);
+  await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_reviews_specialistProfileId" ON reviews_schema.reviews ("specialistProfileId")`);
 
   // Not used yet - no consumer exists in this phase. Reserved for consistency
   // with every other service's schema.
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS reviews_schema.processed_events (
       "event_id" uuid NOT NULL,
       "consumer_name" varchar(100) NOT NULL,
@@ -36,7 +36,7 @@ export async function ensureReviewsSchema(pool: Pool): Promise<void> {
     )
   `);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS reviews_schema.outbox_events (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       "eventType" varchar(100) NOT NULL,
@@ -52,6 +52,6 @@ export async function ensureReviewsSchema(pool: Pool): Promise<void> {
       "publishedAt" timestamptz
     )
   `);
-  await pool.query(`CREATE INDEX IF NOT EXISTS "IDX_reviews_outbox_events_status" ON reviews_schema.outbox_events ("status")`);
-  await pool.query(`CREATE INDEX IF NOT EXISTS "IDX_reviews_outbox_events_nextRetryAt" ON reviews_schema.outbox_events ("nextRetryAt")`);
+  await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_reviews_outbox_events_status" ON reviews_schema.outbox_events ("status")`);
+  await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_reviews_outbox_events_nextRetryAt" ON reviews_schema.outbox_events ("nextRetryAt")`);
 }

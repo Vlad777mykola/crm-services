@@ -1,4 +1,6 @@
-import type { PoolClient } from 'pg';
+import type { EntityManager } from 'typeorm';
+
+import { OutboxEventEntity } from '../db/entities/outbox-event.entity.js';
 
 export const DOMAIN_EVENTS_EXCHANGE = 'domain.events';
 
@@ -15,12 +17,14 @@ export interface RecordOutboxEventInput {
   aggregateId: string;
 }
 
-export async function recordOutboxEvent(client: PoolClient, input: RecordOutboxEventInput): Promise<void> {
+export async function recordOutboxEvent(manager: EntityManager, input: RecordOutboxEventInput): Promise<void> {
   const routing = specialistEventRouting[input.type];
-  await client.query(
-    `INSERT INTO specialists_schema.outbox_events
-       ("eventType", "exchange", "routingKey", "aggregateType", "aggregateId", "payload")
-     VALUES ($1, $2, $3, $4, $5, $6)`,
-    [input.type, routing.exchange, routing.routingKey, 'specialist_profile', input.aggregateId, input.payload],
-  );
+  await manager.getRepository(OutboxEventEntity).insert({
+    eventType: input.type,
+    exchange: routing.exchange,
+    routingKey: routing.routingKey,
+    aggregateType: 'specialist_profile',
+    aggregateId: input.aggregateId,
+    payload: input.payload,
+  });
 }

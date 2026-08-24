@@ -1,26 +1,26 @@
 import { randomUUID } from 'node:crypto';
 
-import type { Pool } from 'pg';
+import type { DataSource } from 'typeorm';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { processInboundEvent } from './process-inbound-event.js';
-import { createPool } from '../db/pool.js';
+import { createDataSource } from '../db/data-source.js';
 import { ensureUsersSchema } from '../db/schema.js';
 import { UserRepository } from '../db/user-repository.js';
 import { CONSUMER_NAME, ProcessedEventsRepository } from '../idempotency/processed-events-repository.js';
 
 const hasDatabase = process.env.USERS_INTEGRATION_TEST === '1';
 
-async function countProcessedEvents(pool: Pool, eventId: string): Promise<number> {
-  const { rows } = await pool.query<{ count: string }>(
+async function countProcessedEvents(dataSource: DataSource, eventId: string): Promise<number> {
+  const rows = await dataSource.query<Array<{ count: string }>>(
     `SELECT count(*)::text AS count FROM users_schema.processed_events WHERE "event_id" = $1 AND "consumer_name" = $2`,
     [eventId, CONSUMER_NAME],
   );
   return Number(rows[0]?.count ?? 0);
 }
 
-async function profileExists(pool: Pool, userId: string): Promise<boolean> {
-  const { rows } = await pool.query<{ count: string }>(
+async function profileExists(dataSource: DataSource, userId: string): Promise<boolean> {
+  const rows = await dataSource.query<Array<{ count: string }>>(
     `SELECT count(*)::text AS count
      FROM users_schema.users u
      JOIN users_schema.user_profiles p ON p."userId" = u."id"
@@ -31,24 +31,25 @@ async function profileExists(pool: Pool, userId: string): Promise<boolean> {
 }
 
 describe.skipIf(!hasDatabase)('processInboundEvent integration', () => {
-  let pool: Pool;
+  let dataSource: DataSource;
   const processedEvents = new ProcessedEventsRepository();
   let users: UserRepository;
 
   beforeAll(async () => {
-    pool = createPool();
-    await ensureUsersSchema(pool);
-    users = new UserRepository(pool);
+    dataSource = createDataSource();
+    await dataSource.initialize();
+    await ensureUsersSchema(dataSource);
+    users = new UserRepository(dataSource);
   });
 
   afterAll(async () => {
-    await pool.end();
+    await dataSource.destroy();
   });
 
   beforeEach(async () => {
-    await pool.query('DELETE FROM users_schema.user_profiles');
-    await pool.query('DELETE FROM users_schema.users');
-    await pool.query('DELETE FROM users_schema.processed_events');
+    await dataSource.query('DELETE FROM users_schema.user_profiles');
+    await dataSource.query('DELETE FROM users_schema.users');
+    await dataSource.query('DELETE FROM users_schema.processed_events');
   });
 
   it('happy path: processed_events and profile created', async () => {
@@ -56,7 +57,7 @@ describe.skipIf(!hasDatabase)('processInboundEvent integration', () => {
     const userId = randomUUID();
 
     await processInboundEvent(
-      { pool, processedEvents, users },
+      { dataSource, processedEvents, users },
       {
         id: eventId,
         type: 'auth.user_registered',
@@ -64,8 +65,8 @@ describe.skipIf(!hasDatabase)('processInboundEvent integration', () => {
       },
     );
 
-    expect(await countProcessedEvents(pool, eventId)).toBe(1);
-    expect(await profileExists(pool, userId)).toBe(true);
+    expect(await countProcessedEvents(dataSource, eventId)).toBe(1);
+    expect(await profileExists(dataSource, userId)).toBe(true);
   });
 
   it('handler failure rolls back processed_events and profile', async () => {
@@ -80,7 +81,7 @@ describe.skipIf(!hasDatabase)('processInboundEvent integration', () => {
     await expect(
       processInboundEvent(
         {
-          pool,
+          dataSource,
           processedEvents,
           users,
           afterMarkProcessed: () => {
@@ -91,13 +92,13 @@ describe.skipIf(!hasDatabase)('processInboundEvent integration', () => {
       ),
     ).rejects.toThrow('simulated handler failure');
 
-    expect(await countProcessedEvents(pool, eventId)).toBe(0);
-    expect(await profileExists(pool, userId)).toBe(false);
+    expect(await countProcessedEvents(dataSource, eventId)).toBe(0);
+    expect(await profileExists(dataSource, userId)).toBe(false);
 
-    await processInboundEvent({ pool, processedEvents, users }, envelope);
+    await processInboundEvent({ dataSource, processedEvents, users }, envelope);
 
-    expect(await countProcessedEvents(pool, eventId)).toBe(1);
-    expect(await profileExists(pool, userId)).toBe(true);
+    expect(await countProcessedEvents(dataSource, eventId)).toBe(1);
+    expect(await profileExists(dataSource, userId)).toBe(true);
   });
 
   it('duplicate after success is skipped without duplicate profile', async () => {
@@ -109,13 +110,13 @@ describe.skipIf(!hasDatabase)('processInboundEvent integration', () => {
       data: { userId, email: 'carol@example.com', name: 'Carol' },
     };
 
-    await processInboundEvent({ pool, processedEvents, users }, envelope);
-    await processInboundEvent({ pool, processedEvents, users }, envelope);
+    await processInboundEvent({ dataSource, processedEvents, users }, envelope);
+    await processInboundEvent({ dataSource, processedEvents, users }, envelope);
 
-    expect(await countProcessedEvents(pool, eventId)).toBe(1);
-    expect(await profileExists(pool, userId)).toBe(true);
+    expect(await countProcessedEvents(dataSource, eventId)).toBe(1);
+    expect(await profileExists(dataSource, userId)).toBe(true);
 
-    const { rows } = await pool.query(`SELECT count(*)::text AS count FROM users_schema.users WHERE "id" = $1`, [
+    const rows = await dataSource.query<Array<{ count: string }>>(`SELECT count(*)::text AS count FROM users_schema.users WHERE "id" = $1`, [
       userId,
     ]);
     expect(Number(rows[0]?.count)).toBe(1);

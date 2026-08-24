@@ -1,5 +1,5 @@
 import express, { type Express } from 'express';
-import type { Pool } from 'pg';
+import type { DataSource } from 'typeorm';
 
 import { errorHandler } from './http/error-handler.js';
 import { createHealthRouter } from './http/health.routes.js';
@@ -8,13 +8,13 @@ import { requestLogger } from './http/request-logger.js';
 import { createReviewsRouter } from './http/routes/reviews.routes.js';
 import type { ReviewsService } from './modules/reviews/reviews.service.js';
 
-export function createApp(pool: Pool, reviewsService: ReviewsService): Express {
+export function createApp(dataSource: DataSource, reviewsService: ReviewsService): Express {
   const app = express();
 
   app.use(express.json());
   app.use(requestLogger);
 
-  app.use(createHealthRouter(pool));
+  app.use(createHealthRouter(dataSource));
   app.use(createReviewsRouter(reviewsService));
 
   app.use(notFoundHandler);

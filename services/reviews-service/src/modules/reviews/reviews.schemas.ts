@@ -1,32 +1,40 @@
 import { z } from 'zod';
 
-export const createReviewRequestSchema = z.object({
+import type {
+  AppointmentOnlyIdParams,
+  CompanyIdParams,
+  CreateReviewRequest,
+  ServiceOnlyIdParams,
+  SpecialistIdParams,
+} from './reviews.contracts.js';
+
+export const createReviewRequestSchema: z.ZodType<CreateReviewRequest> = z.object({
   rating: z.number().int().min(1).max(5),
   comment: z.string().nullable().optional(),
 });
 
 export type CreateReviewInput = z.infer<typeof createReviewRequestSchema>;
 
-export const appointmentOnlyIdParamsSchema = z.object({
+export const appointmentOnlyIdParamsSchema: z.ZodType<AppointmentOnlyIdParams> = z.object({
   appointmentId: z.string().uuid(),
 });
 
-export type AppointmentOnlyIdParams = z.infer<typeof appointmentOnlyIdParamsSchema>;
+export type AppointmentOnlyIdParamsInput = z.infer<typeof appointmentOnlyIdParamsSchema>;
 
-export const companyIdParamsSchema = z.object({
+export const companyIdParamsSchema: z.ZodType<CompanyIdParams> = z.object({
   companyId: z.string().uuid(),
 });
 
-export type CompanyIdParams = z.infer<typeof companyIdParamsSchema>;
+export type CompanyIdParamsInput = z.infer<typeof companyIdParamsSchema>;
 
-export const serviceOnlyIdParamsSchema = z.object({
+export const serviceOnlyIdParamsSchema: z.ZodType<ServiceOnlyIdParams> = z.object({
   serviceId: z.string().uuid(),
 });
 
-export type ServiceOnlyIdParams = z.infer<typeof serviceOnlyIdParamsSchema>;
+export type ServiceOnlyIdParamsInput = z.infer<typeof serviceOnlyIdParamsSchema>;
 
-export const specialistIdParamsSchema = z.object({
+export const specialistIdParamsSchema: z.ZodType<SpecialistIdParams> = z.object({
   specialistId: z.string().uuid(),
 });
 
-export type SpecialistIdParams = z.infer<typeof specialistIdParamsSchema>;
+export type SpecialistIdParamsInput = z.infer<typeof specialistIdParamsSchema>;

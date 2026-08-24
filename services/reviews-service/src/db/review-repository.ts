@@ -1,16 +1,8 @@
-import type { Pool, PoolClient } from 'pg';
+import type { DataSource, EntityManager } from 'typeorm';
 
-export interface ReviewRow {
-  id: string;
-  appointmentId: string;
-  companyId: string;
-  serviceId: string;
-  specialistProfileId: string | null;
-  clientUserId: string;
-  rating: number;
-  comment: string | null;
-  createdAt: Date;
-}
+import { ReviewEntity, type ReviewRow } from './entities/review.entity.js';
+
+export type { ReviewRow } from './entities/review.entity.js';
 
 export interface CreateReviewInput {
   appointmentId: string;
@@ -23,71 +15,35 @@ export interface CreateReviewInput {
 }
 
 export class ReviewRepository {
-  constructor(private readonly pool: Pool) {}
+  constructor(private readonly dataSource: DataSource) {}
 
-  async findByAppointmentId(appointmentId: string): Promise<ReviewRow | undefined> {
-    const { rows } = await this.pool.query<ReviewRow>(
-      `SELECT * FROM reviews_schema.reviews WHERE "appointmentId" = $1`,
-      [appointmentId],
-    );
-    return rows[0];
+  async findByAppointmentId(appointmentId: string): Promise<ReviewRow | null> {
+    return this.dataSource.getRepository(ReviewEntity).findOne({ where: { appointmentId } });
   }
 
-  async create(client: PoolClient, input: CreateReviewInput): Promise<ReviewRow> {
-    const { rows } = await client.query<ReviewRow>(
-      `INSERT INTO reviews_schema.reviews
-         ("appointmentId", "companyId", "serviceId", "specialistProfileId", "clientUserId", "rating", "comment")
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING *`,
-      [
-        input.appointmentId,
-        input.companyId,
-        input.serviceId,
-        input.specialistProfileId,
-        input.clientUserId,
-        input.rating,
-        input.comment,
-      ],
-    );
-    return rows[0];
+  async create(manager: EntityManager, input: CreateReviewInput): Promise<ReviewRow> {
+    const repository = manager.getRepository(ReviewEntity);
+    return repository.save(repository.create(input));
   }
 
   async listByCompany(companyId: string): Promise<ReviewRow[]> {
-    const { rows } = await this.pool.query<ReviewRow>(
-      `SELECT * FROM reviews_schema.reviews WHERE "companyId" = $1 ORDER BY "createdAt" DESC`,
-      [companyId],
-    );
-    return rows;
+    return this.dataSource.getRepository(ReviewEntity).find({
+      where: { companyId },
+      order: { createdAt: 'DESC' },
+    });
   }
 
   async listByService(serviceId: string): Promise<ReviewRow[]> {
-    const { rows } = await this.pool.query<ReviewRow>(
-      `SELECT * FROM reviews_schema.reviews WHERE "serviceId" = $1 ORDER BY "createdAt" DESC`,
-      [serviceId],
-    );
-    return rows;
+    return this.dataSource.getRepository(ReviewEntity).find({
+      where: { serviceId },
+      order: { createdAt: 'DESC' },
+    });
   }
 
   async listBySpecialist(specialistProfileId: string): Promise<ReviewRow[]> {
-    const { rows } = await this.pool.query<ReviewRow>(
-      `SELECT * FROM reviews_schema.reviews WHERE "specialistProfileId" = $1 ORDER BY "createdAt" DESC`,
-      [specialistProfileId],
-    );
-    return rows;
-  }
-
-  async withTransaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
-    const client = await this.pool.connect();
-    try {
-      await client.query('BEGIN');
-      const result = await fn(client);
-      await client.query('COMMIT');
-      return result;
-    } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
-    } finally {
-      client.release();
-    }
+    return this.dataSource.getRepository(ReviewEntity).find({
+      where: { specialistProfileId },
+      order: { createdAt: 'DESC' },
+    });
   }
 }

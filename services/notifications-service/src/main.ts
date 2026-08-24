@@ -1,6 +1,6 @@
 import { createApp } from './app.js';
 import { processInboundEvent } from './consumer/process-inbound-event.js';
-import { createPool } from './db/pool.js';
+import { createDataSource } from './db/data-source.js';
 import { ensureNotificationsSchema } from './db/schema.js';
 import { EmailLogRepository } from './db/email-log-repository.js';
 import { NotificationRepository } from './db/notification-repository.js';
@@ -15,12 +15,13 @@ import { ANALYTICS_EVENTS_EXCHANGE, DOMAIN_EVENTS_DLX, DOMAIN_EVENTS_EXCHANGE } 
 const QUEUE_NAME = 'notifications-service.q';
 
 async function bootstrap(): Promise<void> {
-  const pool = createPool();
-  await ensureNotificationsSchema(pool);
+  const dataSource = createDataSource();
+  await dataSource.initialize();
+  await ensureNotificationsSchema(dataSource);
   const processedEvents = new ProcessedEventsRepository();
 
   const recipients = new RecipientRepository();
-  const notifications = new NotificationRepository(pool);
+  const notifications = new NotificationRepository(dataSource);
   const emailLogs = new EmailLogRepository();
   const notificationsHttpService = new NotificationsHttpService(notifications);
 
@@ -36,7 +37,7 @@ async function bootstrap(): Promise<void> {
     onMessage: async (parsedBody, _routingKey, exchange) => {
       const envelope = parsedBody as { id: string; type: string; data: Record<string, unknown> };
       await processInboundEvent(
-        { pool, processedEvents, recipients, notifications, emailLogs },
+        { dataSource, processedEvents, recipients, notifications, emailLogs },
         envelope,
         exchange,
         parsedBody,
@@ -44,7 +45,7 @@ async function bootstrap(): Promise<void> {
     },
   });
 
-  const app = createApp(pool, consumer, notificationsHttpService);
+  const app = createApp(dataSource, consumer, notificationsHttpService);
   const server = app.listen(env.HEALTH_PORT, () => {
     logger.info(`[notifications-service] listening on :${env.HEALTH_PORT} (/health/*, /notifications/me*)`);
   });
@@ -54,7 +55,7 @@ async function bootstrap(): Promise<void> {
   function shutdown(signal: string): void {
     logger.info(`[notifications-service] received ${signal}, shutting down`);
     server.close(() => {
-      Promise.allSettled([consumer.close(), pool.end()])
+      Promise.allSettled([consumer.close(), dataSource.destroy()])
         .catch((err: unknown) => logger.error({ err }, '[notifications-service] error during shutdown'))
         .finally(() => process.exit(0));
     });

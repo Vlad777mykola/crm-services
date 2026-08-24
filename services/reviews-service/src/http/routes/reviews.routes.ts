@@ -7,11 +7,11 @@ import {
   createReviewRequestSchema,
   serviceOnlyIdParamsSchema,
   specialistIdParamsSchema,
-  type AppointmentOnlyIdParams,
-  type CompanyIdParams,
+  type AppointmentOnlyIdParamsInput,
+  type CompanyIdParamsInput,
   type CreateReviewInput,
-  type ServiceOnlyIdParams,
-  type SpecialistIdParams,
+  type ServiceOnlyIdParamsInput,
+  type SpecialistIdParamsInput,
 } from '../../modules/reviews/reviews.schemas.js';
 import { requireAuth } from '../require-auth.js';
 import { validate } from '../validate.js';
@@ -26,7 +26,7 @@ export function createReviewsRouter(reviewsService: ReviewsService): Router {
     validate(createReviewRequestSchema, 'body'),
     async (req, res, next) => {
       try {
-        const { appointmentId } = req.params as unknown as AppointmentOnlyIdParams;
+        const { appointmentId } = req.params as unknown as AppointmentOnlyIdParamsInput;
         const review = await reviewsService.create(appointmentId, req.auth!.userId, req.body as CreateReviewInput);
         res.status(201).json({ message: 'Review created', data: review });
       } catch (err) {
@@ -40,7 +40,7 @@ export function createReviewsRouter(reviewsService: ReviewsService): Router {
     validate(companyIdParamsSchema, 'params'),
     async (req, res, next) => {
       try {
-        const { companyId } = req.params as unknown as CompanyIdParams;
+        const { companyId } = req.params as unknown as CompanyIdParamsInput;
         const reviews = await reviewsService.listForCompany(companyId);
         res.status(200).json({ message: 'Company reviews', data: reviews });
       } catch (err) {
@@ -54,7 +54,7 @@ export function createReviewsRouter(reviewsService: ReviewsService): Router {
     validate(serviceOnlyIdParamsSchema, 'params'),
     async (req, res, next) => {
       try {
-        const { serviceId } = req.params as unknown as ServiceOnlyIdParams;
+        const { serviceId } = req.params as unknown as ServiceOnlyIdParamsInput;
         const reviews = await reviewsService.listForService(serviceId);
         res.status(200).json({ message: 'Service reviews', data: reviews });
       } catch (err) {
@@ -68,7 +68,7 @@ export function createReviewsRouter(reviewsService: ReviewsService): Router {
     validate(specialistIdParamsSchema, 'params'),
     async (req, res, next) => {
       try {
-        const { specialistId } = req.params as unknown as SpecialistIdParams;
+        const { specialistId } = req.params as unknown as SpecialistIdParamsInput;
         const reviews = await reviewsService.listForSpecialist(specialistId);
         res.status(200).json({ message: 'Specialist reviews', data: reviews });
       } catch (err) {

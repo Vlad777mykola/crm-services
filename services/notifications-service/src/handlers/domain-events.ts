@@ -1,4 +1,4 @@
-import type { PoolClient } from 'pg';
+import type { EntityManager } from 'typeorm';
 
 import type { EmailLogRepository } from '../db/email-log-repository.js';
 import { NotificationRepository, NotificationType } from '../db/notification-repository.js';
@@ -28,7 +28,7 @@ export interface DomainEventHandlerDeps {
  * simulated via email_logs until a separate delivery worker exists.
  */
 export async function handleDomainEvent(
-  client: PoolClient,
+  manager: EntityManager,
   event: WireEventEnvelope,
   deps: DomainEventHandlerDeps,
 ): Promise<void> {
@@ -43,17 +43,17 @@ export async function handleDomainEvent(
 
   const targets =
     recipientSpec.kind === 'user'
-      ? [{ userId: recipientSpec.userId, email: await deps.recipients.getUserEmail(client, recipientSpec.userId) }]
-      : await deps.recipients.getCompanyManagerUsers(client, recipientSpec.companyId);
+      ? [{ userId: recipientSpec.userId, email: await deps.recipients.getUserEmail(manager, recipientSpec.userId) }]
+      : await deps.recipients.getCompanyManagerUsers(manager, recipientSpec.companyId);
 
   for (const target of targets) {
-    await deps.notifications.create(client, target.userId, notificationType, content.subject, content.body, {
+    await deps.notifications.create(manager, target.userId, notificationType, content.subject, content.body, {
       eventType: event.type,
       eventId: event.id,
     });
 
     if (target.email) {
-      await deps.emailLogs.record(client, {
+      await deps.emailLogs.record(manager, {
         toEmail: target.email,
         subject: content.subject,
         body: content.body,

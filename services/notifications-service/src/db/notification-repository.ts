@@ -1,10 +1,10 @@
-import type { Pool, PoolClient } from 'pg';
+import type { DataSource, EntityManager } from 'typeorm';
+
+import { NotificationEntity, type NotificationRow } from './entities/notification.entity.js';
 
 // Mirrors backend/src/modules/notifications/notification.entity.ts's enum -
 // duplicated deliberately, not imported, so this service never depends on
-// backend source. This service is the logical owner of the `notifications`
-// table (see docs/architecture/service-ownership.md); the backend API may
-// only read it.
+// backend source.
 export enum NotificationType {
   APPOINTMENT_REQUESTED = 'appointment.requested',
   APPOINTMENT_APPROVED = 'appointment.approved',
@@ -15,72 +15,52 @@ export enum NotificationType {
   COMPANY_RATING_UPDATED = 'company.rating_updated',
 }
 
-export interface NotificationRow {
-  id: string;
-  userId: string;
-  type: string;
-  title: string;
-  body: string | null;
-  metadata: Record<string, unknown> | null;
-  isRead: boolean;
-  readAt: Date | null;
-  createdAt: Date;
-}
+export type { NotificationRow } from './entities/notification.entity.js';
 
 export class NotificationRepository {
-  constructor(private readonly pool: Pool) {}
+  constructor(private readonly dataSource: DataSource) {}
 
   async create(
-    client: PoolClient,
+    manager: EntityManager,
     userId: string,
     type: NotificationType,
     title: string,
     body: string | null,
     metadata: Record<string, unknown> | null,
   ): Promise<void> {
-    await client.query(
-      `INSERT INTO notifications_schema.notifications ("userId", "type", "title", "body", "metadata")
-       VALUES ($1, $2, $3, $4, $5)`,
-      [userId, type, title, body, metadata ? JSON.stringify(metadata) : null],
-    );
+    const repository = manager.getRepository(NotificationEntity);
+    await repository.save(repository.create({ userId, type, title, body, metadata }));
   }
 
   async listForUser(userId: string): Promise<NotificationRow[]> {
-    const { rows } = await this.pool.query<NotificationRow>(
-      `SELECT * FROM notifications_schema.notifications WHERE "userId" = $1 ORDER BY "createdAt" DESC`,
-      [userId],
-    );
-    return rows;
+    return this.dataSource.getRepository(NotificationEntity).find({
+      where: { userId },
+      order: { createdAt: 'DESC' },
+    });
   }
 
   async countUnread(userId: string): Promise<number> {
-    const { rows } = await this.pool.query<{ count: string }>(
-      `SELECT COUNT(*) FROM notifications_schema.notifications WHERE "userId" = $1 AND "isRead" = false`,
-      [userId],
-    );
-    return Number(rows[0]?.count ?? 0);
+    return this.dataSource.getRepository(NotificationEntity).count({ where: { userId, isRead: false } });
   }
 
-  async findByIdForUser(userId: string, notificationId: string): Promise<NotificationRow | undefined> {
-    const { rows } = await this.pool.query<NotificationRow>(
-      `SELECT * FROM notifications_schema.notifications WHERE "id" = $1 AND "userId" = $2`,
-      [notificationId, userId],
-    );
-    return rows[0];
+  async findByIdForUser(userId: string, notificationId: string): Promise<NotificationRow | null> {
+    return this.dataSource.getRepository(NotificationEntity).findOne({ where: { id: notificationId, userId } });
   }
 
   async markRead(notificationId: string): Promise<NotificationRow> {
-    const { rows } = await this.pool.query<NotificationRow>(
-      `UPDATE notifications_schema.notifications SET "isRead" = true, "readAt" = now() WHERE "id" = $1 RETURNING *`,
-      [notificationId],
-    );
-    return rows[0];
+    const repository = this.dataSource.getRepository(NotificationEntity);
+    await repository.update({ id: notificationId }, { isRead: true, readAt: new Date() });
+    return repository.findOneByOrFail({ id: notificationId });
   }
 
   async markAllReadForUser(userId: string): Promise<void> {
-    await this.pool.query(
-      `UPDATE notifications_schema.notifications SET "isRead" = true, "readAt" = now() WHERE "userId" = $1 AND "isRead" = false`,
-      [userId],
-    );
+    await this.dataSource
+      .getRepository(NotificationEntity)
+      .createQueryBuilder()
+      .update()
+      .set({ isRead: true, readAt: new Date() })
+      .where('"userId" = :userId', { userId })
+      .andWhere('"isRead" = false')
+      .execute();
   }
 }

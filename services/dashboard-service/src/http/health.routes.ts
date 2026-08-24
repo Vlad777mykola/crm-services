@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import type { Pool } from 'pg';
+import type { DataSource } from 'typeorm';
 
 /** Schemas dashboard reads directly (from dashboard.service.ts SQL). */
 const REQUIRED_SCHEMAS = [
@@ -12,7 +12,7 @@ const REQUIRED_SCHEMAS = [
   'services_schema',
 ];
 
-export function createHealthRouter(pool: Pool): Router {
+export function createHealthRouter(dataSource: DataSource): Router {
   const router = Router();
 
   router.get('/health/live', (_req, res) => {
@@ -21,12 +21,12 @@ export function createHealthRouter(pool: Pool): Router {
 
   router.get('/health/ready', (_req, res) => {
     const schemaList = REQUIRED_SCHEMAS.map((s) => `'${s}'`).join(', ');
-    pool
-      .query(
+    dataSource
+      .query<Array<{ schema_name: string }>>(
         `SELECT schema_name FROM information_schema.schemata WHERE schema_name IN (${schemaList})`,
       )
       .then((result) => {
-        if (result.rowCount !== REQUIRED_SCHEMAS.length) {
+        if (result.length !== REQUIRED_SCHEMAS.length) {
           throw new Error('Required dashboard schemas are missing');
         }
         res.status(200).json({ status: 'ok' });

@@ -1,4 +1,4 @@
-import type { PoolClient } from 'pg';
+import type { EntityManager } from 'typeorm';
 
 import { NotificationRepository, NotificationType } from '../db/notification-repository.js';
 import type { RecipientRepository } from '../db/recipient-repository.js';
@@ -16,7 +16,7 @@ export interface AnalyticsEventHandlerDeps {
 }
 
 export async function handleAnalyticsEvent(
-  client: PoolClient,
+  manager: EntityManager,
   envelope: { id: string; type: string; data: Record<string, unknown> },
   deps: AnalyticsEventHandlerDeps,
 ): Promise<void> {
@@ -26,12 +26,12 @@ export async function handleAnalyticsEvent(
   }
 
   const { companyId, averageRating, reviewCount } = envelope.data as AnalyticsCompanyRatingUpdatedEnvelope['data'];
-  const managers = await deps.recipients.getCompanyManagerUsers(client, companyId);
+  const managers = await deps.recipients.getCompanyManagerUsers(manager, companyId);
 
-  for (const manager of managers) {
+  for (const recipient of managers) {
     await deps.notifications.create(
-      client,
-      manager.userId,
+      manager,
+      recipient.userId,
       NotificationType.COMPANY_RATING_UPDATED,
       `Your average rating is now ${averageRating.toFixed(1)}`,
       `Based on ${reviewCount} review${reviewCount === 1 ? '' : 's'} so far, computed by the AI analytics service.`,

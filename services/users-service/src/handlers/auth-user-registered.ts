@@ -1,4 +1,4 @@
-import type { PoolClient } from 'pg';
+import type { EntityManager } from 'typeorm';
 
 import type { UserRepository } from '../db/user-repository.js';
 import { logger } from '../logger.js';
@@ -11,10 +11,10 @@ export interface AuthUserRegisteredData {
 }
 
 export async function handleAuthUserRegistered(
-  client: PoolClient,
+  manager: EntityManager,
   data: AuthUserRegisteredData,
   users: UserRepository,
 ): Promise<void> {
-  await users.createProfileIfMissing(client, data);
+  await users.createProfileIfMissing(manager, data);
   logger.info({ userId: data.userId }, '[users-service] profile created from auth.user_registered');
 }

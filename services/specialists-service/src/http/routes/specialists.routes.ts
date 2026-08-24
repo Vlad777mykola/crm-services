@@ -9,7 +9,7 @@ import {
   updateSpecialistProfileRequestSchema,
   type CreateSpecialistProfileRequestInput,
   type PublicSpecialistsQueryInput,
-  type SpecialistIdParams,
+  type SpecialistIdParamsInput,
   type UpdateSpecialistProfileRequestInput,
 } from '../../modules/specialists/specialists.schemas.js';
 import { validate } from '../validate.js';
@@ -70,7 +70,7 @@ export function createSpecialistsRouter(specialistsService: SpecialistsService):
     validate(specialistIdParamsSchema, 'params'),
     async (req, res, next) => {
       try {
-        const { specialistId } = req.params as unknown as SpecialistIdParams;
+        const { specialistId } = req.params as unknown as SpecialistIdParamsInput;
         const profile = await specialistsService.getById(specialistId, req.auth?.userId);
         res.status(200).json({ message: 'Specialist profile found', data: profile });
       } catch (err) {

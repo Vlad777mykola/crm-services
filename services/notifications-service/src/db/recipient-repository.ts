@@ -1,4 +1,4 @@
-import type { PoolClient } from 'pg';
+import type { EntityManager } from 'typeorm';
 
 export interface CompanyManagerUser {
   userId: string;
@@ -11,13 +11,13 @@ export interface CompanyManagerUser {
  * writes to either table. See docs/architecture/service-ownership.md.
  */
 export class RecipientRepository {
-  async getUserEmail(client: PoolClient, userId: string): Promise<string | null> {
-    const { rows } = await client.query<{ email: string }>('SELECT "email" FROM "users" WHERE "id" = $1', [userId]);
+  async getUserEmail(manager: EntityManager, userId: string): Promise<string | null> {
+    const rows = await manager.query<Array<{ email: string }>>('SELECT "email" FROM "users" WHERE "id" = $1', [userId]);
     return rows[0]?.email ?? null;
   }
 
-  async getCompanyManagerUsers(client: PoolClient, companyId: string): Promise<CompanyManagerUser[]> {
-    const { rows } = await client.query<CompanyManagerUser>(
+  async getCompanyManagerUsers(manager: EntityManager, companyId: string): Promise<CompanyManagerUser[]> {
+    const rows = await manager.query<CompanyManagerUser[]>(
       `SELECT u."id" AS "userId", u."email" AS "email"
        FROM "company_members" cm
        JOIN "users" u ON u."id" = cm."userId"

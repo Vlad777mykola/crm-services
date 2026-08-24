@@ -1,5 +1,5 @@
 import express, { type Express } from 'express';
-import type { Pool } from 'pg';
+import type { DataSource } from 'typeorm';
 
 import { errorHandler } from './http/error-handler.js';
 import { notFoundHandler } from './http/not-found-handler.js';
@@ -8,7 +8,11 @@ import { requestLogger } from './http/request-logger.js';
 import type { NotificationsHttpService } from './modules/notifications/notifications.service.js';
 import type { RabbitMqConsumer } from './rabbitmq/consumer.js';
 
-export function createApp(pool: Pool, consumer: RabbitMqConsumer, notificationsService: NotificationsHttpService): Express {
+export function createApp(
+  dataSource: DataSource,
+  consumer: RabbitMqConsumer,
+  notificationsService: NotificationsHttpService,
+): Express {
   const app = express();
 
   app.use(express.json());
@@ -19,7 +23,7 @@ export function createApp(pool: Pool, consumer: RabbitMqConsumer, notificationsS
   });
 
   app.get('/health/ready', (_req, res) => {
-    pool
+    dataSource
       .query('SELECT 1')
       .then(() => {
         if (!consumer.isReady()) {

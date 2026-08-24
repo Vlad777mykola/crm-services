@@ -1,4 +1,4 @@
-import type { Pool } from 'pg';
+import type { DataSource } from 'typeorm';
 
 /**
  * Creates notifications_schema - see
@@ -7,10 +7,10 @@ import type { Pool } from 'pg';
  * schema (where they previously lived, written only by this service and read
  * by legacy's HTTP API) into their own schema, starting empty.
  */
-export async function ensureNotificationsSchema(pool: Pool): Promise<void> {
-  await pool.query(`CREATE SCHEMA IF NOT EXISTS notifications_schema`);
+export async function ensureNotificationsSchema(dataSource: DataSource): Promise<void> {
+  await dataSource.query(`CREATE SCHEMA IF NOT EXISTS notifications_schema`);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS notifications_schema.notifications (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       "userId" uuid NOT NULL,
@@ -23,10 +23,10 @@ export async function ensureNotificationsSchema(pool: Pool): Promise<void> {
       "createdAt" timestamptz NOT NULL DEFAULT now()
     )
   `);
-  await pool.query(`CREATE INDEX IF NOT EXISTS "IDX_notifications_userId" ON notifications_schema.notifications ("userId")`);
-  await pool.query(`CREATE INDEX IF NOT EXISTS "IDX_notifications_isRead" ON notifications_schema.notifications ("isRead")`);
+  await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_notifications_userId" ON notifications_schema.notifications ("userId")`);
+  await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_notifications_isRead" ON notifications_schema.notifications ("isRead")`);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS notifications_schema.email_logs (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       "toEmail" varchar(255) NOT NULL,
@@ -38,7 +38,7 @@ export async function ensureNotificationsSchema(pool: Pool): Promise<void> {
     )
   `);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS notifications_schema.processed_events (
       "event_id" uuid NOT NULL,
       "consumer_name" varchar(100) NOT NULL,

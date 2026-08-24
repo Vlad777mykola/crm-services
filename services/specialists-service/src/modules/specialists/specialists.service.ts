@@ -1,4 +1,4 @@
-import type { Pool } from 'pg';
+import type { DataSource } from 'typeorm';
 
 import { AppError } from '../../errors/AppError.js';
 import type { SpecialistProfileRow, StatusHistoryRow } from '../../db/specialist-repository.js';
@@ -20,8 +20,8 @@ const PUBLISHABLE_TRANSITIONS: Record<string, readonly string[]> = {
 export class SpecialistsService {
   private readonly specialists: SpecialistRepository;
 
-  constructor(private readonly pool: Pool) {
-    this.specialists = new SpecialistRepository(pool);
+  constructor(private readonly dataSource: DataSource) {
+    this.specialists = new SpecialistRepository(dataSource);
   }
 
   async createMine(userId: string, input: CreateSpecialistProfileRequestInput): Promise<SpecialistProfileRow> {
@@ -30,10 +30,8 @@ export class SpecialistsService {
       throw new AppError('This user already has a specialist profile', 409);
     }
 
-    const client = await this.pool.connect();
-    try {
-      await client.query('BEGIN');
-      const profile = await this.specialists.insert(client, {
+    return this.dataSource.transaction(async (manager) => {
+      const profile = await this.specialists.insert(manager, {
         userId,
         displayName: input.displayName,
         headline: input.headline ?? null,
@@ -43,27 +41,21 @@ export class SpecialistsService {
         isRemoteSupported: input.isRemoteSupported ?? false,
       });
 
-      await this.specialists.insertStatusHistory(client, {
+      await this.specialists.insertStatusHistory(manager, {
         specialistProfileId: profile.id,
         fromStatus: null,
         toStatus: profile.status,
         changedByUserId: userId,
       });
 
-      await recordOutboxEvent(client, {
+      await recordOutboxEvent(manager, {
         type: 'specialist.created',
         aggregateId: profile.id,
         payload: { specialistProfileId: profile.id, userId, displayName: profile.displayName },
       });
 
-      await client.query('COMMIT');
       return profile;
-    } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
-    } finally {
-      client.release();
-    }
+    });
   }
 
   async getMine(userId: string): Promise<SpecialistProfileRow> {
@@ -73,11 +65,8 @@ export class SpecialistsService {
   }
 
   async updateMine(userId: string, patch: UpdateSpecialistProfileRequestInput): Promise<SpecialistProfileRow> {
-    const client = await this.pool.connect();
-    try {
-      await client.query('BEGIN');
-
-      const existing = await this.specialists.findByUserIdWithClient(client, userId);
+    return this.dataSource.transaction(async (manager) => {
+      const existing = await this.specialists.findByUserIdWithManager(manager, userId);
       if (!existing) throw new AppError('This user does not have a specialist profile yet', 404);
 
       const fromStatus = existing.status;
@@ -92,10 +81,10 @@ export class SpecialistsService {
         }
       }
 
-      const updated = await this.specialists.update(client, userId, patch);
+      const updated = await this.specialists.update(manager, userId, patch);
 
       if (updated.status !== fromStatus) {
-        await this.specialists.insertStatusHistory(client, {
+        await this.specialists.insertStatusHistory(manager, {
           specialistProfileId: updated.id,
           fromStatus,
           toStatus: updated.status,
@@ -103,20 +92,14 @@ export class SpecialistsService {
         });
       }
 
-      await recordOutboxEvent(client, {
+      await recordOutboxEvent(manager, {
         type: 'specialist.updated',
         aggregateId: updated.id,
         payload: { specialistProfileId: updated.id, userId, status: updated.status },
       });
 
-      await client.query('COMMIT');
       return updated;
-    } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
-    } finally {
-      client.release();
-    }
+    });
   }
 
   async getMyStatusHistory(userId: string): Promise<StatusHistoryRow[]> {

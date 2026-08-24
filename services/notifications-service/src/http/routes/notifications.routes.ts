@@ -3,7 +3,7 @@ import { Router } from 'express';
 import type { NotificationsHttpService } from '../../modules/notifications/notifications.service.js';
 import {
   notificationIdParamsSchema,
-  type NotificationIdParams,
+  type NotificationIdParamsInput,
 } from '../../modules/notifications/notifications.schemas.js';
 import { requireAuth } from '../require-auth.js';
 import { validate } from '../validate.js';
@@ -47,7 +47,7 @@ export function createNotificationsRouter(notificationsService: NotificationsHtt
     validate(notificationIdParamsSchema, 'params'),
     async (req, res, next) => {
       try {
-        const { notificationId } = req.params as unknown as NotificationIdParams;
+        const { notificationId } = req.params as unknown as NotificationIdParamsInput;
         const notification = await notificationsService.markRead(req.auth!.userId, notificationId);
         res.status(200).json({ message: 'Notification marked as read', data: notification });
       } catch (err) {

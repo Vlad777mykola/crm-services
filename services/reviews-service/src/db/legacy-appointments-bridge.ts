@@ -1,4 +1,4 @@
-import type { Pool } from 'pg';
+import type { DataSource } from 'typeorm';
 
 export interface AppointmentForReview {
   companyId: string;
@@ -23,11 +23,11 @@ export interface AppointmentForReview {
  * instead. Remove once/if an appointment event carries `specialistProfileId`.
  */
 export async function findCompletedAppointmentForClient(
-  pool: Pool,
+  dataSource: DataSource,
   appointmentId: string,
   clientUserId: string,
 ): Promise<AppointmentForReview | undefined> {
-  const { rows } = await pool.query<AppointmentForReview>(
+  const rows = await dataSource.query<AppointmentForReview[]>(
     `SELECT a."companyId", a."serviceId", a."specialistProfileId", a."status", s."name" AS "serviceName"
      FROM appointments_schema.appointments a
      LEFT JOIN appointments_schema.appointment_service_projection s ON s."serviceId" = a."serviceId"
