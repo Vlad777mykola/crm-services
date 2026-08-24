@@ -3,7 +3,12 @@ import { Router } from 'express';
 
 import { env } from '../../env.js';
 import type { AuthService, RequestMeta } from '../../modules/auth/auth.service.js';
-import { loginRequestSchema, registerRequestSchema } from '../../modules/auth/auth.schemas.js';
+import {
+  loginRequestSchema,
+  registerRequestSchema,
+  type LoginRequestInput,
+  type RegisterRequestInput,
+} from '../../modules/auth/auth.schemas.js';
 import { requireAuth } from '../require-auth.js';
 import { validate } from '../validate.js';
 
@@ -37,7 +42,7 @@ export function createAuthRouter(authService: AuthService): Router {
   router.post('/auth/register', validate(registerRequestSchema), async (req, res, next) => {
     try {
       const { identity, accessToken, refreshToken } = await authService.register(
-        req.body as { email: string; name: string; password: string },
+        req.body as RegisterRequestInput,
         requestMeta(req),
       );
       res.cookie(REFRESH_COOKIE_NAME, refreshToken, refreshCookieOptions());
@@ -50,7 +55,7 @@ export function createAuthRouter(authService: AuthService): Router {
   router.post('/auth/login', validate(loginRequestSchema), async (req, res, next) => {
     try {
       const { identity, accessToken, refreshToken } = await authService.login(
-        req.body as { email: string; password: string },
+        req.body as LoginRequestInput,
         requestMeta(req),
       );
       res.cookie(REFRESH_COOKIE_NAME, refreshToken, refreshCookieOptions());

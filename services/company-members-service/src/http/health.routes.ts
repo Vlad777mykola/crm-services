@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import type { Pool } from 'pg';
+import type { DataSource } from 'typeorm';
 
 import type { RabbitMqConsumer } from '../rabbitmq/consumer.js';
 
-export function createHealthRouter(pool: Pool, consumer: RabbitMqConsumer): Router {
+export function createHealthRouter(dataSource: DataSource, consumer: RabbitMqConsumer): Router {
   const router = Router();
 
   router.get('/health/live', (_req, res) => {
@@ -11,7 +11,7 @@ export function createHealthRouter(pool: Pool, consumer: RabbitMqConsumer): Rout
   });
 
   router.get('/health/ready', (_req, res) => {
-    pool
+    dataSource
       .query('SELECT 1')
       .then(() => {
         if (!consumer.isReady()) throw new Error('RabbitMQ is not connected');

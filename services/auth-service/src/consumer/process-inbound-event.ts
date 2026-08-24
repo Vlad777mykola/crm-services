@@ -1,4 +1,4 @@
-import type { Pool } from 'pg';
+import type { DataSource } from 'typeorm';
 
 import type { MembershipProjectionRepository } from '../db/membership-projection-repository.js';
 import {
@@ -17,36 +17,25 @@ export interface InboundEnvelope {
 }
 
 export interface ProcessInboundEventDeps {
-  pool: Pool;
+  dataSource: DataSource;
   processedEvents: ProcessedEventsRepository;
   projection: MembershipProjectionRepository;
 }
 
 export async function processInboundEvent(deps: ProcessInboundEventDeps, envelope: InboundEnvelope): Promise<void> {
-  const client = await deps.pool.connect();
-  try {
-    await client.query('BEGIN');
-
-    const isNewEvent = await deps.processedEvents.markProcessed(client, envelope.id);
+  await deps.dataSource.transaction(async (manager) => {
+    const isNewEvent = await deps.processedEvents.markProcessed(manager, envelope.id);
     if (!isNewEvent) {
-      await client.query('COMMIT');
       logger.info({ eventId: envelope.id }, '[auth-service] already processed - skipping');
       return;
     }
 
     if (envelope.type === 'company-member.added') {
-      await handleCompanyMemberAdded(client, envelope.data as unknown as CompanyMemberAddedData, deps.projection);
+      await handleCompanyMemberAdded(manager, envelope.data as unknown as CompanyMemberAddedData, deps.projection);
     } else if (envelope.type === 'company-member.removed') {
-      await handleCompanyMemberRemoved(client, envelope.data as unknown as CompanyMemberRemovedData, deps.projection);
+      await handleCompanyMemberRemoved(manager, envelope.data as unknown as CompanyMemberRemovedData, deps.projection);
     } else {
       logger.info({ type: envelope.type }, '[auth-service] no handler for this event type - ignoring');
     }
-
-    await client.query('COMMIT');
-  } catch (error) {
-    await client.query('ROLLBACK');
-    throw error;
-  } finally {
-    client.release();
-  }
+  });
 }

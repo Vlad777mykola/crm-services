@@ -1,55 +1,33 @@
-import type { Pool, PoolClient } from 'pg';
+import type { DataSource, EntityManager } from 'typeorm';
 
-export type RequestStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled';
-export type RelationStatus = 'active' | 'paused' | 'removed';
+import {
+  CompanySpecialistRequestEntity,
+  type CompanySpecialistRequestRow,
+} from './entities/company-specialist-request.entity.js';
+import { CompanySpecialistEntity, type CompanySpecialistRow } from './entities/company-specialist.entity.js';
 
-export interface CompanySpecialistRequestRow {
-  id: string;
-  companyId: string;
-  specialistProfileId: string;
-  requestedByUserId: string;
-  status: RequestStatus;
-  message: string | null;
-  respondedAt: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface CompanySpecialistRow {
-  id: string;
-  companyId: string;
-  specialistProfileId: string;
-  status: RelationStatus;
-  startedAt: Date;
-  endedAt: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
+export type {
+  CompanySpecialistRequestRow,
+  RequestStatus,
+} from './entities/company-specialist-request.entity.js';
+export type { CompanySpecialistRow, RelationStatus } from './entities/company-specialist.entity.js';
 
 export class CompanySpecialistRepository {
-  constructor(private readonly pool: Pool) {}
+  constructor(private readonly dataSource: DataSource) {}
 
-  async findActiveRelation(companyId: string, specialistProfileId: string): Promise<CompanySpecialistRow | undefined> {
-    const { rows } = await this.pool.query<CompanySpecialistRow>(
-      `SELECT * FROM company_specialists_schema.company_specialists
-       WHERE "companyId" = $1 AND "specialistProfileId" = $2 AND "status" = 'active'
-       LIMIT 1`,
-      [companyId, specialistProfileId],
-    );
-    return rows[0];
+  async findActiveRelation(companyId: string, specialistProfileId: string): Promise<CompanySpecialistRow | null> {
+    return this.dataSource.getRepository(CompanySpecialistEntity).findOne({
+      where: { companyId, specialistProfileId, status: 'active' },
+    });
   }
 
   async findPendingRequest(
     companyId: string,
     specialistProfileId: string,
-  ): Promise<CompanySpecialistRequestRow | undefined> {
-    const { rows } = await this.pool.query<CompanySpecialistRequestRow>(
-      `SELECT * FROM company_specialists_schema.company_specialist_requests
-       WHERE "companyId" = $1 AND "specialistProfileId" = $2 AND "status" = 'pending'
-       LIMIT 1`,
-      [companyId, specialistProfileId],
-    );
-    return rows[0];
+  ): Promise<CompanySpecialistRequestRow | null> {
+    return this.dataSource.getRepository(CompanySpecialistRequestEntity).findOne({
+      where: { companyId, specialistProfileId, status: 'pending' },
+    });
   }
 
   async insertRequest(input: {
@@ -58,88 +36,77 @@ export class CompanySpecialistRepository {
     requestedByUserId: string;
     message: string | null;
   }): Promise<CompanySpecialistRequestRow> {
-    const { rows } = await this.pool.query<CompanySpecialistRequestRow>(
-      `INSERT INTO company_specialists_schema.company_specialist_requests
-         ("companyId", "specialistProfileId", "requestedByUserId", "status", "message")
-       VALUES ($1, $2, $3, 'pending', $4)
-       RETURNING *`,
-      [input.companyId, input.specialistProfileId, input.requestedByUserId, input.message],
-    );
-    return rows[0]!;
+    const repository = this.dataSource.getRepository(CompanySpecialistRequestEntity);
+    return repository.save(repository.create({ ...input, status: 'pending' }));
   }
 
   async listByCompany(companyId: string): Promise<CompanySpecialistRequestRow[]> {
-    const { rows } = await this.pool.query<CompanySpecialistRequestRow>(
-      `SELECT * FROM company_specialists_schema.company_specialist_requests
-       WHERE "companyId" = $1 ORDER BY "createdAt" DESC`,
-      [companyId],
-    );
-    return rows;
+    return this.dataSource.getRepository(CompanySpecialistRequestEntity).find({
+      where: { companyId },
+      order: { createdAt: 'DESC' },
+    });
   }
 
   async listActiveRelationsByCompany(companyId: string): Promise<CompanySpecialistRow[]> {
-    const { rows } = await this.pool.query<CompanySpecialistRow>(
-      `SELECT * FROM company_specialists_schema.company_specialists
-       WHERE "companyId" = $1 AND "status" = 'active' ORDER BY "startedAt" DESC`,
-      [companyId],
-    );
-    return rows;
+    return this.dataSource.getRepository(CompanySpecialistEntity).find({
+      where: { companyId, status: 'active' },
+      order: { startedAt: 'DESC' },
+    });
   }
 
   async listBySpecialist(specialistProfileId: string): Promise<CompanySpecialistRequestRow[]> {
-    const { rows } = await this.pool.query<CompanySpecialistRequestRow>(
-      `SELECT * FROM company_specialists_schema.company_specialist_requests
-       WHERE "specialistProfileId" = $1 ORDER BY "createdAt" DESC`,
-      [specialistProfileId],
-    );
-    return rows;
+    return this.dataSource.getRepository(CompanySpecialistRequestEntity).find({
+      where: { specialistProfileId },
+      order: { createdAt: 'DESC' },
+    });
   }
 
   async listActiveRelationsBySpecialist(specialistProfileId: string): Promise<CompanySpecialistRow[]> {
-    const { rows } = await this.pool.query<CompanySpecialistRow>(
-      `SELECT * FROM company_specialists_schema.company_specialists
-       WHERE "specialistProfileId" = $1 AND "status" = 'active' ORDER BY "startedAt" DESC`,
-      [specialistProfileId],
-    );
-    return rows;
+    return this.dataSource.getRepository(CompanySpecialistEntity).find({
+      where: { specialistProfileId, status: 'active' },
+      order: { startedAt: 'DESC' },
+    });
   }
 
   async findPendingRequestForSpecialist(
     requestId: string,
     specialistProfileId: string,
-  ): Promise<CompanySpecialistRequestRow | undefined> {
-    const { rows } = await this.pool.query<CompanySpecialistRequestRow>(
-      `SELECT * FROM company_specialists_schema.company_specialist_requests
-       WHERE "id" = $1 AND "specialistProfileId" = $2
-       LIMIT 1`,
-      [requestId, specialistProfileId],
-    );
-    return rows[0];
+  ): Promise<CompanySpecialistRequestRow | null> {
+    return this.dataSource.getRepository(CompanySpecialistRequestEntity).findOne({
+      where: { id: requestId, specialistProfileId },
+    });
   }
 
-  async markRequestResponded(client: PoolClient, requestId: string, status: 'accepted' | 'rejected'): Promise<void> {
-    await client.query(
-      `UPDATE company_specialists_schema.company_specialist_requests
-       SET "status" = $2, "respondedAt" = now(), "updatedAt" = now()
-       WHERE "id" = $1`,
-      [requestId, status],
+  async markRequestResponded(
+    manager: EntityManager,
+    requestId: string,
+    status: 'accepted' | 'rejected',
+  ): Promise<void> {
+    await manager.getRepository(CompanySpecialistRequestEntity).update(
+      { id: requestId },
+      { status, respondedAt: new Date(), updatedAt: new Date() },
     );
   }
 
   async upsertActiveRelation(
-    client: PoolClient,
+    manager: EntityManager,
     companyId: string,
     specialistProfileId: string,
   ): Promise<CompanySpecialistRow> {
-    const { rows } = await client.query<CompanySpecialistRow>(
-      `INSERT INTO company_specialists_schema.company_specialists
-         ("companyId", "specialistProfileId", "status", "startedAt", "endedAt")
-       VALUES ($1, $2, 'active', now(), NULL)
-       ON CONFLICT ("companyId", "specialistProfileId")
-       DO UPDATE SET "status" = 'active', "startedAt" = now(), "endedAt" = NULL, "updatedAt" = now()
-       RETURNING *`,
-      [companyId, specialistProfileId],
-    );
-    return rows[0]!;
+    const repository = manager.getRepository(CompanySpecialistEntity);
+    const existing = await repository.findOne({ where: { companyId, specialistProfileId } });
+
+    if (existing) {
+      return repository.save(
+        repository.merge(existing, {
+          status: 'active',
+          startedAt: new Date(),
+          endedAt: null,
+          updatedAt: new Date(),
+        }),
+      );
+    }
+
+    return repository.save(repository.create({ companyId, specialistProfileId, status: 'active', endedAt: null }));
   }
 }

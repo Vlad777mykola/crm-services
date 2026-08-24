@@ -9,11 +9,11 @@ import {
   serviceIdParamsSchema,
   serviceOnlyIdParamsSchema,
   updateServiceRequestSchema,
-  type CompanyIdParams,
+  type CompanyIdParamsInput,
   type CreateServiceRequestInput,
   type PublicServicesQueryInput,
-  type ServiceIdParams,
-  type ServiceOnlyIdParams,
+  type ServiceIdParamsInput,
+  type ServiceOnlyIdParamsInput,
   type UpdateServiceRequestInput,
 } from '../../modules/services/services.schemas.js';
 import { validate } from '../validate.js';
@@ -28,7 +28,7 @@ export function createServicesRouter(servicesService: ServicesService): Router {
     validate(createServiceRequestSchema, 'body'),
     async (req, res, next) => {
       try {
-        const { companyId } = req.params as unknown as CompanyIdParams;
+        const { companyId } = req.params as unknown as CompanyIdParamsInput;
         const service = await servicesService.create(companyId, req.auth!.userId, req.body as CreateServiceRequestInput);
         res.status(201).json({ message: 'Service created', data: service });
       } catch (err) {
@@ -43,7 +43,7 @@ export function createServicesRouter(servicesService: ServicesService): Router {
     validate(companyIdParamsSchema, 'params'),
     async (req, res, next) => {
       try {
-        const { companyId } = req.params as unknown as CompanyIdParams;
+        const { companyId } = req.params as unknown as CompanyIdParamsInput;
         const services = await servicesService.listByCompany(companyId, req.auth?.userId);
         res.status(200).json({ message: 'Company services', data: services });
       } catch (err) {
@@ -59,7 +59,7 @@ export function createServicesRouter(servicesService: ServicesService): Router {
     validate(updateServiceRequestSchema, 'body'),
     async (req, res, next) => {
       try {
-        const { companyId, serviceId } = req.params as unknown as ServiceIdParams;
+        const { companyId, serviceId } = req.params as unknown as ServiceIdParamsInput;
         const service = await servicesService.update(
           companyId,
           serviceId,
@@ -79,7 +79,7 @@ export function createServicesRouter(servicesService: ServicesService): Router {
     validate(serviceIdParamsSchema, 'params'),
     async (req, res, next) => {
       try {
-        const { companyId, serviceId } = req.params as unknown as ServiceIdParams;
+        const { companyId, serviceId } = req.params as unknown as ServiceIdParamsInput;
         const history = await servicesService.getStatusHistory(companyId, serviceId, req.auth!.userId);
         res.status(200).json({ message: 'Service status history', data: history });
       } catch (err) {
@@ -105,7 +105,7 @@ export function createServicesRouter(servicesService: ServicesService): Router {
     validate(serviceOnlyIdParamsSchema, 'params'),
     async (req, res, next) => {
       try {
-        const { serviceId } = req.params as unknown as ServiceOnlyIdParams;
+        const { serviceId } = req.params as unknown as ServiceOnlyIdParamsInput;
         const service = await servicesService.getById(serviceId, req.auth?.userId);
         res.status(200).json({ message: 'Service found', data: service });
       } catch (err) {

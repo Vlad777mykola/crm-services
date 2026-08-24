@@ -1,0 +1,22 @@
+import { EntitySchema } from 'typeorm';
+
+export interface ServiceProjectionRow {
+  serviceId: string;
+  companyId: string;
+  name: string;
+  status: string;
+  updatedAt: Date;
+}
+
+export const AppointmentServiceProjectionEntity = new EntitySchema<ServiceProjectionRow>({
+  name: 'AppointmentServiceProjection',
+  schema: 'appointments_schema',
+  tableName: 'appointment_service_projection',
+  columns: {
+    serviceId: { type: 'uuid', primary: true },
+    companyId: { type: 'uuid' },
+    name: { type: String, length: 255 },
+    status: { type: String, length: 20 },
+    updatedAt: { type: 'timestamptz', updateDate: true },
+  },
+});

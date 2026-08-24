@@ -1,99 +1,84 @@
-import type { Pool, PoolClient } from 'pg';
+import type { DataSource, EntityManager } from 'typeorm';
 
-export interface CompanyProjectionRow {
-  companyId: string;
-  name: string;
-}
+import {
+  AppointmentCompanyProjectionEntity,
+  type CompanyProjectionRow,
+} from './entities/appointment-company-projection.entity.js';
+import { AppointmentMembershipProjectionEntity } from './entities/appointment-membership-projection.entity.js';
+import { AppointmentServiceSpecialistProjectionEntity } from './entities/appointment-service-specialist-projection.entity.js';
+import {
+  AppointmentServiceProjectionEntity,
+  type ServiceProjectionRow,
+} from './entities/appointment-service-projection.entity.js';
 
-export interface ServiceProjectionRow {
-  serviceId: string;
-  companyId: string;
-  name: string;
-  status: string;
-}
+export type { CompanyProjectionRow } from './entities/appointment-company-projection.entity.js';
+export type { ServiceProjectionRow } from './entities/appointment-service-projection.entity.js';
+
+export type UpsertServiceProjectionInput = Omit<ServiceProjectionRow, 'updatedAt'>;
 
 export class ProjectionsRepository {
-  constructor(private readonly pool: Pool) {}
+  constructor(private readonly dataSource: DataSource) {}
 
-  async upsertMembership(client: PoolClient, companyId: string, userId: string, role: string): Promise<void> {
-    await client.query(
-      `INSERT INTO appointments_schema.appointment_membership_projection ("companyId", "userId", "role")
-       VALUES ($1, $2, $3)
-       ON CONFLICT ("companyId", "userId") DO UPDATE SET "role" = $3, "updatedAt" = now()`,
-      [companyId, userId, role],
+  async upsertMembership(manager: EntityManager, companyId: string, userId: string, role: string): Promise<void> {
+    await manager.getRepository(AppointmentMembershipProjectionEntity).upsert(
+      { companyId, userId, role, updatedAt: new Date() },
+      { conflictPaths: ['companyId', 'userId'] },
     );
   }
 
-  async removeMembership(client: PoolClient, companyId: string, userId: string): Promise<void> {
-    await client.query(
-      `DELETE FROM appointments_schema.appointment_membership_projection WHERE "companyId" = $1 AND "userId" = $2`,
-      [companyId, userId],
-    );
+  async removeMembership(manager: EntityManager, companyId: string, userId: string): Promise<void> {
+    await manager.getRepository(AppointmentMembershipProjectionEntity).delete({ companyId, userId });
   }
 
   async findMembershipRole(companyId: string, userId: string): Promise<string | undefined> {
-    const { rows } = await this.pool.query<{ role: string }>(
-      `SELECT "role" FROM appointments_schema.appointment_membership_projection WHERE "companyId" = $1 AND "userId" = $2`,
-      [companyId, userId],
-    );
-    return rows[0]?.role;
+    const row = await this.dataSource
+      .getRepository(AppointmentMembershipProjectionEntity)
+      .findOne({ where: { companyId, userId } });
+    return row?.role;
   }
 
-  async upsertCompany(client: PoolClient, companyId: string, name: string): Promise<void> {
-    await client.query(
-      `INSERT INTO appointments_schema.appointment_company_projection ("companyId", "name")
-       VALUES ($1, $2)
-       ON CONFLICT ("companyId") DO UPDATE SET "name" = $2, "updatedAt" = now()`,
-      [companyId, name],
-    );
+  async upsertCompany(manager: EntityManager, companyId: string, name: string): Promise<void> {
+    await manager
+      .getRepository(AppointmentCompanyProjectionEntity)
+      .upsert({ companyId, name, updatedAt: new Date() }, { conflictPaths: ['companyId'] });
   }
 
-  async findCompany(companyId: string): Promise<CompanyProjectionRow | undefined> {
-    const { rows } = await this.pool.query<CompanyProjectionRow>(
-      `SELECT "companyId", "name" FROM appointments_schema.appointment_company_projection WHERE "companyId" = $1`,
-      [companyId],
-    );
-    return rows[0];
+  async findCompany(companyId: string): Promise<CompanyProjectionRow | null> {
+    return this.dataSource.getRepository(AppointmentCompanyProjectionEntity).findOne({ where: { companyId } });
   }
 
-  async upsertService(client: PoolClient, input: ServiceProjectionRow): Promise<void> {
-    await client.query(
-      `INSERT INTO appointments_schema.appointment_service_projection ("serviceId", "companyId", "name", "status")
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT ("serviceId") DO UPDATE SET "companyId" = $2, "name" = $3, "status" = $4, "updatedAt" = now()`,
-      [input.serviceId, input.companyId, input.name, input.status],
-    );
+  async upsertService(manager: EntityManager, input: UpsertServiceProjectionInput): Promise<void> {
+    await manager
+      .getRepository(AppointmentServiceProjectionEntity)
+      .upsert({ ...input, updatedAt: new Date() }, { conflictPaths: ['serviceId'] });
   }
 
-  async findService(serviceId: string): Promise<ServiceProjectionRow | undefined> {
-    const { rows } = await this.pool.query<ServiceProjectionRow>(
-      `SELECT "serviceId", "companyId", "name", "status" FROM appointments_schema.appointment_service_projection WHERE "serviceId" = $1`,
-      [serviceId],
-    );
-    return rows[0];
+  async findService(serviceId: string): Promise<ServiceProjectionRow | null> {
+    return this.dataSource.getRepository(AppointmentServiceProjectionEntity).findOne({ where: { serviceId } });
   }
 
-  async upsertServiceSpecialist(client: PoolClient, serviceId: string, specialistProfileId: string): Promise<void> {
-    await client.query(
-      `INSERT INTO appointments_schema.appointment_service_specialist_projection ("serviceId", "specialistProfileId")
-       VALUES ($1, $2)
-       ON CONFLICT ("serviceId", "specialistProfileId") DO UPDATE SET "updatedAt" = now()`,
-      [serviceId, specialistProfileId],
+  async upsertServiceSpecialist(
+    manager: EntityManager,
+    serviceId: string,
+    specialistProfileId: string,
+  ): Promise<void> {
+    await manager.getRepository(AppointmentServiceSpecialistProjectionEntity).upsert(
+      { serviceId, specialistProfileId, updatedAt: new Date() },
+      { conflictPaths: ['serviceId', 'specialistProfileId'] },
     );
   }
 
-  async removeServiceSpecialist(client: PoolClient, serviceId: string, specialistProfileId: string): Promise<void> {
-    await client.query(
-      `DELETE FROM appointments_schema.appointment_service_specialist_projection WHERE "serviceId" = $1 AND "specialistProfileId" = $2`,
-      [serviceId, specialistProfileId],
-    );
+  async removeServiceSpecialist(
+    manager: EntityManager,
+    serviceId: string,
+    specialistProfileId: string,
+  ): Promise<void> {
+    await manager.getRepository(AppointmentServiceSpecialistProjectionEntity).delete({ serviceId, specialistProfileId });
   }
 
   async isServiceSpecialistAssigned(serviceId: string, specialistProfileId: string): Promise<boolean> {
-    const { rows } = await this.pool.query(
-      `SELECT 1 FROM appointments_schema.appointment_service_specialist_projection WHERE "serviceId" = $1 AND "specialistProfileId" = $2`,
-      [serviceId, specialistProfileId],
-    );
-    return rows.length > 0;
+    return this.dataSource.getRepository(AppointmentServiceSpecialistProjectionEntity).exists({
+      where: { serviceId, specialistProfileId },
+    });
   }
 }

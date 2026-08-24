@@ -1,5 +1,5 @@
 import express, { type Express } from 'express';
-import type { Pool } from 'pg';
+import type { DataSource } from 'typeorm';
 
 import { errorHandler } from './http/error-handler.js';
 import { createHealthRouter } from './http/health.routes.js';
@@ -11,7 +11,7 @@ import type { ServiceSpecialistsService } from './modules/services/service-speci
 import type { ServicesService } from './modules/services/services.service.js';
 
 export function createApp(
-  pool: Pool,
+  dataSource: DataSource,
   servicesService: ServicesService,
   serviceSpecialistsService: ServiceSpecialistsService,
 ): Express {
@@ -20,7 +20,7 @@ export function createApp(
   app.use(express.json());
   app.use(requestLogger);
 
-  app.use(createHealthRouter(pool));
+  app.use(createHealthRouter(dataSource));
   app.use(createServicesRouter(servicesService));
   app.use(createServiceSpecialistsRouter(serviceSpecialistsService));
 

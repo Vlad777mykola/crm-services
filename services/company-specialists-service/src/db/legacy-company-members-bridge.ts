@@ -1,4 +1,4 @@
-import type { Pool, PoolClient } from 'pg';
+import type { DataSource, EntityManager } from 'typeorm';
 
 /**
  * TEMPORARY, EXPLICITLY FLAGGED CROSS-SCHEMA READ - same pattern/rationale as
@@ -12,12 +12,14 @@ import type { Pool, PoolClient } from 'pg';
 
 export type CompanyMemberRole = 'owner' | 'manager';
 
+type Queryable = DataSource | EntityManager;
+
 export async function findActiveMembershipRole(
-  client: Pool | PoolClient,
+  client: Queryable,
   companyId: string,
   userId: string,
 ): Promise<CompanyMemberRole | undefined> {
-  const { rows } = await client.query<{ role: CompanyMemberRole }>(
+  const rows = await client.query<Array<{ role: CompanyMemberRole }>>(
     `SELECT "role" FROM company_members_schema.company_members
      WHERE "companyId" = $1 AND "userId" = $2 AND "status" = 'active'
      LIMIT 1`,

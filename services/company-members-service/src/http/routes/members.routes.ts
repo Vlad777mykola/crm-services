@@ -7,9 +7,9 @@ import {
   inviteMemberRequestSchema,
   memberIdParamsSchema,
   updateMemberRequestSchema,
-  type CompanyIdParams,
+  type CompanyIdParamsInput,
   type InviteMemberRequestInput,
-  type MemberIdParams,
+  type MemberIdParamsInput,
   type UpdateMemberRequestInput,
 } from '../../modules/members/members.schemas.js';
 import { validate } from '../validate.js';
@@ -23,7 +23,7 @@ export function createMembersRouter(membersService: MembersService): Router {
     validate(companyIdParamsSchema, 'params'),
     async (req, res, next) => {
       try {
-        const { companyId } = req.params as unknown as CompanyIdParams;
+        const { companyId } = req.params as unknown as CompanyIdParamsInput;
         const members = await membersService.list(companyId, req.auth!.userId);
         res.status(200).json({ message: 'Company members', data: members });
       } catch (err) {
@@ -40,7 +40,7 @@ export function createMembersRouter(membersService: MembersService): Router {
     validate(inviteMemberRequestSchema, 'body'),
     async (req, res, next) => {
       try {
-        const { companyId } = req.params as unknown as CompanyIdParams;
+        const { companyId } = req.params as unknown as CompanyIdParamsInput;
         const { email } = req.body as InviteMemberRequestInput;
         const member = await membersService.invite(companyId, req.auth!.userId, email);
         res.status(201).json({ message: 'Member added', data: member });
@@ -57,7 +57,7 @@ export function createMembersRouter(membersService: MembersService): Router {
     validate(updateMemberRequestSchema, 'body'),
     async (req, res, next) => {
       try {
-        const { companyId, memberId } = req.params as unknown as MemberIdParams;
+        const { companyId, memberId } = req.params as unknown as MemberIdParamsInput;
         const { status } = req.body as UpdateMemberRequestInput;
         const member = await membersService.updateStatus(companyId, req.auth!.userId, memberId, status);
         res.status(200).json({ message: 'Member updated', data: member });
@@ -73,7 +73,7 @@ export function createMembersRouter(membersService: MembersService): Router {
     validate(memberIdParamsSchema, 'params'),
     async (req, res, next) => {
       try {
-        const { companyId, memberId } = req.params as unknown as MemberIdParams;
+        const { companyId, memberId } = req.params as unknown as MemberIdParamsInput;
         const member = await membersService.remove(companyId, req.auth!.userId, memberId);
         res.status(200).json({ message: 'Member removed', data: member });
       } catch (err) {

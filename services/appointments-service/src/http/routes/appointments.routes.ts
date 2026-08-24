@@ -7,9 +7,9 @@ import {
   companyIdParamsSchema,
   createAppointmentRequestSchema,
   respondToAppointmentRequestSchema,
-  type AppointmentIdParams,
-  type AppointmentOnlyIdParams,
-  type CompanyIdParams,
+  type AppointmentIdParamsInput,
+  type AppointmentOnlyIdParamsInput,
+  type CompanyIdParamsInput,
   type CreateAppointmentInput,
   type RespondToAppointmentInput,
 } from '../../modules/appointments/appointments.schemas.js';
@@ -26,7 +26,7 @@ export function createAppointmentsRouter(appointmentsService: AppointmentsServic
     validate(createAppointmentRequestSchema, 'body'),
     async (req, res, next) => {
       try {
-        const { companyId } = req.params as unknown as CompanyIdParams;
+        const { companyId } = req.params as unknown as CompanyIdParamsInput;
         const appointment = await appointmentsService.create(
           companyId,
           req.auth!.userId,
@@ -45,7 +45,7 @@ export function createAppointmentsRouter(appointmentsService: AppointmentsServic
     validate(companyIdParamsSchema, 'params'),
     async (req, res, next) => {
       try {
-        const { companyId } = req.params as unknown as CompanyIdParams;
+        const { companyId } = req.params as unknown as CompanyIdParamsInput;
         const appointments = await appointmentsService.listForCompany(companyId, req.auth!.userId);
         res.status(200).json({ message: 'Company appointments', data: appointments });
       } catch (err) {
@@ -61,7 +61,7 @@ export function createAppointmentsRouter(appointmentsService: AppointmentsServic
     validate(respondToAppointmentRequestSchema, 'body'),
     async (req, res, next) => {
       try {
-        const { companyId, appointmentId } = req.params as unknown as AppointmentIdParams;
+        const { companyId, appointmentId } = req.params as unknown as AppointmentIdParamsInput;
         const appointment = await appointmentsService.respond(
           companyId,
           appointmentId,
@@ -81,7 +81,7 @@ export function createAppointmentsRouter(appointmentsService: AppointmentsServic
     validate(appointmentIdParamsSchema, 'params'),
     async (req, res, next) => {
       try {
-        const { companyId, appointmentId } = req.params as unknown as AppointmentIdParams;
+        const { companyId, appointmentId } = req.params as unknown as AppointmentIdParamsInput;
         const appointment = await appointmentsService.complete(companyId, appointmentId, req.auth!.userId);
         res.status(200).json({ message: 'Appointment marked as completed', data: appointment });
       } catch (err) {
@@ -109,7 +109,7 @@ export function createAppointmentsRouter(appointmentsService: AppointmentsServic
     validate(appointmentOnlyIdParamsSchema, 'params'),
     async (req, res, next) => {
       try {
-        const { appointmentId } = req.params as unknown as AppointmentOnlyIdParams;
+        const { appointmentId } = req.params as unknown as AppointmentOnlyIdParamsInput;
         const history = await appointmentsService.getStatusHistory(appointmentId, req.auth!.userId);
         res.status(200).json({ message: 'Appointment status history', data: history });
       } catch (err) {
@@ -124,7 +124,7 @@ export function createAppointmentsRouter(appointmentsService: AppointmentsServic
     validate(appointmentOnlyIdParamsSchema, 'params'),
     async (req, res, next) => {
       try {
-        const { appointmentId } = req.params as unknown as AppointmentOnlyIdParams;
+        const { appointmentId } = req.params as unknown as AppointmentOnlyIdParamsInput;
         const appointment = await appointmentsService.cancel(appointmentId, req.auth!.userId);
         res.status(200).json({ message: 'Appointment cancelled', data: appointment });
       } catch (err) {

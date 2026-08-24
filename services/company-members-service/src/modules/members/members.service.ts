@@ -1,4 +1,4 @@
-import type { Pool } from 'pg';
+import type { DataSource } from 'typeorm';
 
 import { AppError } from '../../errors/AppError.js';
 import type { MemberRow } from '../../db/member-repository.js';
@@ -12,8 +12,8 @@ export interface MemberWithUser extends MemberRow {
 export class MembersService {
   private readonly members: MemberRepository;
 
-  constructor(private readonly pool: Pool) {
-    this.members = new MemberRepository(pool);
+  constructor(private readonly dataSource: DataSource) {
+    this.members = new MemberRepository(dataSource);
   }
 
   private async requireRole(companyId: string, userId: string, allowedRoles: Array<'owner' | 'manager'>): Promise<MemberRow> {
@@ -27,7 +27,7 @@ export class MembersService {
   async list(companyId: string, requesterUserId: string): Promise<MemberWithUser[]> {
     await this.requireRole(companyId, requesterUserId, ['owner', 'manager']);
     const rows = await this.members.listByCompany(companyId);
-    const users = await findUserNamesByIds(this.pool, rows.map((r) => r.userId));
+    const users = await findUserNamesByIds(this.dataSource, rows.map((r) => r.userId));
     return rows.map((row) => ({ ...row, user: users.get(row.userId) ? { id: row.userId, ...users.get(row.userId)! } : null }));
   }
 
@@ -35,7 +35,7 @@ export class MembersService {
     // Inviting/adding members is owner-only - managers cannot add other managers (legacy parity).
     await this.requireRole(companyId, requesterUserId, ['owner']);
 
-    const invitedUserId = await findUserIdByEmail(this.pool, email);
+    const invitedUserId = await findUserIdByEmail(this.dataSource, email);
     if (!invitedUserId) {
       throw new AppError('No user found with this email', 404);
     }
@@ -45,25 +45,17 @@ export class MembersService {
       throw new AppError('This user is already an active member of the company', 409);
     }
 
-    const client = await this.pool.connect();
-    try {
-      await client.query('BEGIN');
-      const { row } = await this.members.upsertManager(client, companyId, invitedUserId);
-      await recordOutboxEvent(client, {
+    return this.dataSource.transaction(async (manager) => {
+      const { row } = await this.members.upsertManager(manager, companyId, invitedUserId);
+      await recordOutboxEvent(manager, {
         type: 'company-member.added',
         aggregateId: row.id,
         payload: { companyId, userId: invitedUserId, role: row.role },
       });
-      await client.query('COMMIT');
 
-      const users = await findUserNamesByIds(this.pool, [invitedUserId]);
+      const users = await findUserNamesByIds(this.dataSource, [invitedUserId]);
       return { ...row, user: users.get(invitedUserId) ? { id: invitedUserId, ...users.get(invitedUserId)! } : null };
-    } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
-    } finally {
-      client.release();
-    }
+    });
   }
 
   private assertCanTarget(member: MemberRow): void {
@@ -79,25 +71,17 @@ export class MembersService {
     if (!member) throw new AppError('Member not found', 404);
     this.assertCanTarget(member);
 
-    const client = await this.pool.connect();
-    try {
-      await client.query('BEGIN');
-      const updated = await this.members.setStatus(client, memberId, status);
+    return this.dataSource.transaction(async (manager) => {
+      const updated = await this.members.setStatus(manager, memberId, status);
       if (status === 'removed') {
-        await recordOutboxEvent(client, {
+        await recordOutboxEvent(manager, {
           type: 'company-member.removed',
           aggregateId: memberId,
           payload: { companyId, userId: updated.userId },
         });
       }
-      await client.query('COMMIT');
       return updated;
-    } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
-    } finally {
-      client.release();
-    }
+    });
   }
 
   async remove(companyId: string, requesterUserId: string, memberId: string): Promise<MemberRow> {

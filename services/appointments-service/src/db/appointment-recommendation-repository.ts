@@ -1,23 +1,25 @@
-import type { Pool, PoolClient } from 'pg';
+import type { DataSource, EntityManager } from 'typeorm';
 
-export interface AppointmentRecommendationProjection {
-  id: string;
-  appointmentId: string;
-  companyId: string;
-  summary: string;
-  confidence: number;
-}
+import {
+  AppointmentRecommendationProjectionEntity,
+  type AppointmentRecommendationProjection,
+} from './entities/appointment-recommendation-projection.entity.js';
+
+export type { AppointmentRecommendationProjection } from './entities/appointment-recommendation-projection.entity.js';
+
+export type AppointmentRecommendationProjectionInput = Omit<AppointmentRecommendationProjection, 'createdAt'>;
 
 /** Moved from backend-projection-service in Phase 12 - see README "Known gaps". */
 export class AppointmentRecommendationRepository {
-  constructor(private readonly pool: Pool) {}
+  constructor(_dataSource: DataSource) {}
 
-  async upsert(client: PoolClient, projection: AppointmentRecommendationProjection): Promise<void> {
-    await client.query(
-      `INSERT INTO appointments_schema.appointment_recommendation_projections ("id", "appointmentId", "companyId", "summary", "confidence")
-       VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT ("id") DO NOTHING`,
-      [projection.id, projection.appointmentId, projection.companyId, projection.summary, projection.confidence],
-    );
+  async upsert(manager: EntityManager, projection: AppointmentRecommendationProjectionInput): Promise<void> {
+    await manager
+      .createQueryBuilder()
+      .insert()
+      .into(AppointmentRecommendationProjectionEntity)
+      .values(projection)
+      .orIgnore()
+      .execute();
   }
 }

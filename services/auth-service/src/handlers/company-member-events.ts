@@ -1,4 +1,4 @@
-import type { PoolClient } from 'pg';
+import type { EntityManager } from 'typeorm';
 
 import type { MembershipProjectionRepository } from '../db/membership-projection-repository.js';
 import { logger } from '../logger.js';
@@ -17,19 +17,19 @@ export interface CompanyMemberRemovedData {
 }
 
 export async function handleCompanyMemberAdded(
-  client: PoolClient,
+  manager: EntityManager,
   data: CompanyMemberAddedData,
   projection: MembershipProjectionRepository,
 ): Promise<void> {
-  await projection.upsert(client, data.companyId, data.userId, data.role);
+  await projection.upsert(manager, data.companyId, data.userId, data.role);
   logger.info({ companyId: data.companyId, userId: data.userId }, '[auth-service] membership projection upserted');
 }
 
 export async function handleCompanyMemberRemoved(
-  client: PoolClient,
+  manager: EntityManager,
   data: CompanyMemberRemovedData,
   projection: MembershipProjectionRepository,
 ): Promise<void> {
-  await projection.remove(client, data.companyId, data.userId);
+  await projection.remove(manager, data.companyId, data.userId);
   logger.info({ companyId: data.companyId, userId: data.userId }, '[auth-service] membership projection row removed');
 }

@@ -1,4 +1,4 @@
-import type { Pool } from 'pg';
+import type { DataSource } from 'typeorm';
 
 import { AppError } from '../../errors/AppError.js';
 import {
@@ -14,19 +14,19 @@ import type { SendSpecialistRequestInput } from './company-specialists.schemas.j
 export class CompanySpecialistsService {
   private readonly repo: CompanySpecialistRepository;
 
-  constructor(private readonly pool: Pool) {
-    this.repo = new CompanySpecialistRepository(pool);
+  constructor(private readonly dataSource: DataSource) {
+    this.repo = new CompanySpecialistRepository(dataSource);
   }
 
   private async requireOwnerOrManager(companyId: string, userId: string): Promise<void> {
-    const role = await findActiveMembershipRole(this.pool, companyId, userId);
+    const role = await findActiveMembershipRole(this.dataSource, companyId, userId);
     if (role !== 'owner' && role !== 'manager') {
       throw new AppError('You do not have permission to manage this company', 403);
     }
   }
 
   private async getMySpecialistProfileOrThrow(userId: string): Promise<{ id: string; userId: string }> {
-    const profile = await findSpecialistProfileByUserId(this.pool, userId);
+    const profile = await findSpecialistProfileByUserId(this.dataSource, userId);
     if (!profile) {
       throw new AppError('This user does not have a specialist profile yet', 404);
     }
@@ -40,7 +40,7 @@ export class CompanySpecialistsService {
   ): Promise<CompanySpecialistRequestRow> {
     await this.requireOwnerOrManager(companyId, requesterUserId);
 
-    const specialist = await findSpecialistProfileById(this.pool, input.specialistProfileId);
+    const specialist = await findSpecialistProfileById(this.dataSource, input.specialistProfileId);
     if (!specialist) {
       throw new AppError('Specialist profile not found', 404);
     }
@@ -100,23 +100,15 @@ export class CompanySpecialistsService {
     const profile = await this.getMySpecialistProfileOrThrow(userId);
     const request = await this.getPendingRequestForSpecialistOrThrow(requestId, profile.id);
 
-    const client = await this.pool.connect();
-    try {
-      await client.query('BEGIN');
-      await this.repo.markRequestResponded(client, requestId, 'accepted');
-      const relation = await this.repo.upsertActiveRelation(client, request.companyId, profile.id);
-      await recordOutboxEvent(client, {
+    await this.dataSource.transaction(async (manager) => {
+      await this.repo.markRequestResponded(manager, requestId, 'accepted');
+      const relation = await this.repo.upsertActiveRelation(manager, request.companyId, profile.id);
+      await recordOutboxEvent(manager, {
         type: 'company-specialist.accepted',
         aggregateId: relation.id,
         payload: { companyId: request.companyId, specialistProfileId: profile.id },
       });
-      await client.query('COMMIT');
-    } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
-    } finally {
-      client.release();
-    }
+    });
 
     return { ...request, status: 'accepted', respondedAt: new Date() };
   }
@@ -125,17 +117,9 @@ export class CompanySpecialistsService {
     const profile = await this.getMySpecialistProfileOrThrow(userId);
     const request = await this.getPendingRequestForSpecialistOrThrow(requestId, profile.id);
 
-    const client = await this.pool.connect();
-    try {
-      await client.query('BEGIN');
-      await this.repo.markRequestResponded(client, requestId, 'rejected');
-      await client.query('COMMIT');
-    } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
-    } finally {
-      client.release();
-    }
+    await this.dataSource.transaction(async (manager) => {
+      await this.repo.markRequestResponded(manager, requestId, 'rejected');
+    });
 
     return { ...request, status: 'rejected', respondedAt: new Date() };
   }

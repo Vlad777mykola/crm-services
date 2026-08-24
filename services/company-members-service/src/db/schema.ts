@@ -1,4 +1,4 @@
-import type { Pool } from 'pg';
+import type { DataSource } from 'typeorm';
 
 /**
  * Creates company_members_schema - see
@@ -9,10 +9,10 @@ import type { Pool } from 'pg';
  * so this service preserves that exact behavior rather than inventing a new
  * pending-invite flow (no new functionality without approval).
  */
-export async function ensureCompanyMembersSchema(pool: Pool): Promise<void> {
-  await pool.query(`CREATE SCHEMA IF NOT EXISTS company_members_schema`);
+export async function ensureCompanyMembersSchema(dataSource: DataSource): Promise<void> {
+  await dataSource.query(`CREATE SCHEMA IF NOT EXISTS company_members_schema`);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS company_members_schema.company_members (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       "companyId" uuid NOT NULL,
@@ -24,14 +24,14 @@ export async function ensureCompanyMembersSchema(pool: Pool): Promise<void> {
       CONSTRAINT "UQ_company_members_company_user" UNIQUE ("companyId", "userId")
     )
   `);
-  await pool.query(`
+  await dataSource.query(`
     CREATE INDEX IF NOT EXISTS "IDX_company_members_companyId" ON company_members_schema.company_members ("companyId")
   `);
-  await pool.query(`
+  await dataSource.query(`
     CREATE INDEX IF NOT EXISTS "IDX_company_members_userId" ON company_members_schema.company_members ("userId")
   `);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS company_members_schema.member_invitations (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       "companyId" uuid NOT NULL,
@@ -41,7 +41,7 @@ export async function ensureCompanyMembersSchema(pool: Pool): Promise<void> {
     )
   `);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS company_members_schema.processed_events (
       "event_id" uuid NOT NULL,
       "consumer_name" varchar(100) NOT NULL,
@@ -50,7 +50,7 @@ export async function ensureCompanyMembersSchema(pool: Pool): Promise<void> {
     )
   `);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS company_members_schema.outbox_events (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       "eventType" varchar(100) NOT NULL,
@@ -66,10 +66,10 @@ export async function ensureCompanyMembersSchema(pool: Pool): Promise<void> {
       "publishedAt" timestamptz
     )
   `);
-  await pool.query(`
+  await dataSource.query(`
     CREATE INDEX IF NOT EXISTS "IDX_company_members_outbox_events_status" ON company_members_schema.outbox_events ("status")
   `);
-  await pool.query(`
+  await dataSource.query(`
     CREATE INDEX IF NOT EXISTS "IDX_company_members_outbox_events_nextRetryAt" ON company_members_schema.outbox_events ("nextRetryAt")
   `);
 }

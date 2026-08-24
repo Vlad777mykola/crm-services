@@ -1,4 +1,4 @@
-import type { Pool } from 'pg';
+import type { DataSource } from 'typeorm';
 
 /**
  * Creates services_schema - see
@@ -9,10 +9,10 @@ import type { Pool } from 'pg';
  * `service_status_history` is a brand-new, per-domain table (per
  * shared-polymorphic-table-audit.md).
  */
-export async function ensureServicesSchema(pool: Pool): Promise<void> {
-  await pool.query(`CREATE SCHEMA IF NOT EXISTS services_schema`);
+export async function ensureServicesSchema(dataSource: DataSource): Promise<void> {
+  await dataSource.query(`CREATE SCHEMA IF NOT EXISTS services_schema`);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS services_schema.services (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       "companyId" uuid NOT NULL,
@@ -26,11 +26,11 @@ export async function ensureServicesSchema(pool: Pool): Promise<void> {
       "updatedAt" timestamptz NOT NULL DEFAULT now()
     )
   `);
-  await pool.query(`
+  await dataSource.query(`
     CREATE INDEX IF NOT EXISTS "IDX_services_companyId" ON services_schema.services ("companyId")
   `);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS services_schema.service_specialists (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       "serviceId" uuid NOT NULL REFERENCES services_schema.services ("id") ON DELETE CASCADE,
@@ -40,14 +40,14 @@ export async function ensureServicesSchema(pool: Pool): Promise<void> {
       CONSTRAINT "UQ_service_specialists_service_specialist" UNIQUE ("serviceId", "specialistProfileId")
     )
   `);
-  await pool.query(`
+  await dataSource.query(`
     CREATE INDEX IF NOT EXISTS "IDX_service_specialists_serviceId" ON services_schema.service_specialists ("serviceId")
   `);
-  await pool.query(`
+  await dataSource.query(`
     CREATE INDEX IF NOT EXISTS "IDX_service_specialists_specialistProfileId" ON services_schema.service_specialists ("specialistProfileId")
   `);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS services_schema.service_status_history (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       "serviceId" uuid NOT NULL REFERENCES services_schema.services ("id") ON DELETE CASCADE,
@@ -58,11 +58,11 @@ export async function ensureServicesSchema(pool: Pool): Promise<void> {
       "createdAt" timestamptz NOT NULL DEFAULT now()
     )
   `);
-  await pool.query(`
+  await dataSource.query(`
     CREATE INDEX IF NOT EXISTS "IDX_service_status_history_serviceId" ON services_schema.service_status_history ("serviceId")
   `);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS services_schema.processed_events (
       "event_id" uuid NOT NULL,
       "consumer_name" varchar(100) NOT NULL,
@@ -71,7 +71,7 @@ export async function ensureServicesSchema(pool: Pool): Promise<void> {
     )
   `);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS services_schema.outbox_events (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       "eventType" varchar(100) NOT NULL,
@@ -87,10 +87,10 @@ export async function ensureServicesSchema(pool: Pool): Promise<void> {
       "publishedAt" timestamptz
     )
   `);
-  await pool.query(`
+  await dataSource.query(`
     CREATE INDEX IF NOT EXISTS "IDX_services_outbox_events_status" ON services_schema.outbox_events ("status")
   `);
-  await pool.query(`
+  await dataSource.query(`
     CREATE INDEX IF NOT EXISTS "IDX_services_outbox_events_nextRetryAt" ON services_schema.outbox_events ("nextRetryAt")
   `);
 }

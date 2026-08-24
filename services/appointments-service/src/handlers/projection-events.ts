@@ -1,4 +1,4 @@
-import type { PoolClient } from 'pg';
+import type { EntityManager } from 'typeorm';
 
 import type { AppointmentRecommendationRepository } from '../db/appointment-recommendation-repository.js';
 import type { ProjectionsRepository } from '../db/projections-repository.js';
@@ -42,33 +42,33 @@ export interface AiRecommendationCreatedData {
 export async function handleCompanyMemberAdded(
   data: CompanyMemberAddedData,
   projections: ProjectionsRepository,
-  client: PoolClient,
+  manager: EntityManager,
 ): Promise<void> {
-  await projections.upsertMembership(client, data.companyId, data.userId, data.role);
+  await projections.upsertMembership(manager, data.companyId, data.userId, data.role);
 }
 
 export async function handleCompanyMemberRemoved(
   data: CompanyMemberRemovedData,
   projections: ProjectionsRepository,
-  client: PoolClient,
+  manager: EntityManager,
 ): Promise<void> {
-  await projections.removeMembership(client, data.companyId, data.userId);
+  await projections.removeMembership(manager, data.companyId, data.userId);
 }
 
 export async function handleCompanyEvent(
   data: CompanyEventData,
   projections: ProjectionsRepository,
-  client: PoolClient,
+  manager: EntityManager,
 ): Promise<void> {
-  await projections.upsertCompany(client, data.companyId, data.name);
+  await projections.upsertCompany(manager, data.companyId, data.name);
 }
 
 export async function handleServiceEvent(
   data: ServiceEventData,
   projections: ProjectionsRepository,
-  client: PoolClient,
+  manager: EntityManager,
 ): Promise<void> {
-  await projections.upsertService(client, {
+  await projections.upsertService(manager, {
     serviceId: data.serviceId,
     companyId: data.companyId,
     name: data.name,
@@ -79,31 +79,30 @@ export async function handleServiceEvent(
 export async function handleSpecialistServiceAssigned(
   data: SpecialistServiceEventData,
   projections: ProjectionsRepository,
-  client: PoolClient,
+  manager: EntityManager,
 ): Promise<void> {
-  await projections.upsertServiceSpecialist(client, data.serviceId, data.specialistProfileId);
+  await projections.upsertServiceSpecialist(manager, data.serviceId, data.specialistProfileId);
 }
 
 export async function handleSpecialistServiceRemoved(
   data: SpecialistServiceEventData,
   projections: ProjectionsRepository,
-  client: PoolClient,
+  manager: EntityManager,
 ): Promise<void> {
-  await projections.removeServiceSpecialist(client, data.serviceId, data.specialistProfileId);
+  await projections.removeServiceSpecialist(manager, data.serviceId, data.specialistProfileId);
 }
 
 /**
  * Mirrors contracts/events/ai.appointment_recommendation_created.v1.json.
  * Moved from backend-projection-service in Phase 12 - not part of the
- * transactional projection-events client/transaction above because it's
- * unrelated to appointment writes; called directly with the pool.
+ * transactional projection-events manager above.
  */
 export async function handleAiRecommendationCreated(
-  client: PoolClient,
+  manager: EntityManager,
   data: AiRecommendationCreatedData,
   repository: AppointmentRecommendationRepository,
 ): Promise<void> {
-  await repository.upsert(client, {
+  await repository.upsert(manager, {
     id: data.recommendationId,
     appointmentId: data.appointmentId,
     companyId: data.companyId,

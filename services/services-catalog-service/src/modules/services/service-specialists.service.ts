@@ -1,4 +1,4 @@
-import type { Pool } from 'pg';
+import type { DataSource } from 'typeorm';
 
 import { AppError } from '../../errors/AppError.js';
 import { ServiceRepository, type ServiceSpecialistRow } from '../../db/service-repository.js';
@@ -11,12 +11,12 @@ import type { AssignServiceSpecialistInput } from './service-specialists.schemas
 export class ServiceSpecialistsService {
   private readonly repo: ServiceRepository;
 
-  constructor(private readonly pool: Pool) {
-    this.repo = new ServiceRepository(pool);
+  constructor(private readonly dataSource: DataSource) {
+    this.repo = new ServiceRepository(dataSource);
   }
 
   private async requireOwnerOrManager(companyId: string, userId: string): Promise<void> {
-    const role = await findActiveMembershipRole(this.pool, companyId, userId);
+    const role = await findActiveMembershipRole(this.dataSource, companyId, userId);
     if (role !== 'owner' && role !== 'manager') {
       throw new AppError('You do not have permission to manage this company', 403);
     }
@@ -36,7 +36,7 @@ export class ServiceSpecialistsService {
     const service = await this.getServiceOrThrow(serviceId);
     await this.requireOwnerOrManager(service.companyId, requesterUserId);
 
-    const isActive = await isActiveCompanySpecialist(this.pool, service.companyId, input.specialistProfileId);
+    const isActive = await isActiveCompanySpecialist(this.dataSource, service.companyId, input.specialistProfileId);
     if (!isActive) {
       throw new AppError('Specialist is not active in this company', 409);
     }
@@ -46,29 +46,21 @@ export class ServiceSpecialistsService {
       throw new AppError('Specialist is already assigned to this service', 409);
     }
 
-    const client = await this.pool.connect();
-    try {
-      await client.query('BEGIN');
-      const assignment = await this.repo.insertAssignment(client, {
+    return this.dataSource.transaction(async (manager) => {
+      const assignment = await this.repo.insertAssignment(manager, {
         serviceId,
         companyId: service.companyId,
         specialistProfileId: input.specialistProfileId,
       });
 
-      await recordOutboxEvent(client, {
+      await recordOutboxEvent(manager, {
         type: 'specialist-service.assigned',
         aggregateId: assignment.id,
         payload: { serviceId, companyId: service.companyId, specialistProfileId: input.specialistProfileId },
       });
 
-      await client.query('COMMIT');
       return assignment;
-    } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
-    } finally {
-      client.release();
-    }
+    });
   }
 
   async list(serviceId: string, requesterUserId: string | undefined): Promise<ServiceSpecialistRow[]> {
@@ -77,7 +69,7 @@ export class ServiceSpecialistsService {
     if (service.status !== 'published') {
       // Draft/suspended services follow the same visibility rule as the service itself.
       const role = requesterUserId
-        ? await findActiveMembershipRole(this.pool, service.companyId, requesterUserId)
+        ? await findActiveMembershipRole(this.dataSource, service.companyId, requesterUserId)
         : undefined;
       if (role !== 'owner' && role !== 'manager') {
         throw new AppError('Service not found', 404);
@@ -94,29 +86,20 @@ export class ServiceSpecialistsService {
     const assignment = await this.repo.findAssignment(serviceId, specialistProfileId);
     if (!assignment) throw new AppError('Assignment not found', 404);
 
-    const client = await this.pool.connect();
-    try {
-      await client.query('BEGIN');
-      await this.repo.removeAssignment(client, serviceId, specialistProfileId);
+    await this.dataSource.transaction(async (manager) => {
+      await this.repo.removeAssignment(manager, serviceId, specialistProfileId);
 
-      await recordOutboxEvent(client, {
+      await recordOutboxEvent(manager, {
         type: 'specialist-service.removed',
         aggregateId: assignment.id,
         payload: { serviceId, companyId: service.companyId, specialistProfileId },
       });
-
-      await client.query('COMMIT');
-      return assignment;
-    } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
-    } finally {
-      client.release();
-    }
+    });
+    return assignment;
   }
 
   async listMine(userId: string): Promise<ServiceSpecialistRow[]> {
-    const specialistProfileId = await findSpecialistProfileIdByUserId(this.pool, userId);
+    const specialistProfileId = await findSpecialistProfileIdByUserId(this.dataSource, userId);
     if (!specialistProfileId) {
       throw new AppError('This user does not have a specialist profile yet', 404);
     }

@@ -1,19 +1,16 @@
-import type { PoolClient } from 'pg';
+import type { EntityManager } from 'typeorm';
+
+import { AuthMembershipProjectionEntity } from './entities/auth-membership-projection.entity.js';
 
 export class MembershipProjectionRepository {
-  async upsert(client: PoolClient, companyId: string, userId: string, role: string): Promise<void> {
-    await client.query(
-      `INSERT INTO auth_schema.auth_membership_projection ("companyId", "userId", "role")
-       VALUES ($1, $2, $3)
-       ON CONFLICT ("companyId", "userId") DO UPDATE SET "role" = $3, "updatedAt" = now()`,
-      [companyId, userId, role],
+  async upsert(manager: EntityManager, companyId: string, userId: string, role: string): Promise<void> {
+    await manager.getRepository(AuthMembershipProjectionEntity).upsert(
+      { companyId, userId, role, updatedAt: new Date() },
+      { conflictPaths: ['companyId', 'userId'] },
     );
   }
 
-  async remove(client: PoolClient, companyId: string, userId: string): Promise<void> {
-    await client.query(
-      `DELETE FROM auth_schema.auth_membership_projection WHERE "companyId" = $1 AND "userId" = $2`,
-      [companyId, userId],
-    );
+  async remove(manager: EntityManager, companyId: string, userId: string): Promise<void> {
+    await manager.getRepository(AuthMembershipProjectionEntity).delete({ companyId, userId });
   }
 }

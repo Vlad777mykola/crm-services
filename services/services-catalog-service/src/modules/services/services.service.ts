@@ -1,4 +1,4 @@
-import type { Pool } from 'pg';
+import type { DataSource } from 'typeorm';
 
 import { AppError } from '../../errors/AppError.js';
 import { ServiceRepository, type ServiceRow, type StatusHistoryRow } from '../../db/service-repository.js';
@@ -16,12 +16,12 @@ const PUBLISHABLE_TRANSITIONS: Record<string, readonly string[]> = {
 export class ServicesService {
   readonly repo: ServiceRepository;
 
-  constructor(private readonly pool: Pool) {
-    this.repo = new ServiceRepository(pool);
+  constructor(private readonly dataSource: DataSource) {
+    this.repo = new ServiceRepository(dataSource);
   }
 
   private async requireOwnerOrManager(companyId: string, userId: string): Promise<void> {
-    const role = await findActiveMembershipRole(this.pool, companyId, userId);
+    const role = await findActiveMembershipRole(this.dataSource, companyId, userId);
     if (role !== 'owner' && role !== 'manager') {
       throw new AppError('You do not have permission to manage this company', 403);
     }
@@ -29,17 +29,15 @@ export class ServicesService {
 
   private async isOwnerOrManager(companyId: string, userId: string | undefined): Promise<boolean> {
     if (!userId) return false;
-    const role = await findActiveMembershipRole(this.pool, companyId, userId);
+    const role = await findActiveMembershipRole(this.dataSource, companyId, userId);
     return role === 'owner' || role === 'manager';
   }
 
   async create(companyId: string, requesterUserId: string, input: CreateServiceRequestInput): Promise<ServiceRow> {
     await this.requireOwnerOrManager(companyId, requesterUserId);
 
-    const client = await this.pool.connect();
-    try {
-      await client.query('BEGIN');
-      const service = await this.repo.insert(client, {
+    return this.dataSource.transaction(async (manager) => {
+      const service = await this.repo.insert(manager, {
         companyId,
         name: input.name,
         description: input.description ?? null,
@@ -48,27 +46,21 @@ export class ServicesService {
         price: input.price ?? null,
       });
 
-      await this.repo.insertStatusHistory(client, {
+      await this.repo.insertStatusHistory(manager, {
         serviceId: service.id,
         fromStatus: null,
         toStatus: service.status,
         changedByUserId: requesterUserId,
       });
 
-      await recordOutboxEvent(client, {
+      await recordOutboxEvent(manager, {
         type: 'service.created',
         aggregateId: service.id,
         payload: { serviceId: service.id, companyId, name: service.name, status: service.status },
       });
 
-      await client.query('COMMIT');
       return service;
-    } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
-    } finally {
-      client.release();
-    }
+    });
   }
 
   async listByCompany(companyId: string, requesterUserId: string | undefined): Promise<ServiceRow[]> {
@@ -103,10 +95,7 @@ export class ServicesService {
   ): Promise<ServiceRow> {
     await this.requireOwnerOrManager(companyId, requesterUserId);
 
-    const client = await this.pool.connect();
-    try {
-      await client.query('BEGIN');
-
+    return this.dataSource.transaction(async (manager) => {
       const existing = await this.repo.findByIdAndCompany(serviceId, companyId);
       if (!existing) throw new AppError('Service not found', 404);
 
@@ -122,10 +111,10 @@ export class ServicesService {
         }
       }
 
-      const updated = await this.repo.update(client, serviceId, patch);
+      const updated = await this.repo.update(manager, serviceId, patch);
 
       if (updated.status !== fromStatus) {
-        await this.repo.insertStatusHistory(client, {
+        await this.repo.insertStatusHistory(manager, {
           serviceId: updated.id,
           fromStatus,
           toStatus: updated.status,
@@ -133,20 +122,14 @@ export class ServicesService {
         });
       }
 
-      await recordOutboxEvent(client, {
+      await recordOutboxEvent(manager, {
         type: 'service.updated',
         aggregateId: updated.id,
         payload: { serviceId: updated.id, companyId, name: updated.name, status: updated.status },
       });
 
-      await client.query('COMMIT');
       return updated;
-    } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
-    } finally {
-      client.release();
-    }
+    });
   }
 
   async getStatusHistory(companyId: string, serviceId: string, requesterUserId: string): Promise<StatusHistoryRow[]> {

@@ -6,8 +6,8 @@ import {
   companyIdParamsSchema,
   requestIdParamsSchema,
   sendSpecialistRequestSchema,
-  type CompanyIdParams,
-  type RequestIdParams,
+  type CompanyIdParamsInput,
+  type RequestIdParamsInput,
   type SendSpecialistRequestInput,
 } from '../../modules/company-specialists/company-specialists.schemas.js';
 import { validate } from '../validate.js';
@@ -22,7 +22,7 @@ export function createCompanySpecialistsRouter(service: CompanySpecialistsServic
     validate(sendSpecialistRequestSchema, 'body'),
     async (req, res, next) => {
       try {
-        const { companyId } = req.params as unknown as CompanyIdParams;
+        const { companyId } = req.params as unknown as CompanyIdParamsInput;
         const request = await service.sendSpecialistRequest(
           companyId,
           req.auth!.userId,
@@ -41,7 +41,7 @@ export function createCompanySpecialistsRouter(service: CompanySpecialistsServic
     validate(companyIdParamsSchema, 'params'),
     async (req, res, next) => {
       try {
-        const { companyId } = req.params as unknown as CompanyIdParams;
+        const { companyId } = req.params as unknown as CompanyIdParamsInput;
         const requests = await service.listCompanySpecialistRequests(companyId, req.auth!.userId);
         res.status(200).json({ message: 'Company specialist requests', data: requests });
       } catch (err) {
@@ -52,7 +52,7 @@ export function createCompanySpecialistsRouter(service: CompanySpecialistsServic
 
   router.get('/companies/:companyId/specialists', validate(companyIdParamsSchema, 'params'), async (req, res, next) => {
     try {
-      const { companyId } = req.params as unknown as CompanyIdParams;
+      const { companyId } = req.params as unknown as CompanyIdParamsInput;
       const specialists = await service.listCompanySpecialists(companyId);
       res.status(200).json({ message: 'Active specialists', data: specialists });
     } catch (err) {
@@ -87,7 +87,7 @@ export function createCompanySpecialistsRouter(service: CompanySpecialistsServic
     validate(requestIdParamsSchema, 'params'),
     async (req, res, next) => {
       try {
-        const { requestId } = req.params as unknown as RequestIdParams;
+        const { requestId } = req.params as unknown as RequestIdParamsInput;
         const request = await service.acceptSpecialistCompanyRequest(requestId, req.auth!.userId);
         res.status(200).json({ message: 'Request accepted', data: request });
       } catch (err) {
@@ -102,7 +102,7 @@ export function createCompanySpecialistsRouter(service: CompanySpecialistsServic
     validate(requestIdParamsSchema, 'params'),
     async (req, res, next) => {
       try {
-        const { requestId } = req.params as unknown as RequestIdParams;
+        const { requestId } = req.params as unknown as RequestIdParamsInput;
         const request = await service.rejectSpecialistCompanyRequest(requestId, req.auth!.userId);
         res.status(200).json({ message: 'Request rejected', data: request });
       } catch (err) {

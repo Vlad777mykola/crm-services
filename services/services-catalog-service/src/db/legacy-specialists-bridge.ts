@@ -1,4 +1,4 @@
-import type { Pool, PoolClient } from 'pg';
+import type { DataSource, EntityManager } from 'typeorm';
 
 /**
  * TEMPORARY, EXPLICITLY FLAGGED CROSS-SCHEMA READ - resolves "my specialist
@@ -6,10 +6,10 @@ import type { Pool, PoolClient } from 'pg';
  * lookup endpoint exists on specialists-service yet.
  */
 export async function findSpecialistProfileIdByUserId(
-  client: Pool | PoolClient,
+  client: DataSource | EntityManager,
   userId: string,
 ): Promise<string | undefined> {
-  const { rows } = await client.query<{ id: string }>(
+  const rows = await client.query<Array<{ id: string }>>(
     `SELECT "id" FROM specialists_schema.specialist_profiles WHERE "userId" = $1 LIMIT 1`,
     [userId],
   );

@@ -1,4 +1,4 @@
-import type { PoolClient } from 'pg';
+import type { EntityManager } from 'typeorm';
 
 import { logger } from '../logger.js';
 import { MemberRepository } from '../db/member-repository.js';
@@ -23,15 +23,15 @@ export interface CompanyCreatedData {
 export async function handleCompanyCreated(
   data: CompanyCreatedData,
   members: MemberRepository,
-  client: PoolClient,
+  manager: EntityManager,
 ): Promise<void> {
-  const row = await members.insertOwner(client, data.companyId, data.createdByUserId);
+  const row = await members.insertOwner(manager, data.companyId, data.createdByUserId);
   if (!row) {
     logger.info({ companyId: data.companyId }, '[company-members-service] owner row already exists - skipping');
     return;
   }
 
-  await recordOutboxEvent(client, {
+  await recordOutboxEvent(manager, {
     type: 'company-member.added',
     aggregateId: row.id,
     payload: { companyId: data.companyId, userId: data.createdByUserId, role: 'owner' },

@@ -1,4 +1,4 @@
-import type { Pool, PoolClient } from 'pg';
+import type { DataSource, EntityManager } from 'typeorm';
 
 /**
  * TEMPORARY, EXPLICITLY FLAGGED CROSS-SCHEMA READ - same pattern/rationale as
@@ -14,11 +14,13 @@ export interface SpecialistProfileRow {
   userId: string;
 }
 
+type Queryable = DataSource | EntityManager;
+
 export async function findSpecialistProfileById(
-  client: Pool | PoolClient,
+  client: Queryable,
   specialistProfileId: string,
 ): Promise<SpecialistProfileRow | undefined> {
-  const { rows } = await client.query<SpecialistProfileRow>(
+  const rows = await client.query<SpecialistProfileRow[]>(
     `SELECT "id", "userId" FROM specialists_schema.specialist_profiles WHERE "id" = $1 LIMIT 1`,
     [specialistProfileId],
   );
@@ -26,10 +28,10 @@ export async function findSpecialistProfileById(
 }
 
 export async function findSpecialistProfileByUserId(
-  client: Pool | PoolClient,
+  client: Queryable,
   userId: string,
 ): Promise<SpecialistProfileRow | undefined> {
-  const { rows } = await client.query<SpecialistProfileRow>(
+  const rows = await client.query<SpecialistProfileRow[]>(
     `SELECT "id", "userId" FROM specialists_schema.specialist_profiles WHERE "userId" = $1 LIMIT 1`,
     [userId],
   );

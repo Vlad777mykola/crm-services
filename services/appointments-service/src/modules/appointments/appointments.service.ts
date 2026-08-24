@@ -1,4 +1,4 @@
-import type { Pool } from 'pg';
+import type { DataSource } from 'typeorm';
 
 import { AppointmentRepository, type AppointmentRow } from '../../db/appointment-repository.js';
 import { findUserName } from '../../db/legacy-users-bridge.js';
@@ -24,9 +24,9 @@ export class AppointmentsService {
   private readonly appointments: AppointmentRepository;
   private readonly projections: ProjectionsRepository;
 
-  constructor(private readonly pool: Pool) {
-    this.appointments = new AppointmentRepository(pool);
-    this.projections = new ProjectionsRepository(pool);
+  constructor(private readonly dataSource: DataSource) {
+    this.appointments = new AppointmentRepository(dataSource);
+    this.projections = new ProjectionsRepository(dataSource);
   }
 
   private async requireManagingRole(companyId: string, userId: string): Promise<void> {
@@ -49,7 +49,7 @@ export class AppointmentsService {
       }
     }
 
-    const clientName = (await findUserName(this.pool, clientUserId)) ?? 'Unknown client';
+    const clientName = (await findUserName(this.dataSource, clientUserId)) ?? 'Unknown client';
 
     const appointment = await this.appointments.withTransaction(async (client) => {
       const created = await this.appointments.create(client, {
@@ -224,7 +224,7 @@ export class AppointmentsService {
     assertTransitionAllowed(fromStatus, 'cancelled', 'This appointment can no longer be cancelled');
 
     const service = await this.projections.findService(appointment.serviceId);
-    const clientName = (await findUserName(this.pool, clientUserId)) ?? 'Unknown client';
+    const clientName = (await findUserName(this.dataSource, clientUserId)) ?? 'Unknown client';
 
     const saved = await this.appointments.withTransaction(async (client) => {
       const updated = await this.appointments.updateStatus(client, appointmentId, { status: 'cancelled' });

@@ -1,7 +1,7 @@
 import { createApp } from './app.js';
 import { processInboundEvent } from './consumer/process-inbound-event.js';
 import { AppointmentRecommendationRepository } from './db/appointment-recommendation-repository.js';
-import { createPool } from './db/pool.js';
+import { createDataSource } from './db/data-source.js';
 import { ensureAppointmentsSchema } from './db/schema.js';
 import { ProjectionsRepository } from './db/projections-repository.js';
 import { env } from './env.js';
@@ -14,13 +14,14 @@ import { ANALYTICS_EVENTS_EXCHANGE, DOMAIN_EVENTS_DLX, DOMAIN_EVENTS_EXCHANGE } 
 const QUEUE_NAME = 'appointments-service.q';
 
 async function bootstrap(): Promise<void> {
-  const pool = createPool();
-  await ensureAppointmentsSchema(pool);
+  const dataSource = createDataSource();
+  await dataSource.initialize();
+  await ensureAppointmentsSchema(dataSource);
 
   const processedEvents = new ProcessedEventsRepository();
-  const projections = new ProjectionsRepository(pool);
-  const recommendations = new AppointmentRecommendationRepository(pool);
-  const appointmentsService = new AppointmentsService(pool);
+  const projections = new ProjectionsRepository(dataSource);
+  const recommendations = new AppointmentRecommendationRepository(dataSource);
+  const appointmentsService = new AppointmentsService(dataSource);
 
   const consumer = await consumeFromRabbitMq({
     url: env.RABBITMQ_URL,
@@ -39,11 +40,11 @@ async function bootstrap(): Promise<void> {
     ],
     onMessage: async (parsedBody) => {
       const envelope = parsedBody as { id: string; type: string; data: Record<string, unknown> };
-      await processInboundEvent({ pool, processedEvents, projections, recommendations }, envelope);
+      await processInboundEvent({ dataSource, processedEvents, projections, recommendations }, envelope);
     },
   });
 
-  const app = createApp(pool, consumer, appointmentsService);
+  const app = createApp(dataSource, consumer, appointmentsService);
   const server = app.listen(env.PORT, () => {
     logger.info(`[appointments-service] listening on :${env.PORT}`);
   });
@@ -51,7 +52,7 @@ async function bootstrap(): Promise<void> {
   function shutdown(signal: string): void {
     logger.info(`[appointments-service] received ${signal}, shutting down`);
     server.close(() => {
-      Promise.allSettled([consumer.close(), pool.end()])
+      Promise.allSettled([consumer.close(), dataSource.destroy()])
         .catch((err: unknown) => logger.error({ err }, '[appointments-service] error during shutdown'))
         .finally(() => process.exit(0));
     });

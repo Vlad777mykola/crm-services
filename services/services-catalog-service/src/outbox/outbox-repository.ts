@@ -1,4 +1,6 @@
-import type { PoolClient } from 'pg';
+import type { EntityManager } from 'typeorm';
+
+import { OutboxEventEntity } from '../db/entities/outbox-event.entity.js';
 
 export const DOMAIN_EVENTS_EXCHANGE = 'domain.events';
 
@@ -23,16 +25,21 @@ export interface RecordOutboxEventInput {
 
 /**
  * Inserts a services_schema.outbox_events row using the caller's transaction
- * client, so the domain write and the outbox write commit or roll back
+ * manager, so the domain write and the outbox write commit or roll back
  * together.
  */
-export async function recordOutboxEvent(client: PoolClient, input: RecordOutboxEventInput): Promise<void> {
+export async function recordOutboxEvent(manager: EntityManager, input: RecordOutboxEventInput): Promise<void> {
   const routing = servicesEventRouting[input.type];
   const aggregateType = input.type.startsWith('specialist-service') ? 'service-specialist' : 'service';
-  await client.query(
-    `INSERT INTO services_schema.outbox_events
-       ("eventType", "exchange", "routingKey", "aggregateType", "aggregateId", "payload")
-     VALUES ($1, $2, $3, $4, $5, $6)`,
-    [input.type, routing.exchange, routing.routingKey, aggregateType, input.aggregateId, input.payload],
+  const repository = manager.getRepository(OutboxEventEntity);
+  await repository.save(
+    repository.create({
+      eventType: input.type,
+      exchange: routing.exchange,
+      routingKey: routing.routingKey,
+      aggregateType,
+      aggregateId: input.aggregateId,
+      payload: input.payload,
+    }),
   );
 }

@@ -6,9 +6,9 @@ import {
   assignServiceSpecialistRequestSchema,
   serviceSpecialistParamsSchema,
   type AssignServiceSpecialistInput,
-  type ServiceSpecialistParams,
+  type ServiceSpecialistParamsInput,
 } from '../../modules/services/service-specialists.schemas.js';
-import { serviceOnlyIdParamsSchema, type ServiceOnlyIdParams } from '../../modules/services/services.schemas.js';
+import { serviceOnlyIdParamsSchema, type ServiceOnlyIdParamsInput } from '../../modules/services/services.schemas.js';
 import { validate } from '../validate.js';
 
 export function createServiceSpecialistsRouter(service: ServiceSpecialistsService): Router {
@@ -21,7 +21,7 @@ export function createServiceSpecialistsRouter(service: ServiceSpecialistsServic
     validate(assignServiceSpecialistRequestSchema, 'body'),
     async (req, res, next) => {
       try {
-        const { serviceId } = req.params as unknown as ServiceOnlyIdParams;
+        const { serviceId } = req.params as unknown as ServiceOnlyIdParamsInput;
         const assignment = await service.assign(serviceId, req.auth!.userId, req.body as AssignServiceSpecialistInput);
         res.status(201).json({ message: 'Specialist assigned', data: assignment });
       } catch (err) {
@@ -36,7 +36,7 @@ export function createServiceSpecialistsRouter(service: ServiceSpecialistsServic
     validate(serviceOnlyIdParamsSchema, 'params'),
     async (req, res, next) => {
       try {
-        const { serviceId } = req.params as unknown as ServiceOnlyIdParams;
+        const { serviceId } = req.params as unknown as ServiceOnlyIdParamsInput;
         const specialists = await service.list(serviceId, req.auth?.userId);
         res.status(200).json({ message: 'Assigned specialists', data: specialists });
       } catch (err) {
@@ -51,7 +51,7 @@ export function createServiceSpecialistsRouter(service: ServiceSpecialistsServic
     validate(serviceSpecialistParamsSchema, 'params'),
     async (req, res, next) => {
       try {
-        const { serviceId, specialistProfileId } = req.params as unknown as ServiceSpecialistParams;
+        const { serviceId, specialistProfileId } = req.params as unknown as ServiceSpecialistParamsInput;
         const assignment = await service.unassign(serviceId, specialistProfileId, req.auth!.userId);
         res.status(200).json({ message: 'Specialist unassigned', data: assignment });
       } catch (err) {

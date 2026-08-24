@@ -1,4 +1,4 @@
-import type { Pool } from 'pg';
+import type { DataSource } from 'typeorm';
 
 /**
  * Creates appointments_schema - see
@@ -17,10 +17,10 @@ import type { Pool } from 'pg';
  * that contract, which is out of scope for this phase. See README "Known
  * gaps".
  */
-export async function ensureAppointmentsSchema(pool: Pool): Promise<void> {
-  await pool.query(`CREATE SCHEMA IF NOT EXISTS appointments_schema`);
+export async function ensureAppointmentsSchema(dataSource: DataSource): Promise<void> {
+  await dataSource.query(`CREATE SCHEMA IF NOT EXISTS appointments_schema`);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS appointments_schema.appointments (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       "companyId" uuid NOT NULL,
@@ -36,11 +36,11 @@ export async function ensureAppointmentsSchema(pool: Pool): Promise<void> {
       "updatedAt" timestamptz NOT NULL DEFAULT now()
     )
   `);
-  await pool.query(`CREATE INDEX IF NOT EXISTS "IDX_appointments_companyId" ON appointments_schema.appointments ("companyId")`);
-  await pool.query(`CREATE INDEX IF NOT EXISTS "IDX_appointments_serviceId" ON appointments_schema.appointments ("serviceId")`);
-  await pool.query(`CREATE INDEX IF NOT EXISTS "IDX_appointments_clientUserId" ON appointments_schema.appointments ("clientUserId")`);
+  await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_appointments_companyId" ON appointments_schema.appointments ("companyId")`);
+  await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_appointments_serviceId" ON appointments_schema.appointments ("serviceId")`);
+  await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_appointments_clientUserId" ON appointments_schema.appointments ("clientUserId")`);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS appointments_schema.appointment_status_history (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       "appointmentId" uuid NOT NULL REFERENCES appointments_schema.appointments ("id") ON DELETE CASCADE,
@@ -51,10 +51,10 @@ export async function ensureAppointmentsSchema(pool: Pool): Promise<void> {
       "createdAt" timestamptz NOT NULL DEFAULT now()
     )
   `);
-  await pool.query(`CREATE INDEX IF NOT EXISTS "IDX_appointment_status_history_appointmentId" ON appointments_schema.appointment_status_history ("appointmentId")`);
+  await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_appointment_status_history_appointmentId" ON appointments_schema.appointment_status_history ("appointmentId")`);
 
   // Fed by company-member.added/.removed (company-members-service).
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS appointments_schema.appointment_membership_projection (
       "companyId" uuid NOT NULL,
       "userId" uuid NOT NULL,
@@ -65,7 +65,7 @@ export async function ensureAppointmentsSchema(pool: Pool): Promise<void> {
   `);
 
   // Fed by company.created/.updated (companies-service).
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS appointments_schema.appointment_company_projection (
       "companyId" uuid PRIMARY KEY,
       "name" varchar(255) NOT NULL,
@@ -74,7 +74,7 @@ export async function ensureAppointmentsSchema(pool: Pool): Promise<void> {
   `);
 
   // Fed by service.created/.updated (services-catalog-service).
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS appointments_schema.appointment_service_projection (
       "serviceId" uuid PRIMARY KEY,
       "companyId" uuid NOT NULL,
@@ -87,7 +87,7 @@ export async function ensureAppointmentsSchema(pool: Pool): Promise<void> {
   // Fed by specialist-service.assigned/.removed (services-catalog-service) -
   // used to validate a client's preferred specialist is actually assigned to
   // the requested service.
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS appointments_schema.appointment_service_specialist_projection (
       "serviceId" uuid NOT NULL,
       "specialistProfileId" uuid NOT NULL,
@@ -100,7 +100,7 @@ export async function ensureAppointmentsSchema(pool: Pool): Promise<void> {
   // backend-projection-service in Phase 12 (see table-ownership-matrix.md).
   // Fed by ai.appointment_recommendation_created (ai-service, analytics.events
   // exchange). Safe to drop and rebuild; no backfill from the old table.
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS appointments_schema.appointment_recommendation_projections (
       "id" uuid PRIMARY KEY,
       "appointmentId" uuid NOT NULL,
@@ -110,9 +110,9 @@ export async function ensureAppointmentsSchema(pool: Pool): Promise<void> {
       "createdAt" timestamptz NOT NULL DEFAULT now()
     )
   `);
-  await pool.query(`CREATE INDEX IF NOT EXISTS "IDX_appointment_recommendation_projections_appointmentId" ON appointments_schema.appointment_recommendation_projections ("appointmentId")`);
+  await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_appointment_recommendation_projections_appointmentId" ON appointments_schema.appointment_recommendation_projections ("appointmentId")`);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS appointments_schema.processed_events (
       "event_id" uuid NOT NULL,
       "consumer_name" varchar(100) NOT NULL,
@@ -121,7 +121,7 @@ export async function ensureAppointmentsSchema(pool: Pool): Promise<void> {
     )
   `);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS appointments_schema.outbox_events (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       "eventType" varchar(100) NOT NULL,
@@ -137,6 +137,6 @@ export async function ensureAppointmentsSchema(pool: Pool): Promise<void> {
       "publishedAt" timestamptz
     )
   `);
-  await pool.query(`CREATE INDEX IF NOT EXISTS "IDX_appointments_outbox_events_status" ON appointments_schema.outbox_events ("status")`);
-  await pool.query(`CREATE INDEX IF NOT EXISTS "IDX_appointments_outbox_events_nextRetryAt" ON appointments_schema.outbox_events ("nextRetryAt")`);
+  await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_appointments_outbox_events_status" ON appointments_schema.outbox_events ("status")`);
+  await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_appointments_outbox_events_nextRetryAt" ON appointments_schema.outbox_events ("nextRetryAt")`);
 }

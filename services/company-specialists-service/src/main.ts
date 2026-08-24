@@ -1,16 +1,17 @@
 import { createApp } from './app.js';
-import { createPool } from './db/pool.js';
+import { createDataSource } from './db/data-source.js';
 import { ensureCompanySpecialistsSchema } from './db/schema.js';
 import { env } from './env.js';
 import { logger } from './logger.js';
 import { CompanySpecialistsService } from './modules/company-specialists/company-specialists.service.js';
 
 async function bootstrap(): Promise<void> {
-  const pool = createPool();
-  await ensureCompanySpecialistsSchema(pool);
+  const dataSource = createDataSource();
+  await dataSource.initialize();
+  await ensureCompanySpecialistsSchema(dataSource);
 
-  const service = new CompanySpecialistsService(pool);
-  const app = createApp(pool, service);
+  const service = new CompanySpecialistsService(dataSource);
+  const app = createApp(dataSource, service);
 
   const server = app.listen(env.PORT, () => {
     logger.info(`[company-specialists-service] listening on :${env.PORT}`);
@@ -19,9 +20,9 @@ async function bootstrap(): Promise<void> {
   function shutdown(signal: string): void {
     logger.info(`[company-specialists-service] received ${signal}, shutting down`);
     server.close(() => {
-      pool
-        .end()
-        .catch((err: unknown) => logger.error({ err }, '[company-specialists-service] error closing pool'))
+      dataSource
+        .destroy()
+        .catch((err: unknown) => logger.error({ err }, '[company-specialists-service] error closing data source'))
         .finally(() => process.exit(0));
     });
   }

@@ -1,113 +1,81 @@
-import type { Pool, PoolClient } from 'pg';
+import type { DataSource, EntityManager } from 'typeorm';
 
-export type MemberRole = 'owner' | 'manager';
-export type MemberStatus = 'active' | 'removed';
+import { MemberEntity, type MemberRow, type MemberStatus } from './entities/member.entity.js';
 
-export interface MemberRow {
-  id: string;
-  companyId: string;
-  userId: string;
-  role: MemberRole;
-  status: MemberStatus;
-  createdAt: Date;
-  updatedAt: Date;
-}
+export type { MemberRole, MemberRow, MemberStatus } from './entities/member.entity.js';
 
 export class MemberRepository {
-  constructor(private readonly pool: Pool) {}
+  constructor(private readonly dataSource: DataSource) {}
 
-  async insertOwner(client: PoolClient, companyId: string, userId: string): Promise<MemberRow | undefined> {
-    const { rows } = await client.query<MemberRow>(
-      `INSERT INTO company_members_schema.company_members ("companyId", "userId", "role", "status")
-       VALUES ($1, $2, 'owner', 'active')
-       ON CONFLICT ("companyId", "userId") DO NOTHING
-       RETURNING *`,
-      [companyId, userId],
-    );
-    return rows[0];
+  async insertOwner(manager: EntityManager, companyId: string, userId: string): Promise<MemberRow | null> {
+    const result = await manager
+      .createQueryBuilder()
+      .insert()
+      .into(MemberEntity)
+      .values({ companyId, userId, role: 'owner', status: 'active' })
+      .orIgnore()
+      .returning('*')
+      .execute();
+
+    return (result.raw[0] as MemberRow | undefined) ?? null;
   }
 
-  async findByCompanyAndUser(companyId: string, userId: string): Promise<MemberRow | undefined> {
-    const { rows } = await this.pool.query<MemberRow>(
-      `SELECT * FROM company_members_schema.company_members WHERE "companyId" = $1 AND "userId" = $2 LIMIT 1`,
-      [companyId, userId],
-    );
-    return rows[0];
+  async findByCompanyAndUser(companyId: string, userId: string): Promise<MemberRow | null> {
+    return this.dataSource.getRepository(MemberEntity).findOne({ where: { companyId, userId } });
   }
 
-  async findById(companyId: string, memberId: string): Promise<MemberRow | undefined> {
-    const { rows } = await this.pool.query<MemberRow>(
-      `SELECT * FROM company_members_schema.company_members WHERE "id" = $1 AND "companyId" = $2 LIMIT 1`,
-      [memberId, companyId],
-    );
-    return rows[0];
+  async findById(companyId: string, memberId: string): Promise<MemberRow | null> {
+    return this.dataSource.getRepository(MemberEntity).findOne({ where: { id: memberId, companyId } });
   }
 
   async listByCompany(companyId: string): Promise<MemberRow[]> {
-    const { rows } = await this.pool.query<MemberRow>(
-      `SELECT * FROM company_members_schema.company_members WHERE "companyId" = $1 ORDER BY "createdAt" ASC`,
-      [companyId],
-    );
-    return rows;
+    return this.dataSource.getRepository(MemberEntity).find({
+      where: { companyId },
+      order: { createdAt: 'ASC' },
+    });
   }
 
-  async upsertManager(client: PoolClient, companyId: string, userId: string): Promise<{ row: MemberRow; wasReactivated: boolean }> {
-    const existing = await client.query<MemberRow>(
-      `SELECT * FROM company_members_schema.company_members WHERE "companyId" = $1 AND "userId" = $2 LIMIT 1`,
-      [companyId, userId],
-    );
+  async upsertManager(
+    manager: EntityManager,
+    companyId: string,
+    userId: string,
+  ): Promise<{ row: MemberRow; wasReactivated: boolean }> {
+    const repository = manager.getRepository(MemberEntity);
+    const existing = await repository.findOne({ where: { companyId, userId } });
 
-    if (existing.rows[0]) {
-      const { rows } = await client.query<MemberRow>(
-        `UPDATE company_members_schema.company_members SET "status" = 'active', "role" = 'manager', "updatedAt" = now()
-         WHERE "id" = $1 RETURNING *`,
-        [existing.rows[0].id],
-      );
-      return { row: rows[0], wasReactivated: true };
+    if (existing) {
+      const row = await repository.save(repository.merge(existing, { status: 'active', role: 'manager', updatedAt: new Date() }));
+      return { row, wasReactivated: true };
     }
 
-    const { rows } = await client.query<MemberRow>(
-      `INSERT INTO company_members_schema.company_members ("companyId", "userId", "role", "status")
-       VALUES ($1, $2, 'manager', 'active') RETURNING *`,
-      [companyId, userId],
-    );
-    return { row: rows[0], wasReactivated: false };
+    const row = await repository.save(repository.create({ companyId, userId, role: 'manager', status: 'active' }));
+    return { row, wasReactivated: false };
   }
 
-  async setStatus(client: PoolClient, memberId: string, status: MemberStatus): Promise<MemberRow> {
-    const { rows } = await client.query<MemberRow>(
-      `UPDATE company_members_schema.company_members SET "status" = $2, "updatedAt" = now()
-       WHERE "id" = $1 RETURNING *`,
-      [memberId, status],
-    );
-    return rows[0];
+  async setStatus(manager: EntityManager, memberId: string, status: MemberStatus): Promise<MemberRow> {
+    const repository = manager.getRepository(MemberEntity);
+    const existing = await repository.findOneOrFail({ where: { id: memberId } });
+    return repository.save(repository.merge(existing, { status, updatedAt: new Date() }));
   }
 }
 
 /**
  * TEMPORARY, EXPLICITLY FLAGGED CROSS-SCHEMA READ.
- *
- * `GET .../members` and invite-by-email need user identity data
- * (email -> userId lookup, and name for display) that lives in
- * users-service's own schema. There's no public "find user by email" HTTP
- * endpoint anywhere (users-service only exposes GET /users/:id and /users/me),
- * so this reads users_schema directly (same physical Postgres instance) -
- * same documented compromise pattern as
- * services/companies-service/src/db/legacy-company-members-bridge.ts.
- * A real fix would add a users-service endpoint or an event-fed local
- * projection; flagged here for a future cleanup, not required by
- * microservices-extraction-checklist.md Phase 5.
  */
-export async function findUserIdByEmail(pool: Pool, email: string): Promise<string | undefined> {
-  const { rows } = await pool.query<{ id: string }>(`SELECT "id" FROM users_schema.users WHERE "email" = $1 LIMIT 1`, [
-    email,
-  ]);
+export async function findUserIdByEmail(dataSource: DataSource, email: string): Promise<string | undefined> {
+  const rows = await dataSource.query<Array<{ id: string }>>(
+    `SELECT "id" FROM users_schema.users WHERE "email" = $1 LIMIT 1`,
+    [email],
+  );
   return rows[0]?.id;
 }
 
-export async function findUserNamesByIds(pool: Pool, userIds: string[]): Promise<Map<string, { name: string; email: string | null }>> {
+export async function findUserNamesByIds(
+  dataSource: DataSource,
+  userIds: string[],
+): Promise<Map<string, { name: string; email: string | null }>> {
   if (userIds.length === 0) return new Map();
-  const { rows } = await pool.query<{ id: string; email: string | null; name: string }>(
+  const rows = await dataSource.query<Array<{ id: string; email: string | null; name: string }>>(
     `SELECT u."id", u."email", p."name" FROM users_schema.users u
      JOIN users_schema.user_profiles p ON p."userId" = u."id"
      WHERE u."id" = ANY($1)`,

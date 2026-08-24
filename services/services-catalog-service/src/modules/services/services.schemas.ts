@@ -1,8 +1,16 @@
 import { z } from 'zod';
 
 import { paginationQuerySchema } from '../../common/pagination.js';
+import type {
+  CompanyIdParams,
+  CreateServiceRequest,
+  PublicServicesQuery,
+  ServiceIdParams,
+  ServiceOnlyIdParams,
+  UpdateServiceRequest,
+} from './services.contracts.js';
 
-export const createServiceRequestSchema = z.object({
+export const createServiceRequestSchema: z.ZodType<CreateServiceRequest> = z.object({
   name: z.string().min(1),
   description: z.string().nullable().optional(),
   category: z.string().nullable().optional(),
@@ -12,7 +20,7 @@ export const createServiceRequestSchema = z.object({
 
 export type CreateServiceRequestInput = z.infer<typeof createServiceRequestSchema>;
 
-export const updateServiceRequestSchema = z.object({
+export const updateServiceRequestSchema: z.ZodType<UpdateServiceRequest> = z.object({
   name: z.string().min(1).optional(),
   description: z.string().nullable().optional(),
   category: z.string().nullable().optional(),
@@ -24,26 +32,26 @@ export const updateServiceRequestSchema = z.object({
 
 export type UpdateServiceRequestInput = z.infer<typeof updateServiceRequestSchema>;
 
-export const companyIdParamsSchema = z.object({
+export const companyIdParamsSchema: z.ZodType<CompanyIdParams> = z.object({
   companyId: z.string().uuid(),
 });
 
-export type CompanyIdParams = z.infer<typeof companyIdParamsSchema>;
+export type CompanyIdParamsInput = z.infer<typeof companyIdParamsSchema>;
 
-export const serviceIdParamsSchema = z.object({
+export const serviceIdParamsSchema: z.ZodType<ServiceIdParams> = z.object({
   companyId: z.string().uuid(),
   serviceId: z.string().uuid(),
 });
 
-export type ServiceIdParams = z.infer<typeof serviceIdParamsSchema>;
+export type ServiceIdParamsInput = z.infer<typeof serviceIdParamsSchema>;
 
-export const serviceOnlyIdParamsSchema = z.object({
+export const serviceOnlyIdParamsSchema: z.ZodType<ServiceOnlyIdParams> = z.object({
   serviceId: z.string().uuid(),
 });
 
-export type ServiceOnlyIdParams = z.infer<typeof serviceOnlyIdParamsSchema>;
+export type ServiceOnlyIdParamsInput = z.infer<typeof serviceOnlyIdParamsSchema>;
 
-export const publicServicesQuerySchema = paginationQuerySchema.extend({
+export const publicServicesQuerySchema: z.ZodType<PublicServicesQuery> = paginationQuerySchema.extend({
   q: z.string().trim().min(1).optional(),
   category: z.string().trim().min(1).optional(),
 });

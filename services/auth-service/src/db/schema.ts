@@ -1,4 +1,4 @@
-import type { Pool } from 'pg';
+import type { DataSource } from 'typeorm';
 
 /**
  * Creates auth_schema and every table this service owns if they don't already
@@ -14,10 +14,10 @@ import type { Pool } from 'pg';
  * separate "users" table here anymore; profile fields live in users-service's
  * own schema (users_schema), not this one.
  */
-export async function ensureAuthSchema(pool: Pool): Promise<void> {
-  await pool.query(`CREATE SCHEMA IF NOT EXISTS auth_schema`);
+export async function ensureAuthSchema(dataSource: DataSource): Promise<void> {
+  await dataSource.query(`CREATE SCHEMA IF NOT EXISTS auth_schema`);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS auth_schema.auth_identities (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       "provider" varchar(50) NOT NULL,
@@ -29,11 +29,11 @@ export async function ensureAuthSchema(pool: Pool): Promise<void> {
       CONSTRAINT "UQ_auth_identities_provider_provider_user_id" UNIQUE ("provider", "providerUserId")
     )
   `);
-  await pool.query(`
+  await dataSource.query(`
     CREATE INDEX IF NOT EXISTS "IDX_auth_identities_email" ON auth_schema.auth_identities ("email")
   `);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS auth_schema.auth_sessions (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       "userId" uuid NOT NULL REFERENCES auth_schema.auth_identities ("id") ON DELETE CASCADE,
@@ -47,7 +47,7 @@ export async function ensureAuthSchema(pool: Pool): Promise<void> {
       "updatedAt" timestamptz NOT NULL DEFAULT now()
     )
   `);
-  await pool.query(`
+  await dataSource.query(`
     CREATE INDEX IF NOT EXISTS "IDX_auth_sessions_userId" ON auth_schema.auth_sessions ("userId")
   `);
 
@@ -55,7 +55,7 @@ export async function ensureAuthSchema(pool: Pool): Promise<void> {
   // checks read this table, never company-members-service's schema directly.
   // No data migration (no backfill policy) - populated only from events
   // published after Phase 5 goes live.
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS auth_schema.auth_membership_projection (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       "userId" uuid NOT NULL,
@@ -68,7 +68,7 @@ export async function ensureAuthSchema(pool: Pool): Promise<void> {
   `);
 
   // Not consumed from yet in Phase 2 - reserved ahead of Phase 5, per Task 2.2.
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS auth_schema.processed_events (
       "event_id" uuid NOT NULL,
       "consumer_name" varchar(100) NOT NULL,
@@ -80,7 +80,7 @@ export async function ensureAuthSchema(pool: Pool): Promise<void> {
   // Matches backend/src/infrastructure/outbox/outbox-event.entity.ts exactly
   // so the existing services/outbox-publisher image can be redeployed
   // unmodified against this table (Q8) - see service-port-registry.md.
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS auth_schema.outbox_events (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       "eventType" varchar(100) NOT NULL,
@@ -96,13 +96,13 @@ export async function ensureAuthSchema(pool: Pool): Promise<void> {
       "publishedAt" timestamptz
     )
   `);
-  await pool.query(`
+  await dataSource.query(`
     CREATE INDEX IF NOT EXISTS "IDX_auth_outbox_events_eventType" ON auth_schema.outbox_events ("eventType")
   `);
-  await pool.query(`
+  await dataSource.query(`
     CREATE INDEX IF NOT EXISTS "IDX_auth_outbox_events_status" ON auth_schema.outbox_events ("status")
   `);
-  await pool.query(`
+  await dataSource.query(`
     CREATE INDEX IF NOT EXISTS "IDX_auth_outbox_events_nextRetryAt" ON auth_schema.outbox_events ("nextRetryAt")
   `);
 }

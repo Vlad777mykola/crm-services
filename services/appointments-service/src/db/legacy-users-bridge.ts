@@ -1,4 +1,4 @@
-import type { Pool, PoolClient } from 'pg';
+import type { DataSource, EntityManager } from 'typeorm';
 
 /**
  * TEMPORARY, EXPLICITLY FLAGGED CROSS-SCHEMA READ - same pattern/rationale as
@@ -10,8 +10,8 @@ import type { Pool, PoolClient } from 'pg';
  * this service, this one cannot be event-fed today. Reads `users_schema`
  * directly instead.
  */
-export async function findUserName(client: Pool | PoolClient, userId: string): Promise<string | undefined> {
-  const { rows } = await client.query<{ name: string }>(
+export async function findUserName(client: DataSource | EntityManager, userId: string): Promise<string | undefined> {
+  const rows = await client.query<Array<{ name: string }>>(
     `SELECT "name" FROM users_schema.user_profiles WHERE "userId" = $1 LIMIT 1`,
     [userId],
   );

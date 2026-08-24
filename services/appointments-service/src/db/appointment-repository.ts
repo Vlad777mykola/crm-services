@@ -1,19 +1,13 @@
-import type { Pool, PoolClient } from 'pg';
+import type { DataSource, EntityManager } from 'typeorm';
 
-export interface AppointmentRow {
-  id: string;
-  companyId: string;
-  serviceId: string;
-  specialistProfileId: string | null;
-  clientUserId: string;
-  requestedStartAt: Date;
-  status: string;
-  notes: string | null;
-  respondedAt: Date | null;
-  completedAt: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import {
+  AppointmentStatusHistoryEntity,
+  type StatusHistoryRow,
+} from './entities/appointment-status-history.entity.js';
+import { AppointmentEntity, type AppointmentRow } from './entities/appointment.entity.js';
+
+export type { StatusHistoryRow } from './entities/appointment-status-history.entity.js';
+export type { AppointmentRow } from './entities/appointment.entity.js';
 
 export interface CreateAppointmentInput {
   companyId: string;
@@ -24,90 +18,56 @@ export interface CreateAppointmentInput {
   notes: string | null;
 }
 
-export interface StatusHistoryRow {
-  id: string;
-  appointmentId: string;
-  fromStatus: string | null;
-  toStatus: string;
-  changedByUserId: string | null;
-  reason: string | null;
-  createdAt: Date;
-}
-
 export class AppointmentRepository {
-  constructor(private readonly pool: Pool) {}
+  constructor(private readonly dataSource: DataSource) {}
 
-  async create(client: PoolClient, input: CreateAppointmentInput): Promise<AppointmentRow> {
-    const { rows } = await client.query<AppointmentRow>(
-      `INSERT INTO appointments_schema.appointments
-         ("companyId", "serviceId", "specialistProfileId", "clientUserId", "requestedStartAt", "status", "notes")
-       VALUES ($1, $2, $3, $4, $5, 'pending', $6)
-       RETURNING *`,
-      [input.companyId, input.serviceId, input.specialistProfileId, input.clientUserId, input.requestedStartAt, input.notes],
-    );
-    return rows[0];
+  async create(manager: EntityManager, input: CreateAppointmentInput): Promise<AppointmentRow> {
+    const repository = manager.getRepository(AppointmentEntity);
+    return repository.save(repository.create({ ...input, status: 'pending' }));
   }
 
-  async findById(id: string): Promise<AppointmentRow | undefined> {
-    const { rows } = await this.pool.query<AppointmentRow>(
-      `SELECT * FROM appointments_schema.appointments WHERE "id" = $1`,
-      [id],
-    );
-    return rows[0];
+  async findById(id: string): Promise<AppointmentRow | null> {
+    return this.dataSource.getRepository(AppointmentEntity).findOne({ where: { id } });
   }
 
-  async findByIdAndCompany(id: string, companyId: string): Promise<AppointmentRow | undefined> {
-    const { rows } = await this.pool.query<AppointmentRow>(
-      `SELECT * FROM appointments_schema.appointments WHERE "id" = $1 AND "companyId" = $2`,
-      [id, companyId],
-    );
-    return rows[0];
+  async findByIdAndCompany(id: string, companyId: string): Promise<AppointmentRow | null> {
+    return this.dataSource.getRepository(AppointmentEntity).findOne({ where: { id, companyId } });
   }
 
-  async findByIdAndClient(id: string, clientUserId: string): Promise<AppointmentRow | undefined> {
-    const { rows } = await this.pool.query<AppointmentRow>(
-      `SELECT * FROM appointments_schema.appointments WHERE "id" = $1 AND "clientUserId" = $2`,
-      [id, clientUserId],
-    );
-    return rows[0];
+  async findByIdAndClient(id: string, clientUserId: string): Promise<AppointmentRow | null> {
+    return this.dataSource.getRepository(AppointmentEntity).findOne({ where: { id, clientUserId } });
   }
 
   async listByCompany(companyId: string): Promise<AppointmentRow[]> {
-    const { rows } = await this.pool.query<AppointmentRow>(
-      `SELECT * FROM appointments_schema.appointments WHERE "companyId" = $1 ORDER BY "createdAt" DESC`,
-      [companyId],
-    );
-    return rows;
+    return this.dataSource.getRepository(AppointmentEntity).find({
+      where: { companyId },
+      order: { createdAt: 'DESC' },
+    });
   }
 
   async listByClient(clientUserId: string): Promise<AppointmentRow[]> {
-    const { rows } = await this.pool.query<AppointmentRow>(
-      `SELECT * FROM appointments_schema.appointments WHERE "clientUserId" = $1 ORDER BY "createdAt" DESC`,
-      [clientUserId],
-    );
-    return rows;
+    return this.dataSource.getRepository(AppointmentEntity).find({
+      where: { clientUserId },
+      order: { createdAt: 'DESC' },
+    });
   }
 
   async updateStatus(
-    client: PoolClient,
+    manager: EntityManager,
     id: string,
     fields: { status: string; respondedAt?: Date | null; completedAt?: Date | null },
   ): Promise<AppointmentRow> {
-    const { rows } = await client.query<AppointmentRow>(
-      `UPDATE appointments_schema.appointments
-       SET "status" = $2,
-           "respondedAt" = COALESCE($3, "respondedAt"),
-           "completedAt" = COALESCE($4, "completedAt"),
-           "updatedAt" = now()
-       WHERE "id" = $1
-       RETURNING *`,
-      [id, fields.status, fields.respondedAt ?? null, fields.completedAt ?? null],
-    );
-    return rows[0];
+    const patch: Partial<AppointmentRow> = { status: fields.status, updatedAt: new Date() };
+    if (fields.respondedAt) patch.respondedAt = fields.respondedAt;
+    if (fields.completedAt) patch.completedAt = fields.completedAt;
+
+    const repository = manager.getRepository(AppointmentEntity);
+    await repository.update({ id }, patch);
+    return (await repository.findOne({ where: { id } }))!;
   }
 
   async recordStatusChange(
-    client: PoolClient,
+    manager: EntityManager,
     input: {
       appointmentId: string;
       fromStatus: string | null;
@@ -116,34 +76,18 @@ export class AppointmentRepository {
       reason?: string | null;
     },
   ): Promise<void> {
-    await client.query(
-      `INSERT INTO appointments_schema.appointment_status_history
-         ("appointmentId", "fromStatus", "toStatus", "changedByUserId", "reason")
-       VALUES ($1, $2, $3, $4, $5)`,
-      [input.appointmentId, input.fromStatus, input.toStatus, input.changedByUserId, input.reason ?? null],
-    );
+    const repository = manager.getRepository(AppointmentStatusHistoryEntity);
+    await repository.save(repository.create({ ...input, reason: input.reason ?? null }));
   }
 
   async listStatusHistory(appointmentId: string): Promise<StatusHistoryRow[]> {
-    const { rows } = await this.pool.query<StatusHistoryRow>(
-      `SELECT * FROM appointments_schema.appointment_status_history WHERE "appointmentId" = $1 ORDER BY "createdAt" ASC`,
-      [appointmentId],
-    );
-    return rows;
+    return this.dataSource.getRepository(AppointmentStatusHistoryEntity).find({
+      where: { appointmentId },
+      order: { createdAt: 'ASC' },
+    });
   }
 
-  async withTransaction<T>(fn: (client: PoolClient) => Promise<T>): Promise<T> {
-    const client = await this.pool.connect();
-    try {
-      await client.query('BEGIN');
-      const result = await fn(client);
-      await client.query('COMMIT');
-      return result;
-    } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
-    } finally {
-      client.release();
-    }
+  async withTransaction<T>(fn: (manager: EntityManager) => Promise<T>): Promise<T> {
+    return this.dataSource.transaction(fn);
   }
 }

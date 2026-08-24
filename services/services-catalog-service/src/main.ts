@@ -1,5 +1,5 @@
 import { createApp } from './app.js';
-import { createPool } from './db/pool.js';
+import { createDataSource } from './db/data-source.js';
 import { ensureServicesSchema } from './db/schema.js';
 import { env } from './env.js';
 import { logger } from './logger.js';
@@ -7,12 +7,13 @@ import { ServiceSpecialistsService } from './modules/services/service-specialist
 import { ServicesService } from './modules/services/services.service.js';
 
 async function bootstrap(): Promise<void> {
-  const pool = createPool();
-  await ensureServicesSchema(pool);
+  const dataSource = createDataSource();
+  await dataSource.initialize();
+  await ensureServicesSchema(dataSource);
 
-  const servicesService = new ServicesService(pool);
-  const serviceSpecialistsService = new ServiceSpecialistsService(pool);
-  const app = createApp(pool, servicesService, serviceSpecialistsService);
+  const servicesService = new ServicesService(dataSource);
+  const serviceSpecialistsService = new ServiceSpecialistsService(dataSource);
+  const app = createApp(dataSource, servicesService, serviceSpecialistsService);
 
   const server = app.listen(env.PORT, () => {
     logger.info(`[services-catalog-service] listening on :${env.PORT}`);
@@ -21,9 +22,9 @@ async function bootstrap(): Promise<void> {
   function shutdown(signal: string): void {
     logger.info(`[services-catalog-service] received ${signal}, shutting down`);
     server.close(() => {
-      pool
-        .end()
-        .catch((err: unknown) => logger.error({ err }, '[services-catalog-service] error closing pool'))
+      dataSource
+        .destroy()
+        .catch((err: unknown) => logger.error({ err }, '[services-catalog-service] error closing data source'))
         .finally(() => process.exit(0));
     });
   }

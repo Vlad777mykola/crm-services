@@ -1,4 +1,4 @@
-import type { Pool } from 'pg';
+import type { DataSource } from 'typeorm';
 
 import { AppError } from '../../errors/AppError.js';
 import { env } from '../../env.js';
@@ -49,9 +49,9 @@ export class AuthService {
   private readonly identities: IdentityRepository;
   private readonly sessions: SessionRepository;
 
-  constructor(private readonly pool: Pool) {
-    this.identities = new IdentityRepository(pool);
-    this.sessions = new SessionRepository(pool);
+  constructor(private readonly dataSource: DataSource) {
+    this.identities = new IdentityRepository(dataSource);
+    this.sessions = new SessionRepository(dataSource);
   }
 
   private async issueSession(userId: string, meta: RequestMeta): Promise<{ refreshToken: string }> {
@@ -74,11 +74,8 @@ export class AuthService {
 
     const passwordHash = await hashPassword(input.password);
 
-    const client = await this.pool.connect();
-    let identity: AuthIdentityRow;
-    try {
-      await client.query('BEGIN');
-      identity = await this.identities.create(client, {
+    const identity = await this.dataSource.transaction(async (manager) => {
+      const createdIdentity = await this.identities.create(manager, {
         provider: PASSWORD_PROVIDER,
         providerUserId: input.email,
         email: input.email,
@@ -87,18 +84,13 @@ export class AuthService {
       // Published so users-service can create a profile - see
       // contracts/events/auth.user_registered.v1.json. Same DB transaction as
       // the identity insert, so both commit or roll back together.
-      await recordOutboxEvent(client, {
+      await recordOutboxEvent(manager, {
         type: 'auth.user_registered',
-        aggregateId: identity.id,
-        payload: { userId: identity.id, email: input.email, name: input.name },
+        aggregateId: createdIdentity.id,
+        payload: { userId: createdIdentity.id, email: input.email, name: input.name },
       });
-      await client.query('COMMIT');
-    } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
-    } finally {
-      client.release();
-    }
+      return createdIdentity;
+    });
 
     const { refreshToken } = await this.issueSession(identity.id, meta);
     const accessToken = signAccessToken(identity.id);

@@ -1,12 +1,14 @@
 import { z } from 'zod';
 
-export const registerRequestSchema = z.object({
+import type { LoginRequest, RegisterRequest } from './auth.contracts.js';
+
+export const registerRequestSchema: z.ZodType<RegisterRequest> = z.object({
   email: z.string().email(),
   name: z.string().min(1),
   password: z.string().min(8),
 });
 
-export const loginRequestSchema = z.object({
+export const loginRequestSchema: z.ZodType<LoginRequest> = z.object({
   email: z.string().email(),
   password: z.string().min(1),
 });

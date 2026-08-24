@@ -1,4 +1,6 @@
-import type { PoolClient } from 'pg';
+import type { EntityManager } from 'typeorm';
+
+import { OutboxEventEntity } from '../db/entities/outbox-event.entity.js';
 
 /**
  * Maps this service's own domain event types to the exchange/routing key
@@ -23,17 +25,22 @@ export interface RecordOutboxEventInput {
 
 /**
  * Inserts an auth_schema.outbox_events row using the caller's transaction
- * client, so the identity write and the outbox write commit or roll back
+ * manager, so the identity write and the outbox write commit or roll back
  * together - see auth.service.ts `register()`. Never talks to RabbitMQ
  * directly: services/outbox-publisher (redeployed per Q8, pointed at this
  * schema) is the only process that reads this table.
  */
-export async function recordOutboxEvent(client: PoolClient, input: RecordOutboxEventInput): Promise<void> {
+export async function recordOutboxEvent(manager: EntityManager, input: RecordOutboxEventInput): Promise<void> {
   const routing = authEventRouting[input.type];
-  await client.query(
-    `INSERT INTO auth_schema.outbox_events
-       ("eventType", "exchange", "routingKey", "aggregateType", "aggregateId", "payload")
-     VALUES ($1, $2, $3, $4, $5, $6)`,
-    [input.type, routing.exchange, routing.routingKey, 'auth_identity', input.aggregateId, input.payload],
+  const repository = manager.getRepository(OutboxEventEntity);
+  await repository.save(
+    repository.create({
+      eventType: input.type,
+      exchange: routing.exchange,
+      routingKey: routing.routingKey,
+      aggregateType: 'auth_identity',
+      aggregateId: input.aggregateId,
+      payload: input.payload,
+    }),
   );
 }

@@ -1,4 +1,4 @@
-import type { Pool, PoolClient } from 'pg';
+import type { DataSource, EntityManager } from 'typeorm';
 
 /**
  * TEMPORARY, EXPLICITLY FLAGGED CROSS-SCHEMA READ - checking that a specialist
@@ -7,11 +7,11 @@ import type { Pool, PoolClient } from 'pg';
  * data. No public lookup endpoint exists there yet.
  */
 export async function isActiveCompanySpecialist(
-  client: Pool | PoolClient,
+  client: DataSource | EntityManager,
   companyId: string,
   specialistProfileId: string,
 ): Promise<boolean> {
-  const { rows } = await client.query(
+  const rows = await client.query<Array<{ exists: number }>>(
     `SELECT 1 FROM company_specialists_schema.company_specialists
      WHERE "companyId" = $1 AND "specialistProfileId" = $2 AND "status" = 'active'
      LIMIT 1`,

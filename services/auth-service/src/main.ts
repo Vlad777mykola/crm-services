@@ -1,6 +1,6 @@
 import { createApp } from './app.js';
 import { processInboundEvent } from './consumer/process-inbound-event.js';
-import { createPool } from './db/pool.js';
+import { createDataSource } from './db/data-source.js';
 import { MembershipProjectionRepository } from './db/membership-projection-repository.js';
 import { ensureAuthSchema } from './db/schema.js';
 import { env } from './env.js';
@@ -13,10 +13,11 @@ import { DOMAIN_EVENTS_DLX, DOMAIN_EVENTS_EXCHANGE } from './rabbitmq/topology.j
 const QUEUE_NAME = 'auth-service.q';
 
 async function bootstrap(): Promise<void> {
-  const pool = createPool();
-  await ensureAuthSchema(pool);
+  const dataSource = createDataSource();
+  await dataSource.initialize();
+  await ensureAuthSchema(dataSource);
 
-  const authService = new AuthService(pool);
+  const authService = new AuthService(dataSource);
   const processedEvents = new ProcessedEventsRepository();
   const projection = new MembershipProjectionRepository();
 
@@ -30,11 +31,11 @@ async function bootstrap(): Promise<void> {
     ],
     onMessage: async (parsedBody) => {
       const envelope = parsedBody as { id: string; type: string; data: Record<string, unknown> };
-      await processInboundEvent({ pool, processedEvents, projection }, envelope);
+      await processInboundEvent({ dataSource, processedEvents, projection }, envelope);
     },
   });
 
-  const app = createApp(pool, authService, consumer);
+  const app = createApp(dataSource, authService, consumer);
 
   const server = app.listen(env.PORT, () => {
     logger.info(`[auth-service] listening on :${env.PORT}`);
@@ -43,7 +44,7 @@ async function bootstrap(): Promise<void> {
   function shutdown(signal: string): void {
     logger.info(`[auth-service] received ${signal}, shutting down`);
     server.close(() => {
-      Promise.allSettled([consumer.close(), pool.end()])
+      Promise.allSettled([consumer.close(), dataSource.destroy()])
         .catch((err: unknown) => logger.error({ err }, '[auth-service] error during shutdown'))
         .finally(() => process.exit(0));
     });

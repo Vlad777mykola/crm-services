@@ -1,14 +1,14 @@
-import type { Pool } from 'pg';
+import type { DataSource } from 'typeorm';
 
 /**
  * Creates company_specialists_schema - see
  * docs/architecture/microservices-extraction-checklist.md Phase 7 Task 7.2.
  * No backfill: starts empty.
  */
-export async function ensureCompanySpecialistsSchema(pool: Pool): Promise<void> {
-  await pool.query(`CREATE SCHEMA IF NOT EXISTS company_specialists_schema`);
+export async function ensureCompanySpecialistsSchema(dataSource: DataSource): Promise<void> {
+  await dataSource.query(`CREATE SCHEMA IF NOT EXISTS company_specialists_schema`);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS company_specialists_schema.company_specialist_requests (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       "companyId" uuid NOT NULL,
@@ -21,14 +21,14 @@ export async function ensureCompanySpecialistsSchema(pool: Pool): Promise<void> 
       "updatedAt" timestamptz NOT NULL DEFAULT now()
     )
   `);
-  await pool.query(`
+  await dataSource.query(`
     CREATE INDEX IF NOT EXISTS "IDX_csr_companyId" ON company_specialists_schema.company_specialist_requests ("companyId")
   `);
-  await pool.query(`
+  await dataSource.query(`
     CREATE INDEX IF NOT EXISTS "IDX_csr_specialistProfileId" ON company_specialists_schema.company_specialist_requests ("specialistProfileId")
   `);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS company_specialists_schema.company_specialists (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       "companyId" uuid NOT NULL,
@@ -41,14 +41,14 @@ export async function ensureCompanySpecialistsSchema(pool: Pool): Promise<void> 
       CONSTRAINT "UQ_company_specialists_company_specialist" UNIQUE ("companyId", "specialistProfileId")
     )
   `);
-  await pool.query(`
+  await dataSource.query(`
     CREATE INDEX IF NOT EXISTS "IDX_cs_companyId" ON company_specialists_schema.company_specialists ("companyId")
   `);
-  await pool.query(`
+  await dataSource.query(`
     CREATE INDEX IF NOT EXISTS "IDX_cs_specialistProfileId" ON company_specialists_schema.company_specialists ("specialistProfileId")
   `);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS company_specialists_schema.processed_events (
       "event_id" uuid NOT NULL,
       "consumer_name" varchar(100) NOT NULL,
@@ -57,7 +57,7 @@ export async function ensureCompanySpecialistsSchema(pool: Pool): Promise<void> 
     )
   `);
 
-  await pool.query(`
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS company_specialists_schema.outbox_events (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       "eventType" varchar(100) NOT NULL,
@@ -73,10 +73,10 @@ export async function ensureCompanySpecialistsSchema(pool: Pool): Promise<void> 
       "publishedAt" timestamptz
     )
   `);
-  await pool.query(`
+  await dataSource.query(`
     CREATE INDEX IF NOT EXISTS "IDX_cs_outbox_events_status" ON company_specialists_schema.outbox_events ("status")
   `);
-  await pool.query(`
+  await dataSource.query(`
     CREATE INDEX IF NOT EXISTS "IDX_cs_outbox_events_nextRetryAt" ON company_specialists_schema.outbox_events ("nextRetryAt")
   `);
 }
