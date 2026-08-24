@@ -7,7 +7,7 @@ export interface OutboxEventRow {
   routingKey: string;
   aggregateType: string;
   aggregateId: string;
-  payload: Record<string, unknown>;
+  payload: unknown;
   status: string;
   attempts: number;
   nextRetryAt: Date;
