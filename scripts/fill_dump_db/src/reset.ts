@@ -10,6 +10,11 @@ export const SEEDED_TABLES = [
   'services_schema.services',
   'company_specialists_schema.company_specialists',
   'company_specialists_schema.company_specialist_requests',
+  'specialists_schema.public_specialist_rating_summary',
+  'specialists_schema.public_specialist_service_projection',
+  'specialists_schema.public_service_projection',
+  'specialists_schema.public_specialist_company_projection',
+  'specialists_schema.public_company_projection',
   'specialists_schema.specialist_profiles',
   'company_members_schema.company_members',
   'companies_schema.companies',
@@ -72,6 +77,11 @@ export const RESETTABLE_APPLICATION_TABLES = [
   // specialists_schema
   'specialists_schema.specialist_profiles',
   'specialists_schema.specialist_status_history',
+  'specialists_schema.public_company_projection',
+  'specialists_schema.public_specialist_company_projection',
+  'specialists_schema.public_service_projection',
+  'specialists_schema.public_specialist_service_projection',
+  'specialists_schema.public_specialist_rating_summary',
   'specialists_schema.processed_events',
   'specialists_schema.outbox_events',
   // company_specialists_schema

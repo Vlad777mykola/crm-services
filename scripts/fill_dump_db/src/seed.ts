@@ -247,6 +247,15 @@ export async function seedDatabase(): Promise<void> {
   });
   await insertQualified('company_specialists_schema', 'company_specialist_requests', {
     companyId: beautyId,
+    specialistProfileId: olenaId,
+    requestedByUserId: uid('owner.beauty@example.com'),
+    status: 'accepted',
+    message: 'Offer weekend cosmetic consultation slots at Glow Beauty Studio.',
+    respondedAt: daysFromNow(-38),
+    createdAt: daysFromNow(-40),
+  });
+  await insertQualified('company_specialists_schema', 'company_specialist_requests', {
+    companyId: beautyId,
     specialistProfileId: kateId,
     requestedByUserId: uid('owner.beauty@example.com'),
     status: 'accepted',
@@ -272,7 +281,7 @@ export async function seedDatabase(): Promise<void> {
     respondedAt: daysFromNow(-5),
     createdAt: daysFromNow(-8),
   });
-  console.log('[fill_dump_db] created 7 company specialist requests (pending, accepted x4, rejected, cancelled)');
+  console.log('[fill_dump_db] created 8 company specialist requests (pending, accepted x5, rejected, cancelled)');
 
   // ---------------------------------------------------------------------
   // Company <-> specialist relationships - one of each CompanySpecialistStatus
@@ -293,6 +302,13 @@ export async function seedDatabase(): Promise<void> {
   });
   await insertQualified('company_specialists_schema', 'company_specialists', {
     companyId: beautyId,
+    specialistProfileId: olenaId,
+    status: 'active',
+    startedAt: daysFromNow(-38),
+    endedAt: null,
+  });
+  await insertQualified('company_specialists_schema', 'company_specialists', {
+    companyId: beautyId,
     specialistProfileId: kateId,
     status: 'paused',
     startedAt: daysFromNow(-90),
@@ -305,7 +321,7 @@ export async function seedDatabase(): Promise<void> {
     startedAt: daysFromNow(-120),
     endedAt: daysFromNow(-10),
   });
-  console.log('[fill_dump_db] created 4 company specialists (active x2, paused, removed)');
+  console.log('[fill_dump_db] created 5 company specialists (active x3, paused, removed)');
 
   // ---------------------------------------------------------------------
   // Services - one of each ServiceStatus
@@ -382,7 +398,100 @@ export async function seedDatabase(): Promise<void> {
   await insertQualified('services_schema', 'service_specialists', { serviceId: teethWhiteningId, companyId: dentalId, specialistProfileId: olenaId });
   await insertQualified('services_schema', 'service_specialists', { serviceId: haircutId, companyId: beautyId, specialistProfileId: ninaId });
   await insertQualified('services_schema', 'service_specialists', { serviceId: manicureId, companyId: beautyId, specialistProfileId: ninaId });
-  console.log('[fill_dump_db] created 4 service specialist assignments');
+  await insertQualified('services_schema', 'service_specialists', { serviceId: manicureId, companyId: beautyId, specialistProfileId: olenaId });
+  console.log('[fill_dump_db] created 5 service specialist assignments');
+
+  // ---------------------------------------------------------------------
+  // Specialists-service public discovery projections (normally fed by RabbitMQ
+  // events). Direct SQL seed mirrors them so public specialist cards can show
+  // companies/services immediately after seed-only setup.
+  // ---------------------------------------------------------------------
+  await insertRow('specialists_schema', 'public_company_projection', {
+    companyId: dentalId,
+    name: 'Bright Smile Dental',
+    slug: 'bright-smile-dental',
+    status: 'published',
+  });
+  await insertRow('specialists_schema', 'public_company_projection', {
+    companyId: beautyId,
+    name: 'Glow Beauty Studio',
+    slug: 'glow-beauty-studio',
+    status: 'published',
+  });
+  await insertRow('specialists_schema', 'public_company_projection', {
+    companyId: fitnessId,
+    name: 'Fresh Start Fitness',
+    slug: 'fresh-start-fitness',
+    status: 'draft',
+  });
+  await insertRow('specialists_schema', 'public_company_projection', {
+    companyId: spaId,
+    name: 'Old Town Spa',
+    slug: 'old-town-spa',
+    status: 'suspended',
+  });
+  await insertRow('specialists_schema', 'public_specialist_company_projection', {
+    companyId: dentalId,
+    specialistProfileId: olenaId,
+  });
+  await insertRow('specialists_schema', 'public_specialist_company_projection', {
+    companyId: beautyId,
+    specialistProfileId: ninaId,
+  });
+  await insertRow('specialists_schema', 'public_specialist_company_projection', {
+    companyId: beautyId,
+    specialistProfileId: olenaId,
+  });
+  await insertRow('specialists_schema', 'public_service_projection', {
+    serviceId: teethCleaningId,
+    companyId: dentalId,
+    name: 'Teeth Cleaning',
+    status: 'published',
+  });
+  await insertRow('specialists_schema', 'public_service_projection', {
+    serviceId: teethWhiteningId,
+    companyId: dentalId,
+    name: 'Teeth Whitening',
+    status: 'published',
+  });
+  await insertRow('specialists_schema', 'public_service_projection', {
+    serviceId: haircutId,
+    companyId: beautyId,
+    name: 'Haircut & Styling',
+    status: 'published',
+  });
+  await insertRow('specialists_schema', 'public_service_projection', {
+    serviceId: manicureId,
+    companyId: beautyId,
+    name: 'Manicure',
+    status: 'published',
+  });
+  await insertRow('specialists_schema', 'public_specialist_service_projection', {
+    serviceId: teethCleaningId,
+    companyId: dentalId,
+    specialistProfileId: olenaId,
+  });
+  await insertRow('specialists_schema', 'public_specialist_service_projection', {
+    serviceId: teethWhiteningId,
+    companyId: dentalId,
+    specialistProfileId: olenaId,
+  });
+  await insertRow('specialists_schema', 'public_specialist_service_projection', {
+    serviceId: haircutId,
+    companyId: beautyId,
+    specialistProfileId: ninaId,
+  });
+  await insertRow('specialists_schema', 'public_specialist_service_projection', {
+    serviceId: manicureId,
+    companyId: beautyId,
+    specialistProfileId: ninaId,
+  });
+  await insertRow('specialists_schema', 'public_specialist_service_projection', {
+    serviceId: manicureId,
+    companyId: beautyId,
+    specialistProfileId: olenaId,
+  });
+  console.log('[fill_dump_db] created specialists-service public discovery projections');
 
   // ---------------------------------------------------------------------
   // Appointments-service projections (normally fed by RabbitMQ events).
@@ -451,6 +560,10 @@ export async function seedDatabase(): Promise<void> {
   await insertRow('appointments_schema', 'appointment_service_specialist_projection', {
     serviceId: manicureId,
     specialistProfileId: ninaId,
+  });
+  await insertRow('appointments_schema', 'appointment_service_specialist_projection', {
+    serviceId: manicureId,
+    specialistProfileId: olenaId,
   });
   console.log('[fill_dump_db] created appointments-service projections (companies, memberships, services, assignments)');
 
@@ -645,6 +758,18 @@ export async function seedDatabase(): Promise<void> {
     createdAt: daysFromNow(-6),
   });
   console.log('[fill_dump_db] created 2 reviews');
+
+  await insertRow('specialists_schema', 'public_specialist_rating_summary', {
+    specialistProfileId: olenaId,
+    ratingSum: 5,
+    reviewsCount: 1,
+  });
+  await insertRow('specialists_schema', 'public_specialist_rating_summary', {
+    specialistProfileId: ninaId,
+    ratingSum: 4,
+    reviewsCount: 1,
+  });
+  console.log('[fill_dump_db] created specialists-service rating summaries');
 
   // ---------------------------------------------------------------------
   // Notifications - one per NotificationType

@@ -93,6 +93,49 @@ export async function ensureAllMicroserviceSchemas(): Promise<void> {
       "createdAt" timestamptz NOT NULL DEFAULT now()
     )
   `);
+  await query(`
+    CREATE TABLE IF NOT EXISTS specialists_schema.public_company_projection (
+      "companyId" uuid PRIMARY KEY,
+      "name" varchar(255) NOT NULL,
+      "slug" varchar(255),
+      "status" varchar(20) NOT NULL,
+      "updatedAt" timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+  await query(`
+    CREATE TABLE IF NOT EXISTS specialists_schema.public_specialist_company_projection (
+      "specialistProfileId" uuid NOT NULL,
+      "companyId" uuid NOT NULL,
+      "updatedAt" timestamptz NOT NULL DEFAULT now(),
+      PRIMARY KEY ("specialistProfileId", "companyId")
+    )
+  `);
+  await query(`
+    CREATE TABLE IF NOT EXISTS specialists_schema.public_service_projection (
+      "serviceId" uuid PRIMARY KEY,
+      "companyId" uuid NOT NULL,
+      "name" varchar(255) NOT NULL,
+      "status" varchar(20) NOT NULL,
+      "updatedAt" timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+  await query(`
+    CREATE TABLE IF NOT EXISTS specialists_schema.public_specialist_service_projection (
+      "serviceId" uuid NOT NULL,
+      "companyId" uuid NOT NULL,
+      "specialistProfileId" uuid NOT NULL,
+      "updatedAt" timestamptz NOT NULL DEFAULT now(),
+      PRIMARY KEY ("serviceId", "specialistProfileId")
+    )
+  `);
+  await query(`
+    CREATE TABLE IF NOT EXISTS specialists_schema.public_specialist_rating_summary (
+      "specialistProfileId" uuid PRIMARY KEY,
+      "ratingSum" int NOT NULL DEFAULT 0,
+      "reviewsCount" int NOT NULL DEFAULT 0,
+      "updatedAt" timestamptz NOT NULL DEFAULT now()
+    )
+  `);
 
   await query(`CREATE SCHEMA IF NOT EXISTS company_specialists_schema`);
   await query(`

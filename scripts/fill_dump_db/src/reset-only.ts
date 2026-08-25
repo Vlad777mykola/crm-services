@@ -1,5 +1,5 @@
-import { resetDatabase } from './reset.ts';
-import { pool } from './db.ts';
+import { pool } from './db.js';
+import { resetDatabase } from './reset.js';
 
 await resetDatabase();
 await pool.end();

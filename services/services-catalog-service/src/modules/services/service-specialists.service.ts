@@ -4,7 +4,11 @@ import { AssignServiceSpecialistHandler } from '../../application/commands/assig
 import { UnassignServiceSpecialistHandler } from '../../application/commands/unassign-service-specialist/unassign-service-specialist.handler.js';
 import { ServiceSpecialistQueries } from '../../application/queries/service-specialist-queries.js';
 import { TypeOrmServicesEventOutbox } from '../../application/services/typeorm-services-event-outbox.js';
-import { ServiceRepository, type ServiceSpecialistRow } from '../../db/service-repository.js';
+import {
+  ServiceRepository,
+  type ServiceSpecialistRow,
+  type ServiceSpecialistWithSpecialistRow,
+} from '../../db/service-repository.js';
 import type { AssignServiceSpecialistInput } from './service-specialists.schemas.js';
 
 export class ServiceSpecialistsService {
@@ -28,7 +32,7 @@ export class ServiceSpecialistsService {
     return this.assignCommand.execute({ serviceId, requesterUserId, input });
   }
 
-  async list(serviceId: string, requesterUserId: string | undefined): Promise<ServiceSpecialistRow[]> {
+  async list(serviceId: string, requesterUserId: string | undefined): Promise<ServiceSpecialistWithSpecialistRow[]> {
     return this.queries.list(serviceId, requesterUserId);
   }
 

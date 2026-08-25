@@ -1,5 +1,5 @@
-import { ensureAllMicroserviceSchemas } from './ensure-schemas.ts';
-import { pool } from './db.ts';
+import { pool } from './db.js';
+import { ensureAllMicroserviceSchemas } from './ensure-schemas.js';
 
 await ensureAllMicroserviceSchemas();
 await pool.end();

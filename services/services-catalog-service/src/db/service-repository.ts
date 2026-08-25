@@ -11,6 +11,13 @@ export type { ServiceSpecialistRow } from './entities/service-specialist.entity.
 export type { StatusHistoryRow } from './entities/service-status-history.entity.js';
 export type { ServiceRow, ServiceStatus } from './entities/service.entity.js';
 
+export interface ServiceSpecialistWithSpecialistRow extends ServiceSpecialistRow {
+  specialist?: {
+    id: string;
+    displayName: string;
+  };
+}
+
 export class ServiceRepository {
   constructor(private readonly dataSource: DataSource) {}
 
@@ -123,6 +130,41 @@ export class ServiceRepository {
       where: { serviceId },
       order: { createdAt: 'ASC' },
     });
+  }
+
+  async listAssignmentsByServiceWithSpecialist(serviceId: string): Promise<ServiceSpecialistWithSpecialistRow[]> {
+    const rows = await this.dataSource.query<
+      Array<
+        ServiceSpecialistRow & {
+          specialistId: string | null;
+          specialistDisplayName: string | null;
+        }
+      >
+    >(
+      `
+        SELECT
+          assignment."id",
+          assignment."serviceId",
+          assignment."companyId",
+          assignment."specialistProfileId",
+          assignment."createdAt",
+          specialist."id" AS "specialistId",
+          specialist."displayName" AS "specialistDisplayName"
+        FROM services_schema.service_specialists assignment
+        LEFT JOIN specialists_schema.specialist_profiles specialist
+          ON specialist."id" = assignment."specialistProfileId"
+        WHERE assignment."serviceId" = $1
+        ORDER BY assignment."createdAt" ASC
+      `,
+      [serviceId],
+    );
+
+    return rows.map(({ specialistId, specialistDisplayName, ...row }) => ({
+      ...row,
+      ...(specialistId && specialistDisplayName
+        ? { specialist: { id: specialistId, displayName: specialistDisplayName } }
+        : {}),
+    }));
   }
 
   async listAssignmentsBySpecialist(specialistProfileId: string): Promise<ServiceSpecialistRow[]> {
