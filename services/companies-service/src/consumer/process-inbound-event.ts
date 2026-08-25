@@ -1,10 +1,12 @@
 import type { DataSource } from 'typeorm';
 
-import type { CompanyInsightRepository } from '../db/company-insight-repository.js';
 import {
-  handleAiCompanyInsightCreated,
-  type AiCompanyInsightCreatedData,
-} from '../handlers/ai-company-insight-created.js';
+  RecordAiCompanyInsightHandler,
+} from '../application/event-handlers/record-ai-company-insight/record-ai-company-insight.handler.js';
+import type {
+  AiCompanyInsightCreatedData,
+} from '../application/event-handlers/record-ai-company-insight/record-ai-company-insight.event.js';
+import type { CompanyInsightRepository } from '../db/company-insight-repository.js';
 import type { ProcessedEventsRepository } from '../idempotency/processed-events-repository.js';
 import { logger } from '../logger.js';
 
@@ -29,10 +31,9 @@ export async function processInboundEvent(deps: ProcessInboundEventDeps, envelop
     }
 
     if (envelope.type === 'ai.company_insight_created') {
-      await handleAiCompanyInsightCreated(
+      await new RecordAiCompanyInsightHandler(deps.insights).handle(
         manager,
         envelope.data as unknown as AiCompanyInsightCreatedData,
-        deps.insights,
       );
     } else {
       logger.info({ type: envelope.type }, '[companies-service] no handler for this event type - ignoring');

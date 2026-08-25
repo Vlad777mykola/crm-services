@@ -1,31 +1,23 @@
 import type { DataSource } from 'typeorm';
 
-import { AppError } from '../../errors/AppError.js';
+import { AssignServiceSpecialistHandler } from '../../application/commands/assign-service-specialist/assign-service-specialist.handler.js';
+import { UnassignServiceSpecialistHandler } from '../../application/commands/unassign-service-specialist/unassign-service-specialist.handler.js';
+import { ServiceSpecialistQueries } from '../../application/queries/service-specialist-queries.js';
+import { TypeOrmServicesEventOutbox } from '../../application/services/typeorm-services-event-outbox.js';
 import { ServiceRepository, type ServiceSpecialistRow } from '../../db/service-repository.js';
-import { findActiveMembershipRole } from '../../db/legacy-company-members-bridge.js';
-import { isActiveCompanySpecialist } from '../../db/legacy-company-specialists-bridge.js';
-import { findSpecialistProfileIdByUserId } from '../../db/legacy-specialists-bridge.js';
-import { recordOutboxEvent } from '../../outbox/outbox-repository.js';
 import type { AssignServiceSpecialistInput } from './service-specialists.schemas.js';
 
 export class ServiceSpecialistsService {
-  private readonly repo: ServiceRepository;
+  private readonly assignCommand: AssignServiceSpecialistHandler;
+  private readonly queries: ServiceSpecialistQueries;
+  private readonly unassignCommand: UnassignServiceSpecialistHandler;
 
-  constructor(private readonly dataSource: DataSource) {
-    this.repo = new ServiceRepository(dataSource);
-  }
-
-  private async requireOwnerOrManager(companyId: string, userId: string): Promise<void> {
-    const role = await findActiveMembershipRole(this.dataSource, companyId, userId);
-    if (role !== 'owner' && role !== 'manager') {
-      throw new AppError('You do not have permission to manage this company', 403);
-    }
-  }
-
-  private async getServiceOrThrow(serviceId: string) {
-    const service = await this.repo.findById(serviceId);
-    if (!service) throw new AppError('Service not found', 404);
-    return service;
+  constructor(dataSource: DataSource) {
+    const repo = new ServiceRepository(dataSource);
+    const outbox = new TypeOrmServicesEventOutbox();
+    this.assignCommand = new AssignServiceSpecialistHandler(dataSource, repo, outbox);
+    this.queries = new ServiceSpecialistQueries(dataSource, repo);
+    this.unassignCommand = new UnassignServiceSpecialistHandler(dataSource, repo, outbox);
   }
 
   async assign(
@@ -33,76 +25,18 @@ export class ServiceSpecialistsService {
     requesterUserId: string,
     input: AssignServiceSpecialistInput,
   ): Promise<ServiceSpecialistRow> {
-    const service = await this.getServiceOrThrow(serviceId);
-    await this.requireOwnerOrManager(service.companyId, requesterUserId);
-
-    const isActive = await isActiveCompanySpecialist(this.dataSource, service.companyId, input.specialistProfileId);
-    if (!isActive) {
-      throw new AppError('Specialist is not active in this company', 409);
-    }
-
-    const existing = await this.repo.findAssignment(serviceId, input.specialistProfileId);
-    if (existing) {
-      throw new AppError('Specialist is already assigned to this service', 409);
-    }
-
-    return this.dataSource.transaction(async (manager) => {
-      const assignment = await this.repo.insertAssignment(manager, {
-        serviceId,
-        companyId: service.companyId,
-        specialistProfileId: input.specialistProfileId,
-      });
-
-      await recordOutboxEvent(manager, {
-        type: 'specialist-service.assigned',
-        aggregateId: assignment.id,
-        payload: { serviceId, companyId: service.companyId, specialistProfileId: input.specialistProfileId },
-      });
-
-      return assignment;
-    });
+    return this.assignCommand.execute({ serviceId, requesterUserId, input });
   }
 
   async list(serviceId: string, requesterUserId: string | undefined): Promise<ServiceSpecialistRow[]> {
-    const service = await this.getServiceOrThrow(serviceId);
-
-    if (service.status !== 'published') {
-      // Draft/suspended services follow the same visibility rule as the service itself.
-      const role = requesterUserId
-        ? await findActiveMembershipRole(this.dataSource, service.companyId, requesterUserId)
-        : undefined;
-      if (role !== 'owner' && role !== 'manager') {
-        throw new AppError('Service not found', 404);
-      }
-    }
-
-    return this.repo.listAssignmentsByService(serviceId);
+    return this.queries.list(serviceId, requesterUserId);
   }
 
   async unassign(serviceId: string, specialistProfileId: string, requesterUserId: string): Promise<ServiceSpecialistRow> {
-    const service = await this.getServiceOrThrow(serviceId);
-    await this.requireOwnerOrManager(service.companyId, requesterUserId);
-
-    const assignment = await this.repo.findAssignment(serviceId, specialistProfileId);
-    if (!assignment) throw new AppError('Assignment not found', 404);
-
-    await this.dataSource.transaction(async (manager) => {
-      await this.repo.removeAssignment(manager, serviceId, specialistProfileId);
-
-      await recordOutboxEvent(manager, {
-        type: 'specialist-service.removed',
-        aggregateId: assignment.id,
-        payload: { serviceId, companyId: service.companyId, specialistProfileId },
-      });
-    });
-    return assignment;
+    return this.unassignCommand.execute({ serviceId, specialistProfileId, requesterUserId });
   }
 
   async listMine(userId: string): Promise<ServiceSpecialistRow[]> {
-    const specialistProfileId = await findSpecialistProfileIdByUserId(this.dataSource, userId);
-    if (!specialistProfileId) {
-      throw new AppError('This user does not have a specialist profile yet', 404);
-    }
-    return this.repo.listAssignmentsBySpecialist(specialistProfileId);
+    return this.queries.listMine(userId);
   }
 }

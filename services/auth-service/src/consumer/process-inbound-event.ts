@@ -1,12 +1,7 @@
 import type { DataSource } from 'typeorm';
 
+import { RecordMembershipProjectionHandler } from '../application/event-handlers/record-membership-projection/record-membership-projection.handler.js';
 import type { MembershipProjectionRepository } from '../db/membership-projection-repository.js';
-import {
-  handleCompanyMemberAdded,
-  handleCompanyMemberRemoved,
-  type CompanyMemberAddedData,
-  type CompanyMemberRemovedData,
-} from '../handlers/company-member-events.js';
 import type { ProcessedEventsRepository } from '../idempotency/processed-events-repository.js';
 import { logger } from '../logger.js';
 
@@ -30,11 +25,8 @@ export async function processInboundEvent(deps: ProcessInboundEventDeps, envelop
       return;
     }
 
-    if (envelope.type === 'company-member.added') {
-      await handleCompanyMemberAdded(manager, envelope.data as unknown as CompanyMemberAddedData, deps.projection);
-    } else if (envelope.type === 'company-member.removed') {
-      await handleCompanyMemberRemoved(manager, envelope.data as unknown as CompanyMemberRemovedData, deps.projection);
-    } else {
+    const handled = await new RecordMembershipProjectionHandler(deps.projection).handle(manager, envelope.type, envelope.data);
+    if (!handled) {
       logger.info({ type: envelope.type }, '[auth-service] no handler for this event type - ignoring');
     }
   });

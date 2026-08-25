@@ -1,7 +1,13 @@
 import type { DataSource } from 'typeorm';
 
+import {
+  CreateOwnerFromCompanyCreatedHandler,
+} from '../application/event-handlers/create-owner-from-company-created/create-owner-from-company-created.handler.js';
+import type {
+  CompanyCreatedData,
+} from '../application/event-handlers/create-owner-from-company-created/company-created.event.js';
+import { TypeOrmCompanyMemberEventOutbox } from '../application/services/typeorm-company-member-event-outbox.js';
 import type { MemberRepository } from '../db/member-repository.js';
-import { handleCompanyCreated, type CompanyCreatedData } from '../handlers/company-created.js';
 import type { ProcessedEventsRepository } from '../idempotency/processed-events-repository.js';
 import { logger } from '../logger.js';
 
@@ -26,7 +32,10 @@ export async function processInboundEvent(deps: ProcessInboundEventDeps, envelop
     }
 
     if (envelope.type === 'company.created') {
-      await handleCompanyCreated(envelope.data as unknown as CompanyCreatedData, deps.members, manager);
+      await new CreateOwnerFromCompanyCreatedHandler(deps.members, new TypeOrmCompanyMemberEventOutbox()).handle(
+        manager,
+        envelope.data as unknown as CompanyCreatedData,
+      );
       return;
     }
 

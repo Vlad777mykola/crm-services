@@ -1,29 +1,23 @@
-import { AppError } from '../../errors/AppError.js';
+import { UpdateUserProfileHandler } from '../../application/commands/update-user-profile/update-user-profile.handler.js';
+import { GetUserProfileHandler } from '../../application/queries/get-user-profile/get-user-profile.handler.js';
 import type { UserProfileRow } from '../../db/user-repository.js';
 import { UserRepository } from '../../db/user-repository.js';
 import type { UpdateUserRequestInput } from './users.schemas.js';
 
 export class UsersService {
-  private readonly users: UserRepository;
+  private readonly getUserProfileQuery: GetUserProfileHandler;
+  private readonly updateUserProfileCommand: UpdateUserProfileHandler;
 
   constructor(repository: UserRepository) {
-    this.users = repository;
+    this.getUserProfileQuery = new GetUserProfileHandler(repository);
+    this.updateUserProfileCommand = new UpdateUserProfileHandler(repository, repository);
   }
 
   async getById(userId: string): Promise<UserProfileRow> {
-    const user = await this.users.findById(userId);
-    if (!user) {
-      throw new AppError('User not found', 404);
-    }
-    return user;
+    return this.getUserProfileQuery.execute({ userId });
   }
 
   async updateProfile(userId: string, patch: UpdateUserRequestInput): Promise<UserProfileRow> {
-    const existing = await this.users.findById(userId);
-    if (!existing) {
-      throw new AppError('User not found', 404);
-    }
-    const updated = await this.users.updateProfile(userId, patch);
-    return updated!;
+    return this.updateUserProfileCommand.execute({ userId, patch });
   }
 }

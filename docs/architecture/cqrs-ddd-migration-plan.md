@@ -126,12 +126,22 @@ This gives us architectural consistency without a framework migration.
 | 1 | `notifications-service` | Done | Express retained. HTTP commands/queries and RabbitMQ event handlers now route through `src/application`. No external contract changes. |
 | 2 | `reviews-service` | Architecture prep done | Express retained for now. Create-review command, list-review queries, repository ports, appointment lookup port, and outbox port now live under `src/application`. Actual NestJS pilot remains a separate dependency/framework decision. |
 | 3 | `specialists-service` | Architecture prep done | Express retained for now. Create/update commands, public/me/status/id queries, repository ports, and outbox port now live under `src/application`. Actual NestJS pilot remains a separate dependency/framework decision. |
+| 4 | `company-specialists-service` | Architecture prep done | Express retained. Send/accept/reject commands, company/specialist-facing queries, repository ports, bridge lookup ports, and outbox port now live under `src/application`. |
+| 5 | `users-service` | Architecture prep done | Express retained. User profile query/update command and `auth.user_registered` event handler now live under `src/application`; existing consumer tests still pass. |
+| 6 | `company-members-service` | Architecture prep done | Express retained. Invite/update commands, list query, `company.created` event handler, user lookup bridge, guards, presenter, and outbox port now live under `src/application`. |
+| 7 | `services-catalog-service` | Architecture prep done | Express retained. Service create/update and assignment/unassignment commands plus service/service-specialist queries now live under `src/application`. |
+| 8 | `companies-service` | Architecture prep done | Express retained. Create/update commands, public/my/id/status queries, authorization helpers, outbox wrapper, and AI insight event handler now live under `src/application`. |
+| 9 | `appointments-service` | Architecture prep done | Express retained. Create/respond/complete/cancel commands, company/client/status queries, authorization helper, outbox wrapper, response view model, and projection event handler now live under `src/application`. |
+| 10 | `auth-service` | Architecture prep done | Express retained. Register/login/refresh/logout commands, current-identity query, identity view model, outbox wrapper, and membership projection event handler now live under `src/application`. |
 
 ## Open Risks Before NestJS Pilot
 
-- `reviews-service` and `specialists-service` currently have no test files, so a
-  framework migration would need either focused tests or a smoke checklist before
-  changing bootstrap/router behavior.
+- Several services currently have no test files, so a framework migration would
+  need either focused tests or a smoke checklist before changing bootstrap/router
+  behavior. Verified missing-test packages during this pass include
+  `reviews-service`, `specialists-service`, `company-specialists-service`,
+  `company-members-service`, `services-catalog-service`, `companies-service`,
+  `appointments-service`, and `auth-service`.
 - NestJS dependencies are not installed in the service package today. Adding them
   should be a deliberate package/deployment change, not mixed into a behavior
   refactor.

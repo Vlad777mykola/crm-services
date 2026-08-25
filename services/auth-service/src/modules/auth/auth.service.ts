@@ -1,16 +1,11 @@
 import type { DataSource } from 'typeorm';
 
-import { AppError } from '../../errors/AppError.js';
-import { env } from '../../env.js';
-import type { AuthIdentityRow } from '../../db/identity-repository.js';
+import { AuthCommands } from '../../application/commands/auth-commands.js';
+import { AuthQueries } from '../../application/queries/auth-queries.js';
+import { TypeOrmAuthEventOutbox } from '../../application/services/typeorm-auth-event-outbox.js';
+import type { AuthResult, IdentityView } from '../../application/view-models/identity-view.js';
 import { IdentityRepository } from '../../db/identity-repository.js';
 import { SessionRepository } from '../../db/session-repository.js';
-import { recordOutboxEvent } from '../../outbox/outbox-repository.js';
-import { hashPassword, verifyPassword } from '../../security/password.js';
-import { signAccessToken } from '../../security/jwt.js';
-import { generateRefreshToken, hashRefreshToken } from '../../security/refresh-token.js';
-
-const PASSWORD_PROVIDER = 'password';
 
 export interface RequestMeta {
   userAgent: string | null;
@@ -23,135 +18,36 @@ export interface RequestMeta {
  * aren't reachable via HTTP until Phase 3 (`GET /users/me`). See
  * docs/architecture/microservices-extraction-checklist.md Task 2.4.
  */
-export interface IdentityView {
-  id: string;
-  email: string | null;
-  createdAt: Date;
-}
-
-export interface AuthResult {
-  identity: IdentityView;
-  accessToken: string;
-  refreshToken: string;
-}
-
-function toIdentityView(row: AuthIdentityRow): IdentityView {
-  return { id: row.id, email: row.email, createdAt: row.createdAt };
-}
-
-function refreshTokenExpiryDate(): Date {
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + env.REFRESH_TOKEN_TTL_DAYS);
-  return expiresAt;
-}
+export type { AuthResult, IdentityView } from '../../application/view-models/identity-view.js';
 
 export class AuthService {
-  private readonly identities: IdentityRepository;
-  private readonly sessions: SessionRepository;
+  private readonly commands: AuthCommands;
+  private readonly queries: AuthQueries;
 
-  constructor(private readonly dataSource: DataSource) {
-    this.identities = new IdentityRepository(dataSource);
-    this.sessions = new SessionRepository(dataSource);
-  }
-
-  private async issueSession(userId: string, meta: RequestMeta): Promise<{ refreshToken: string }> {
-    const refreshToken = generateRefreshToken();
-    await this.sessions.create({
-      userId,
-      refreshTokenHash: hashRefreshToken(refreshToken),
-      userAgent: meta.userAgent,
-      ipAddress: meta.ipAddress,
-      expiresAt: refreshTokenExpiryDate(),
-    });
-    return { refreshToken };
+  constructor(dataSource: DataSource) {
+    const identities = new IdentityRepository(dataSource);
+    const sessions = new SessionRepository(dataSource);
+    this.commands = new AuthCommands(dataSource, identities, sessions, new TypeOrmAuthEventOutbox());
+    this.queries = new AuthQueries(identities);
   }
 
   async register(input: { email: string; name: string; password: string }, meta: RequestMeta): Promise<AuthResult> {
-    const existing = await this.identities.findByEmail(input.email);
-    if (existing) {
-      throw new AppError('A user with this email already exists', 409);
-    }
-
-    const passwordHash = await hashPassword(input.password);
-
-    const identity = await this.dataSource.transaction(async (manager) => {
-      const createdIdentity = await this.identities.create(manager, {
-        provider: PASSWORD_PROVIDER,
-        providerUserId: input.email,
-        email: input.email,
-        passwordHash,
-      });
-      // Published so users-service can create a profile - see
-      // contracts/events/auth.user_registered.v1.json. Same DB transaction as
-      // the identity insert, so both commit or roll back together.
-      await recordOutboxEvent(manager, {
-        type: 'auth.user_registered',
-        aggregateId: createdIdentity.id,
-        payload: { userId: createdIdentity.id, email: input.email, name: input.name },
-      });
-      return createdIdentity;
-    });
-
-    const { refreshToken } = await this.issueSession(identity.id, meta);
-    const accessToken = signAccessToken(identity.id);
-
-    return { identity: toIdentityView(identity), accessToken, refreshToken };
+    return this.commands.register(input, meta);
   }
 
   async login(input: { email: string; password: string }, meta: RequestMeta): Promise<AuthResult> {
-    const identity = await this.identities.findByEmail(input.email);
-
-    if (!identity?.passwordHash || !(await verifyPassword(input.password, identity.passwordHash))) {
-      throw new AppError('Invalid email or password', 401);
-    }
-
-    const { refreshToken } = await this.issueSession(identity.id, meta);
-    const accessToken = signAccessToken(identity.id);
-
-    return { identity: toIdentityView(identity), accessToken, refreshToken };
+    return this.commands.login(input, meta);
   }
 
   async refresh(rawRefreshToken: string | undefined, meta: RequestMeta): Promise<{ accessToken: string; refreshToken: string }> {
-    if (!rawRefreshToken) {
-      throw new AppError('Missing refresh token', 401);
-    }
-
-    const session = await this.sessions.findByRefreshTokenHash(hashRefreshToken(rawRefreshToken));
-
-    if (!session || session.status !== 'active' || session.expiresAt.getTime() < Date.now()) {
-      throw new AppError('Invalid or expired refresh token', 401);
-    }
-
-    const newRefreshToken = generateRefreshToken();
-    await this.sessions.rotate(session.id, {
-      refreshTokenHash: hashRefreshToken(newRefreshToken),
-      expiresAt: refreshTokenExpiryDate(),
-      userAgent: meta.userAgent ?? session.userAgent,
-      ipAddress: meta.ipAddress ?? session.ipAddress,
-    });
-
-    return { accessToken: signAccessToken(session.userId), refreshToken: newRefreshToken };
+    return this.commands.refresh(rawRefreshToken, meta);
   }
 
   async logout(rawRefreshToken: string | undefined): Promise<void> {
-    if (!rawRefreshToken) {
-      return;
-    }
-
-    const session = await this.sessions.findByRefreshTokenHash(hashRefreshToken(rawRefreshToken));
-
-    if (session && session.status === 'active') {
-      await this.sessions.revoke(session.id);
-    }
+    return this.commands.logout(rawRefreshToken);
   }
 
   async getCurrentIdentity(userId: string): Promise<IdentityView> {
-    const identity = await this.identities.findById(userId);
-
-    if (!identity) {
-      throw new AppError('User not found', 404);
-    }
-
-    return toIdentityView(identity);
+    return this.queries.getCurrentIdentity(userId);
   }
 }

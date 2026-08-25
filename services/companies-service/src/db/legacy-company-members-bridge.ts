@@ -7,7 +7,7 @@ import type { DataSource, EntityManager } from 'typeorm';
  * - this file used to write directly to legacy's `public.company_members`
  * (Phase 4), but that write moved to company-members-service's own
  * `company.created` consumer (see
- * services/company-members-service/src/handlers/company-created.ts).
+ * services/company-members-service/src/application/event-handlers/create-owner-from-company-created).
  *
  * What's left here is read-only, for companies-service's own authorization
  * needs (PATCH/status-history permission checks, "my companies"): reading
