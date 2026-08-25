@@ -16,24 +16,25 @@ Every message uses the `envelope.v1.json` wrapper (`id`, `type`, `source`, `vers
 | `appointment.rejected` | `domain.events` | `appointment.rejected` | backend (via outbox) | notifications-service | `appointment.rejected.v1.json` |
 | `appointment.cancelled` | `domain.events` | `appointment.cancelled` | backend (via outbox) | notifications-service | `appointment.cancelled.v1.json` |
 | `appointment.completed` | `domain.events` | `appointment.completed` | backend (via outbox) | notifications-service, ai-service | `appointment.completed.v1.json` |
-| `review.received` | `domain.events` | `review.received` | backend (via outbox) | notifications-service | `review.received.v1.json` |
+| `review.received` | `domain.events` | `review.received` | reviews-service (via outbox) | notifications-service, specialists-service (`public_specialist_rating_summary`) | `review.received.v1.json` |
 | `analytics.company_rating_updated` | `analytics.events` | `analytics.company_rating_updated` | ai-service | notifications-service | `analytics.company_rating_updated.v1.json` |
 | `ai.appointment_recommendation_created` | `analytics.events` | `ai.appointment_recommendation_created` | ai-service | appointments-service (`appointment_recommendation_projections`, moved from backend-projection-service in Phase 12) | `ai.appointment_recommendation_created.v1.json` |
 | `ai.company_insight_created` | `analytics.events` | `ai.company_insight_created` | ai-service | companies-service (`company_insight_projections`, moved from backend-projection-service in Phase 12) | `ai.company_insight_created.v1.json` |
 | `ai.job_failed` | `analytics.events` | `ai.job_failed` | ai-service | **Confirmed: no consumer for now.** Schema exists and ai-service may still publish it, but nothing needs to consume it yet. Do not add a consumer without a confirmed need. | `ai.job_failed.v1.json` |
 | `auth.user_registered` | `domain.events` | `auth.user_registered` | auth-service (via its own outbox) | users-service (creates profile idempotently) | `auth.user_registered.v1.json` |
-| `company.created` | `domain.events` | `company.created` | companies-service (via its own outbox) | appointments-service (projection, Phase 9 — no consumer yet) | `company.created.v1.json` |
-| `company.updated` | `domain.events` | `company.updated` | companies-service (via its own outbox) | appointments-service (projection, Phase 9 — no consumer yet) | `company.updated.v1.json` |
+| `company.created` | `domain.events` | `company.created` | companies-service (via its own outbox) | appointments-service (projection), specialists-service (`public_company_projection`) | `company.created.v1.json` |
+| `company.updated` | `domain.events` | `company.updated` | companies-service (via its own outbox) | appointments-service (projection), specialists-service (`public_company_projection`) | `company.updated.v1.json` |
 | `company.created` (re-consumed) | `domain.events` | — | — | company-members-service (auto-creates the `owner` row) | `company.created.v1.json` |
 | `company-member.added` | `domain.events` | `company-member.added` | company-members-service (via its own outbox) | auth-service (membership projection) | `company-member.added.v1.json` |
 | `company-member.removed` | `domain.events` | `company-member.removed` | company-members-service (via its own outbox) | auth-service (membership projection) | `company-member.removed.v1.json` |
 | `specialist.created` | `domain.events` | `specialist.created` | specialists-service (via its own outbox) | appointments-service (projection, Phase 9 — no consumer yet) | `specialist.created.v1.json` |
 | `specialist.updated` | `domain.events` | `specialist.updated` | specialists-service (via its own outbox) | appointments-service (projection, Phase 9 — no consumer yet) | `specialist.updated.v1.json` |
-| `company-specialist.accepted` | `domain.events` | `company-specialist.accepted` | company-specialists-service (via its own outbox) | appointments-service (projection, Phase 9 — no consumer yet) | `company-specialist.accepted.v1.json` |
-| `service.created` | `domain.events` | `service.created` | services-catalog-service (via its own outbox) | appointments-service (projection, Phase 9 — no consumer yet) | `service.created.v1.json` |
-| `service.updated` | `domain.events` | `service.updated` | services-catalog-service (via its own outbox) | appointments-service (projection, Phase 9 — no consumer yet) | `service.updated.v1.json` |
-| `specialist-service.assigned` | `domain.events` | `specialist-service.assigned` | services-catalog-service (via its own outbox) | appointments-service (projection, Phase 9 — no consumer yet) | `specialist-service.assigned.v1.json` |
-| `specialist-service.removed` | `domain.events` | `specialist-service.removed` | services-catalog-service (via its own outbox) | appointments-service (projection, Phase 9 — no consumer yet) | `specialist-service.removed.v1.json` |
+| `company-specialist.accepted` | `domain.events` | `company-specialist.accepted` | company-specialists-service (via its own outbox) | appointments-service (projection), specialists-service (`public_specialist_company_projection`) | `company-specialist.accepted.v1.json` |
+| `company-specialist.removed` | `domain.events` | `company-specialist.removed` | Not currently published | specialists-service (`public_specialist_company_projection`, once publisher exists) | `company-specialist.removed.v1.json` |
+| `service.created` | `domain.events` | `service.created` | services-catalog-service (via its own outbox) | appointments-service (projection), specialists-service (`public_service_projection`) | `service.created.v1.json` |
+| `service.updated` | `domain.events` | `service.updated` | services-catalog-service (via its own outbox) | appointments-service (projection), specialists-service (`public_service_projection`) | `service.updated.v1.json` |
+| `specialist-service.assigned` | `domain.events` | `specialist-service.assigned` | services-catalog-service (via its own outbox) | appointments-service (projection), specialists-service (`public_specialist_service_projection`) | `specialist-service.assigned.v1.json` |
+| `specialist-service.removed` | `domain.events` | `specialist-service.removed` | services-catalog-service (via its own outbox) | appointments-service (projection), specialists-service (`public_specialist_service_projection`) | `specialist-service.removed.v1.json` |
 
 `company-member.role_changed.v1.json` exists (contract-first, per Task 5.3) but is
 **not published** — no code path in company-members-service changes a member's role

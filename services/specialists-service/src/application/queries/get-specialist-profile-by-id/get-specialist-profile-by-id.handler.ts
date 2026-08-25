@@ -1,12 +1,14 @@
-import type { SpecialistProfileRow } from '../../../db/specialist-repository.js';
+import type {
+  PublicSpecialistProfileView,
+  PublicSpecialistProjectionRepository,
+} from '../../../db/public-specialist-projection-repository.js';
 import { AppError } from '../../../errors/AppError.js';
-import type { SpecialistReadRepository } from '../../ports/specialist-repositories.js';
 import type { GetSpecialistProfileByIdQuery } from './get-specialist-profile-by-id.query.js';
 
 export class GetSpecialistProfileByIdHandler {
-  constructor(private readonly reads: SpecialistReadRepository) {}
+  constructor(private readonly reads: PublicSpecialistProjectionRepository) {}
 
-  async execute(query: GetSpecialistProfileByIdQuery): Promise<SpecialistProfileRow> {
+  async execute(query: GetSpecialistProfileByIdQuery): Promise<PublicSpecialistProfileView> {
     const profile = await this.reads.findById(query.specialistId);
     if (!profile) {
       throw new AppError('Specialist profile not found', 404);

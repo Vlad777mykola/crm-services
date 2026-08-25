@@ -18,6 +18,24 @@ export interface SpecialistProfile {
   updatedAt: string;
 }
 
+export interface PublicSpecialistService {
+  id: string;
+  name: string;
+}
+
+export interface PublicSpecialistCompany {
+  id: string;
+  name: string;
+  slug: string | null;
+  services: PublicSpecialistService[];
+}
+
+export interface PublicSpecialistProfile extends SpecialistProfile {
+  rating: number;
+  reviewsCount: number;
+  companies: PublicSpecialistCompany[];
+}
+
 export interface CreateSpecialistProfileInput {
   displayName: string;
   headline?: string | null;
@@ -48,7 +66,7 @@ export interface PublicSpecialistsQuery {
 }
 
 export interface PublicSpecialistsResult {
-  items: SpecialistProfile[];
+  items: PublicSpecialistProfile[];
   meta: PaginationMeta;
 }
 
@@ -102,12 +120,12 @@ export async function fetchPublicSpecialists(query: PublicSpecialistsQuery = {})
 
   const queryString = params.toString();
   const response = await authorizedFetch(`/specialists/public${queryString ? `?${queryString}` : ''}`);
-  const body = await parseJsonOrThrow<{ data: SpecialistProfile[]; meta: PaginationMeta }>(response);
+  const body = await parseJsonOrThrow<{ data: PublicSpecialistProfile[]; meta: PaginationMeta }>(response);
   return { items: body.data, meta: body.meta };
 }
 
-export async function fetchSpecialistById(specialistId: string): Promise<SpecialistProfile> {
+export async function fetchSpecialistById(specialistId: string): Promise<PublicSpecialistProfile> {
   const response = await authorizedFetch(`/specialists/${specialistId}`);
-  const body = await parseJsonOrThrow<{ data: SpecialistProfile }>(response);
+  const body = await parseJsonOrThrow<{ data: PublicSpecialistProfile }>(response);
   return body.data;
 }

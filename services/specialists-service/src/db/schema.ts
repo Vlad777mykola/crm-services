@@ -45,6 +45,70 @@ export async function ensureSpecialistsSchema(dataSource: DataSource): Promise<v
   `);
 
   await dataSource.query(`
+    CREATE TABLE IF NOT EXISTS specialists_schema.public_company_projection (
+      "companyId" uuid PRIMARY KEY,
+      "name" varchar(255) NOT NULL,
+      "slug" varchar(255),
+      "status" varchar(20) NOT NULL,
+      "updatedAt" timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+
+  await dataSource.query(`
+    CREATE TABLE IF NOT EXISTS specialists_schema.public_specialist_company_projection (
+      "specialistProfileId" uuid NOT NULL,
+      "companyId" uuid NOT NULL,
+      "updatedAt" timestamptz NOT NULL DEFAULT now(),
+      PRIMARY KEY ("specialistProfileId", "companyId")
+    )
+  `);
+  await dataSource.query(`
+    CREATE INDEX IF NOT EXISTS "IDX_public_specialist_company_companyId"
+    ON specialists_schema.public_specialist_company_projection ("companyId")
+  `);
+
+  await dataSource.query(`
+    CREATE TABLE IF NOT EXISTS specialists_schema.public_service_projection (
+      "serviceId" uuid PRIMARY KEY,
+      "companyId" uuid NOT NULL,
+      "name" varchar(255) NOT NULL,
+      "status" varchar(20) NOT NULL,
+      "updatedAt" timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+  await dataSource.query(`
+    CREATE INDEX IF NOT EXISTS "IDX_public_service_projection_companyId"
+    ON specialists_schema.public_service_projection ("companyId")
+  `);
+
+  await dataSource.query(`
+    CREATE TABLE IF NOT EXISTS specialists_schema.public_specialist_service_projection (
+      "serviceId" uuid NOT NULL,
+      "companyId" uuid NOT NULL,
+      "specialistProfileId" uuid NOT NULL,
+      "updatedAt" timestamptz NOT NULL DEFAULT now(),
+      PRIMARY KEY ("serviceId", "specialistProfileId")
+    )
+  `);
+  await dataSource.query(`
+    CREATE INDEX IF NOT EXISTS "IDX_public_specialist_service_companyId"
+    ON specialists_schema.public_specialist_service_projection ("companyId")
+  `);
+  await dataSource.query(`
+    CREATE INDEX IF NOT EXISTS "IDX_public_specialist_service_specialistProfileId"
+    ON specialists_schema.public_specialist_service_projection ("specialistProfileId")
+  `);
+
+  await dataSource.query(`
+    CREATE TABLE IF NOT EXISTS specialists_schema.public_specialist_rating_summary (
+      "specialistProfileId" uuid PRIMARY KEY,
+      "ratingSum" int NOT NULL DEFAULT 0,
+      "reviewsCount" int NOT NULL DEFAULT 0,
+      "updatedAt" timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS specialists_schema.outbox_events (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       "eventType" varchar(100) NOT NULL,

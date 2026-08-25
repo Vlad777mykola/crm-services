@@ -92,6 +92,58 @@ SpecialistProfile:
     - createdAt
     - updatedAt
 
+PublicSpecialistService:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    name:
+      type: string
+  required:
+    - id
+    - name
+
+PublicSpecialistCompany:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    name:
+      type: string
+    slug:
+      type: string
+      nullable: true
+    services:
+      type: array
+      items:
+        $ref: '#/PublicSpecialistService'
+  required:
+    - id
+    - name
+    - slug
+    - services
+
+PublicSpecialistProfile:
+  allOf:
+    - $ref: '#/SpecialistProfile'
+    - type: object
+      properties:
+        rating:
+          type: number
+          format: float
+        reviewsCount:
+          type: integer
+        companies:
+          type: array
+          items:
+            $ref: '#/PublicSpecialistCompany'
+      required:
+        - rating
+        - reviewsCount
+        - companies
+
 SpecialistProfileResponse:
   type: object
   properties:
@@ -99,6 +151,17 @@ SpecialistProfileResponse:
       type: string
     data:
       $ref: '#/SpecialistProfile'
+  required:
+    - message
+    - data
+
+PublicSpecialistProfileResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      $ref: '#/PublicSpecialistProfile'
   required:
     - message
     - data
@@ -111,7 +174,7 @@ SpecialistProfileListResponse:
     data:
       type: array
       items:
-        $ref: '#/SpecialistProfile'
+        $ref: '#/PublicSpecialistProfile'
     meta:
       $ref: '../../openapi.yaml#/components/schemas/PaginationMeta'
   required:

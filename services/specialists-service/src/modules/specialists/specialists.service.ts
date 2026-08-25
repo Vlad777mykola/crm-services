@@ -7,6 +7,8 @@ import { GetSpecialistProfileByIdHandler } from '../../application/queries/get-s
 import { ListMySpecialistStatusHistoryHandler } from '../../application/queries/list-my-specialist-status-history/list-my-specialist-status-history.handler.js';
 import { ListPublicSpecialistsHandler } from '../../application/queries/list-public-specialists/list-public-specialists.handler.js';
 import { TypeOrmSpecialistEventOutbox } from '../../application/services/typeorm-specialist-event-outbox.js';
+import type { PublicSpecialistProfileView } from '../../db/public-specialist-projection-repository.js';
+import { PublicSpecialistProjectionRepository } from '../../db/public-specialist-projection-repository.js';
 import type { SpecialistProfileRow, StatusHistoryRow } from '../../db/specialist-repository.js';
 import { SpecialistRepository } from '../../db/specialist-repository.js';
 import type { PaginationMeta } from '../../common/pagination.js';
@@ -26,12 +28,13 @@ export class SpecialistsService {
 
   constructor(dataSource: DataSource) {
     const specialists = new SpecialistRepository(dataSource);
+    const publicSpecialists = new PublicSpecialistProjectionRepository(dataSource);
     const outbox = new TypeOrmSpecialistEventOutbox();
     this.createMineCommand = new CreateMySpecialistProfileHandler(dataSource, specialists, specialists, outbox);
-    this.getByIdQuery = new GetSpecialistProfileByIdHandler(specialists);
+    this.getByIdQuery = new GetSpecialistProfileByIdHandler(publicSpecialists);
     this.getMineQuery = new GetMySpecialistProfileHandler(specialists);
     this.listMyStatusHistoryQuery = new ListMySpecialistStatusHistoryHandler(specialists);
-    this.listPublicQuery = new ListPublicSpecialistsHandler(specialists);
+    this.listPublicQuery = new ListPublicSpecialistsHandler(publicSpecialists);
     this.updateMineCommand = new UpdateMySpecialistProfileHandler(dataSource, specialists, specialists, outbox);
   }
 
@@ -51,11 +54,11 @@ export class SpecialistsService {
     return this.listMyStatusHistoryQuery.execute({ userId });
   }
 
-  async getPublic(query: PublicSpecialistsQueryInput): Promise<{ items: SpecialistProfileRow[]; meta: PaginationMeta }> {
+  async getPublic(query: PublicSpecialistsQueryInput): Promise<{ items: PublicSpecialistProfileView[]; meta: PaginationMeta }> {
     return this.listPublicQuery.execute({ input: query });
   }
 
-  async getById(specialistId: string, requesterUserId: string | undefined): Promise<SpecialistProfileRow> {
+  async getById(specialistId: string, requesterUserId: string | undefined): Promise<PublicSpecialistProfileView> {
     return this.getByIdQuery.execute({ specialistId, requesterUserId });
   }
 }

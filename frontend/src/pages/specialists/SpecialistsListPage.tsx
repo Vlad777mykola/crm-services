@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
-import { Alert, Card, Checkbox, Empty, Input, List, Pagination, Space, Spin, Typography } from 'antd';
+import { Alert, Avatar, Button, Card, Checkbox, Empty, Input, List, Pagination, Rate, Space, Tag, Spin, Typography } from 'antd';
 import { Link } from 'react-router';
 
 import { fetchPublicSpecialists, type PublicSpecialistsQuery } from '@/features/specialists/api/specialistsApi';
@@ -65,15 +65,38 @@ export function SpecialistsListPage() {
             loading={isFetching}
             dataSource={data.items}
             renderItem={(specialist) => (
-              <List.Item>
+              <List.Item
+                actions={[
+                  <Link key="view" to={`/specialists/${specialist.id}`}>
+                    <Button type="primary">View</Button>
+                  </Link>,
+                ]}
+              >
                 <List.Item.Meta
+                  avatar={<Avatar size={48}>{specialist.displayName.slice(0, 1).toUpperCase()}</Avatar>}
                   title={<Link to={`/specialists/${specialist.id}`}>{specialist.displayName}</Link>}
                   description={
-                    <>
-                      {specialist.headline && <Typography.Text type="secondary">{specialist.headline}</Typography.Text>}
-                      {specialist.category && <Typography.Text type="secondary"> · {specialist.category}</Typography.Text>}
-                      {specialist.city && <Typography.Text type="secondary"> · {specialist.city}</Typography.Text>}
-                    </>
+                    <Space direction="vertical" size={6}>
+                      <span>
+                        {specialist.headline && <Typography.Text type="secondary">{specialist.headline}</Typography.Text>}
+                        {specialist.category && <Typography.Text type="secondary"> · {specialist.category}</Typography.Text>}
+                        {specialist.city && <Typography.Text type="secondary"> · {specialist.city}</Typography.Text>}
+                      </span>
+                      <Space size={6} wrap>
+                        <Rate allowHalf disabled value={specialist.rating} style={{ fontSize: 14 }} />
+                        <Typography.Text type="secondary">
+                          {specialist.rating.toFixed(1)} ({specialist.reviewsCount} reviews)
+                        </Typography.Text>
+                      </Space>
+                      <Space size={[4, 4]} wrap>
+                        {specialist.companies.length === 0 && <Typography.Text type="secondary">No active companies yet</Typography.Text>}
+                        {specialist.companies.map((company) => (
+                          <Link key={company.id} to={`/companies/${company.id}`}>
+                            <Tag>{company.name}</Tag>
+                          </Link>
+                        ))}
+                      </Space>
+                    </Space>
                   }
                 />
               </List.Item>

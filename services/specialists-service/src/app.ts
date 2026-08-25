@@ -7,14 +7,19 @@ import { notFoundHandler } from './http/not-found-handler.js';
 import { requestLogger } from './http/request-logger.js';
 import { createSpecialistsRouter } from './http/routes/specialists.routes.js';
 import type { SpecialistsService } from './modules/specialists/specialists.service.js';
+import type { RabbitMqConsumer } from './rabbitmq/consumer.js';
 
-export function createApp(dataSource: DataSource, specialistsService: SpecialistsService): Express {
+export function createApp(
+  dataSource: DataSource,
+  consumer: RabbitMqConsumer,
+  specialistsService: SpecialistsService,
+): Express {
   const app = express();
 
   app.use(express.json());
   app.use(requestLogger);
 
-  app.use(createHealthRouter(dataSource));
+  app.use(createHealthRouter(dataSource, consumer));
   app.use(createSpecialistsRouter(specialistsService));
 
   app.use(notFoundHandler);

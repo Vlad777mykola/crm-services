@@ -10,6 +10,7 @@
     "reviewId": { "type": "string", "format": "uuid" },
     "companyId": { "type": "string", "format": "uuid" },
     "serviceId": { "type": "string", "format": "uuid" },
+    "specialistProfileId": { "type": ["string", "null"], "format": "uuid" },
     "serviceName": { "type": "string" },
     "rating": { "type": "integer", "minimum": 1, "maximum": 5 },
     "comment": { "type": ["string", "null"] }

@@ -1,7 +1,9 @@
 import { Router } from 'express';
 import type { DataSource } from 'typeorm';
 
-export function createHealthRouter(dataSource: DataSource): Router {
+import type { RabbitMqConsumer } from '../rabbitmq/consumer.js';
+
+export function createHealthRouter(dataSource: DataSource, consumer: RabbitMqConsumer): Router {
   const router = Router();
 
   router.get('/health/live', (_req, res) => {
@@ -11,7 +13,12 @@ export function createHealthRouter(dataSource: DataSource): Router {
   router.get('/health/ready', (_req, res) => {
     dataSource
       .query('SELECT 1')
-      .then(() => res.status(200).json({ status: 'ok' }))
+      .then(() => {
+        if (!consumer.isReady()) {
+          throw new Error('RabbitMQ is not connected');
+        }
+        res.status(200).json({ status: 'ok' });
+      })
       .catch(() => res.status(503).json({ status: 'not-ready' }));
   });
 

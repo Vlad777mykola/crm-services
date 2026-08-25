@@ -51,6 +51,7 @@ export class CreateReviewHandler {
           reviewId: review.id,
           companyId: review.companyId,
           serviceId: review.serviceId,
+          specialistProfileId: review.specialistProfileId,
           serviceName: appointment.serviceName ?? 'Unknown service',
           rating: review.rating,
           comment: review.comment,

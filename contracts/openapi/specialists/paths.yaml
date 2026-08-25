@@ -135,7 +135,7 @@ Public:
     parameters:
       - name: q
         in: query
-        description: Free-text search across display name, headline, and bio
+        description: Free-text search across display name, headline, bio, company name, and service name
         schema:
           type: string
       - name: category
@@ -192,7 +192,7 @@ BySpecialistId:
         content:
           application/json:
             schema:
-              $ref: './schemas.yaml#/SpecialistProfileResponse'
+              $ref: './schemas.yaml#/PublicSpecialistProfileResponse'
       '404':
         description: Specialist profile not found
         content:
