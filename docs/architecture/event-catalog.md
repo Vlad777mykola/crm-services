@@ -16,12 +16,15 @@ Every message uses the `envelope.v1.json` wrapper (`id`, `type`, `source`, `vers
 | `appointment.rejected` | `domain.events` | `appointment.rejected` | backend (via outbox) | notifications-service | `appointment.rejected.v1.json` |
 | `appointment.cancelled` | `domain.events` | `appointment.cancelled` | backend (via outbox) | notifications-service | `appointment.cancelled.v1.json` |
 | `appointment.completed` | `domain.events` | `appointment.completed` | backend (via outbox) | notifications-service, ai-service | `appointment.completed.v1.json` |
+| `appointment.review_eligible` | `domain.events` | `appointment.review_eligible` | appointments-service (via its own outbox) | reviews-service (`appointment_review_eligibility_projection`) | `appointment.review_eligible.v1.json` |
 | `review.received` | `domain.events` | `review.received` | reviews-service (via outbox) | notifications-service, specialists-service (`public_specialist_rating_summary`) | `review.received.v1.json` |
 | `analytics.company_rating_updated` | `analytics.events` | `analytics.company_rating_updated` | ai-service | notifications-service | `analytics.company_rating_updated.v1.json` |
 | `ai.appointment_recommendation_created` | `analytics.events` | `ai.appointment_recommendation_created` | ai-service | appointments-service (`appointment_recommendation_projections`, moved from backend-projection-service in Phase 12) | `ai.appointment_recommendation_created.v1.json` |
 | `ai.company_insight_created` | `analytics.events` | `ai.company_insight_created` | ai-service | companies-service (`company_insight_projections`, moved from backend-projection-service in Phase 12) | `ai.company_insight_created.v1.json` |
 | `ai.job_failed` | `analytics.events` | `ai.job_failed` | ai-service | **Confirmed: no consumer for now.** Schema exists and ai-service may still publish it, but nothing needs to consume it yet. Do not add a consumer without a confirmed need. | `ai.job_failed.v1.json` |
 | `auth.user_registered` | `domain.events` | `auth.user_registered` | auth-service (via its own outbox) | users-service (creates profile idempotently) | `auth.user_registered.v1.json` |
+| `user.profile_created` | `domain.events` | `user.profile_created` | users-service (via its own outbox) | appointments-service (`client_profiles_projection`) | `user.profile_created.v1.json` |
+| `user.profile_updated` | `domain.events` | `user.profile_updated` | users-service (via its own outbox) | appointments-service (`client_profiles_projection`) | `user.profile_updated.v1.json` |
 | `company.created` | `domain.events` | `company.created` | companies-service (via its own outbox) | appointments-service (projection), specialists-service (`public_company_projection`) | `company.created.v1.json` |
 | `company.updated` | `domain.events` | `company.updated` | companies-service (via its own outbox) | appointments-service (projection), specialists-service (`public_company_projection`) | `company.updated.v1.json` |
 | `company.created` (re-consumed) | `domain.events` | — | — | company-members-service (auto-creates the `owner` row) | `company.created.v1.json` |
@@ -57,8 +60,6 @@ today.
 | `specialist.published` | `domain.events` | specialists-service | (none confirmed) | 6 | Confirm need |
 | `company-specialist.requested` | `domain.events` | company-specialists-service | (none confirmed — notifications candidate) | 7 | Confirm need — not added |
 | `company-specialist.rejected` | `domain.events` | company-specialists-service | (none confirmed) | 7 | Confirm need — not added |
-| `user.profile_created` | `domain.events` | users-service | (none confirmed) | 3 | Confirm need — may be redundant with `auth.user_registered` |
-| `user.profile_updated` | `domain.events` | users-service | (none confirmed) | 3 | Confirm need before writing schema |
 | `notification.created` | `domain.events` | notifications-service | (none confirmed) | 11 | Confirm need — notifications-service is currently a pure consumer, not a publisher |
 | `email.sent` | `domain.events` | notifications-service | (none confirmed) | 11 | Confirm need |
 | `email.failed` | `domain.events` | notifications-service | (none confirmed) | 11 | Confirm need |

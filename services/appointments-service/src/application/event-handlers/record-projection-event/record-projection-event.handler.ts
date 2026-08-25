@@ -9,6 +9,7 @@ import type {
   CompanyMemberRemovedData,
   ServiceEventData,
   SpecialistServiceEventData,
+  UserProfileEventData,
 } from './projection-events.js';
 
 export class RecordProjectionEventHandler {
@@ -65,6 +66,17 @@ export class RecordProjectionEventHandler {
       case 'specialist-service.removed': {
         const event = data as unknown as SpecialistServiceEventData;
         await this.projections.removeServiceSpecialist(manager, event.serviceId, event.specialistProfileId);
+        return true;
+      }
+      case 'user.profile_created':
+      case 'user.profile_updated': {
+        const event = data as unknown as UserProfileEventData;
+        await this.projections.upsertClientProfile(manager, {
+          userId: event.userId,
+          email: event.email,
+          name: event.name,
+          phone: event.phone,
+        });
         return true;
       }
       default:

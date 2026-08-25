@@ -21,6 +21,8 @@ export interface RecordOutboxEventInput {
   type: AuthDomainEventName;
   payload: Record<string, unknown>;
   aggregateId: string;
+  correlationId?: string | null;
+  causationId?: string | null;
 }
 
 /**
@@ -41,6 +43,8 @@ export async function recordOutboxEvent(manager: EntityManager, input: RecordOut
       aggregateType: 'auth_identity',
       aggregateId: input.aggregateId,
       payload: input.payload,
+      correlationId: input.correlationId ?? null,
+      causationId: input.causationId ?? null,
     }),
   );
 }

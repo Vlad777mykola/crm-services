@@ -6,6 +6,7 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(4006),
   DATABASE_URL: z.string().default('postgres://postgres:postgres@localhost:5432/crm'),
+  RABBITMQ_URL: z.string().default('amqp://crm:crm_local_only@localhost:5672'),
   JWT_ACCESS_SECRET: z.string().min(1).default('dev-access-secret-change-me'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
 });

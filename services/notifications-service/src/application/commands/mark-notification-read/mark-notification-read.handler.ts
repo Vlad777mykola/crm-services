@@ -1,4 +1,4 @@
-import { AppError } from '../../../errors/AppError.js';
+import { AppError } from '@crm/http-kit';
 import type { NotificationRow } from '../../../db/entities/notification.entity.js';
 import type {
   NotificationReadRepository,

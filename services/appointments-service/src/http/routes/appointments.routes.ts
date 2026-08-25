@@ -31,6 +31,7 @@ export function createAppointmentsRouter(appointmentsService: AppointmentsServic
           companyId,
           req.auth!.userId,
           req.body as CreateAppointmentInput,
+          req.context.requestId,
         );
         res.status(201).json({ message: 'Appointment requested', data: appointment });
       } catch (err) {
@@ -67,6 +68,7 @@ export function createAppointmentsRouter(appointmentsService: AppointmentsServic
           appointmentId,
           req.auth!.userId,
           req.body as RespondToAppointmentInput,
+          req.context.requestId,
         );
         res.status(200).json({ message: 'Appointment updated', data: appointment });
       } catch (err) {
@@ -82,7 +84,12 @@ export function createAppointmentsRouter(appointmentsService: AppointmentsServic
     async (req, res, next) => {
       try {
         const { companyId, appointmentId } = req.params as unknown as AppointmentIdParamsInput;
-        const appointment = await appointmentsService.complete(companyId, appointmentId, req.auth!.userId);
+        const appointment = await appointmentsService.complete(
+          companyId,
+          appointmentId,
+          req.auth!.userId,
+          req.context.requestId,
+        );
         res.status(200).json({ message: 'Appointment marked as completed', data: appointment });
       } catch (err) {
         next(err);
@@ -125,7 +132,7 @@ export function createAppointmentsRouter(appointmentsService: AppointmentsServic
     async (req, res, next) => {
       try {
         const { appointmentId } = req.params as unknown as AppointmentOnlyIdParamsInput;
-        const appointment = await appointmentsService.cancel(appointmentId, req.auth!.userId);
+        const appointment = await appointmentsService.cancel(appointmentId, req.auth!.userId, req.context.requestId);
         res.status(200).json({ message: 'Appointment cancelled', data: appointment });
       } catch (err) {
         next(err);

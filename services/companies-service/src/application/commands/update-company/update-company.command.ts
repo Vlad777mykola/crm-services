@@ -4,4 +4,5 @@ export interface UpdateCompanyCommand {
   companyId: string;
   requesterUserId: string;
   patch: UpdateCompanyRequestInput;
+  correlationId?: string;
 }

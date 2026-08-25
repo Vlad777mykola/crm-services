@@ -10,9 +10,14 @@ import {
   AppointmentServiceProjectionEntity,
   type ServiceProjectionRow,
 } from './entities/appointment-service-projection.entity.js';
+import {
+  ClientProfileProjectionEntity,
+  type ClientProfileProjectionRow,
+} from './entities/client-profile-projection.entity.js';
 
 export type { CompanyProjectionRow } from './entities/appointment-company-projection.entity.js';
 export type { ServiceProjectionRow } from './entities/appointment-service-projection.entity.js';
+export type { ClientProfileProjectionRow } from './entities/client-profile-projection.entity.js';
 
 export type UpsertServiceProjectionInput = Omit<ServiceProjectionRow, 'updatedAt'>;
 
@@ -80,5 +85,18 @@ export class ProjectionsRepository {
     return this.dataSource.getRepository(AppointmentServiceSpecialistProjectionEntity).exists({
       where: { serviceId, specialistProfileId },
     });
+  }
+
+  async upsertClientProfile(
+    manager: EntityManager,
+    input: Omit<ClientProfileProjectionRow, 'updatedAt'>,
+  ): Promise<void> {
+    await manager
+      .getRepository(ClientProfileProjectionEntity)
+      .upsert({ ...input, updatedAt: new Date() }, { conflictPaths: ['userId'] });
+  }
+
+  async findClientProfile(userId: string): Promise<ClientProfileProjectionRow | null> {
+    return this.dataSource.getRepository(ClientProfileProjectionEntity).findOne({ where: { userId } });
   }
 }

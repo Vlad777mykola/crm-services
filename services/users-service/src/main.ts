@@ -7,6 +7,7 @@ import { env } from './env.js';
 import { ProcessedEventsRepository } from './idempotency/processed-events-repository.js';
 import { logger } from './logger.js';
 import { UsersService } from './modules/users/users.service.js';
+import { OutboxRepository } from './outbox/outbox-repository.js';
 import { consumeFromRabbitMq } from './rabbitmq/consumer.js';
 import { DOMAIN_EVENTS_DLX, DOMAIN_EVENTS_EXCHANGE } from './rabbitmq/topology.js';
 
@@ -19,7 +20,8 @@ async function bootstrap(): Promise<void> {
 
   const processedEvents = new ProcessedEventsRepository();
   const users = new UserRepository(dataSource);
-  const usersService = new UsersService(users);
+  const outbox = new OutboxRepository();
+  const usersService = new UsersService(users, outbox);
 
   const consumer = await consumeFromRabbitMq({
     url: env.RABBITMQ_URL,
@@ -27,8 +29,8 @@ async function bootstrap(): Promise<void> {
     deadLetterExchange: DOMAIN_EVENTS_DLX,
     bindings: [{ exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'auth.user_registered' }],
     onMessage: async (parsedBody) => {
-      const envelope = parsedBody as { id: string; type: string; data: Record<string, unknown> };
-      await processInboundEvent({ dataSource, processedEvents, users }, envelope);
+      const envelope = parsedBody as { id: string; type: string; correlationId?: string; data: Record<string, unknown> };
+      await processInboundEvent({ dataSource, processedEvents, users, outbox }, envelope);
     },
   });
 

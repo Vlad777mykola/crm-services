@@ -30,7 +30,11 @@ export function createUsersRouter(usersService: UsersService): Router {
 
   router.patch('/users/me', requireAuth, validate(updateUserRequestSchema), async (req, res, next) => {
     try {
-      const user = await usersService.updateProfile(req.auth!.userId, req.body as UpdateUserRequestInput);
+      const user = await usersService.updateProfile(
+        req.auth!.userId,
+        req.body as UpdateUserRequestInput,
+        req.context.requestId,
+      );
       res.status(200).json({ message: 'Profile updated', data: user });
     } catch (err) {
       next(err);

@@ -19,7 +19,11 @@ export function createCompaniesRouter(companiesService: CompaniesService): Route
 
   router.post('/companies', requireAuth, validate(createCompanyRequestSchema, 'body'), async (req, res, next) => {
     try {
-      const company = await companiesService.create(req.body as CreateCompanyRequestInput, req.auth!.userId);
+      const company = await companiesService.create(
+        req.body as CreateCompanyRequestInput,
+        req.auth!.userId,
+        req.context.requestId,
+      );
       res.status(201).json({ message: 'Company created', data: company });
     } catch (err) {
       next(err);
@@ -79,7 +83,12 @@ export function createCompaniesRouter(companiesService: CompaniesService): Route
     async (req, res, next) => {
       try {
         const { companyId } = req.params as unknown as CompanyIdParamsInput;
-        const company = await companiesService.update(companyId, req.auth!.userId, req.body as UpdateCompanyRequestInput);
+        const company = await companiesService.update(
+          companyId,
+          req.auth!.userId,
+          req.body as UpdateCompanyRequestInput,
+          req.context.requestId,
+        );
         res.status(200).json({ message: 'Company updated', data: company });
       } catch (err) {
         next(err);

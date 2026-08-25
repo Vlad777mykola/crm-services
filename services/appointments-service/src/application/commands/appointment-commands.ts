@@ -1,7 +1,4 @@
-import type { DataSource } from 'typeorm';
-
 import { AppointmentRepository } from '../../db/appointment-repository.js';
-import { findUserName } from '../../db/legacy-users-bridge.js';
 import { ProjectionsRepository } from '../../db/projections-repository.js';
 import { AppError } from '../../errors/AppError.js';
 import type { CreateAppointmentInput, RespondToAppointmentInput } from '../../modules/appointments/appointments.schemas.js';
@@ -12,13 +9,17 @@ import { toAppointmentResponse, type AppointmentResponse } from '../view-models/
 
 export class AppointmentCommands {
   constructor(
-    private readonly dataSource: DataSource,
     private readonly appointments: AppointmentRepository,
     private readonly projections: ProjectionsRepository,
     private readonly outbox: TypeOrmAppointmentEventOutbox,
   ) {}
 
-  async create(companyId: string, clientUserId: string, input: CreateAppointmentInput): Promise<AppointmentResponse> {
+  async create(
+    companyId: string,
+    clientUserId: string,
+    input: CreateAppointmentInput,
+    correlationId?: string,
+  ): Promise<AppointmentResponse> {
     const service = await this.projections.findService(input.serviceId);
     if (!service || service.companyId !== companyId || service.status !== 'published') {
       throw new AppError('Service not found', 404);
@@ -31,7 +32,7 @@ export class AppointmentCommands {
       }
     }
 
-    const clientName = (await findUserName(this.dataSource, clientUserId)) ?? 'Unknown client';
+    const clientName = (await this.projections.findClientProfile(clientUserId))?.name ?? 'Unknown client';
 
     const appointment = await this.appointments.withTransaction(async (client) => {
       const created = await this.appointments.create(client, {
@@ -53,6 +54,7 @@ export class AppointmentCommands {
       await this.outbox.record(client, {
         type: 'appointment.requested',
         aggregateId: created.id,
+        correlationId: correlationId ?? null,
         payload: {
           appointmentId: created.id,
           companyId,
@@ -74,6 +76,7 @@ export class AppointmentCommands {
     appointmentId: string,
     requesterUserId: string,
     input: RespondToAppointmentInput,
+    correlationId?: string,
   ): Promise<AppointmentResponse> {
     await requireManagingRole(this.projections, companyId, requesterUserId);
 
@@ -107,6 +110,7 @@ export class AppointmentCommands {
       await this.outbox.record(client, {
         type: nextStatus === 'approved' ? 'appointment.approved' : 'appointment.rejected',
         aggregateId: appointmentId,
+        correlationId: correlationId ?? null,
         payload: {
           appointmentId,
           companyId,
@@ -124,7 +128,12 @@ export class AppointmentCommands {
     return toAppointmentResponse(saved);
   }
 
-  async complete(companyId: string, appointmentId: string, requesterUserId: string): Promise<AppointmentResponse> {
+  async complete(
+    companyId: string,
+    appointmentId: string,
+    requesterUserId: string,
+    correlationId?: string,
+  ): Promise<AppointmentResponse> {
     await requireManagingRole(this.projections, companyId, requesterUserId);
 
     const appointment = await this.appointments.findByIdAndCompany(appointmentId, companyId);
@@ -156,6 +165,7 @@ export class AppointmentCommands {
       await this.outbox.record(client, {
         type: 'appointment.completed',
         aggregateId: appointmentId,
+        correlationId: correlationId ?? null,
         payload: {
           appointmentId,
           companyId,
@@ -166,13 +176,28 @@ export class AppointmentCommands {
         },
       });
 
+      await this.outbox.record(client, {
+        type: 'appointment.review_eligible',
+        aggregateId: appointmentId,
+        correlationId: correlationId ?? null,
+        payload: {
+          appointmentId,
+          companyId,
+          serviceId: appointment.serviceId,
+          clientUserId: appointment.clientUserId,
+          specialistProfileId: appointment.specialistProfileId,
+          serviceName: service?.name ?? 'Unknown service',
+          completedAt: updated.completedAt?.toISOString() ?? new Date().toISOString(),
+        },
+      });
+
       return updated;
     });
 
     return toAppointmentResponse(saved);
   }
 
-  async cancel(appointmentId: string, clientUserId: string): Promise<AppointmentResponse> {
+  async cancel(appointmentId: string, clientUserId: string, correlationId?: string): Promise<AppointmentResponse> {
     const appointment = await this.appointments.findByIdAndClient(appointmentId, clientUserId);
     if (!appointment) {
       throw new AppError('Appointment not found', 404);
@@ -182,7 +207,7 @@ export class AppointmentCommands {
     assertTransitionAllowed(fromStatus, 'cancelled', 'This appointment can no longer be cancelled');
 
     const service = await this.projections.findService(appointment.serviceId);
-    const clientName = (await findUserName(this.dataSource, clientUserId)) ?? 'Unknown client';
+    const clientName = (await this.projections.findClientProfile(clientUserId))?.name ?? 'Unknown client';
 
     const saved = await this.appointments.withTransaction(async (client) => {
       const updated = await this.appointments.updateStatus(client, appointmentId, { status: 'cancelled' });
@@ -197,6 +222,7 @@ export class AppointmentCommands {
       await this.outbox.record(client, {
         type: 'appointment.cancelled',
         aggregateId: appointmentId,
+        correlationId: correlationId ?? null,
         payload: {
           appointmentId,
           companyId: appointment.companyId,

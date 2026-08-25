@@ -41,8 +41,8 @@ export class OutboxRepository {
         ADD COLUMN IF NOT EXISTS "lockedBy" varchar(200),
         ADD COLUMN IF NOT EXISTS "lockedAt" timestamptz,
         ADD COLUMN IF NOT EXISTS "leaseUntil" timestamptz,
-        ADD COLUMN IF NOT EXISTS "correlationId" uuid,
-        ADD COLUMN IF NOT EXISTS "causationId" uuid
+        ADD COLUMN IF NOT EXISTS "correlationId" text,
+        ADD COLUMN IF NOT EXISTS "causationId" text
     `);
     await this.pool.query(`
       CREATE INDEX IF NOT EXISTS "IDX_outbox_pending_claim"

@@ -57,6 +57,7 @@ export class AuthCommands {
       await this.outbox.record(manager, {
         type: 'auth.user_registered',
         aggregateId: createdIdentity.id,
+        correlationId: meta.correlationId ?? null,
         payload: { userId: createdIdentity.id, email: input.email, name: input.name },
       });
       return createdIdentity;

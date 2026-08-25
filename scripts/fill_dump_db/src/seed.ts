@@ -36,6 +36,12 @@ export async function seedDatabase(): Promise<void> {
       city: account.city,
       bio: account.bio,
     });
+    await insertRow('appointments_schema', 'client_profiles_projection', {
+      userId,
+      email: account.email,
+      name: account.name,
+      phone: account.phone,
+    });
   }
   const uid = (email: string): string => {
     const id = userIdByEmail.get(email);
@@ -151,6 +157,105 @@ export async function seedDatabase(): Promise<void> {
     role: 'owner',
   });
   console.log('[fill_dump_db] created 5 auth membership projections');
+
+  // companies-service local membership projection (active company members only)
+  await insertRow('companies_schema', 'company_membership_projection', {
+    userId: uid('owner.dental@example.com'),
+    companyId: dentalId,
+    role: 'owner',
+    status: 'active',
+  });
+  await insertRow('companies_schema', 'company_membership_projection', {
+    userId: uid('manager.dental@example.com'),
+    companyId: dentalId,
+    role: 'manager',
+    status: 'active',
+  });
+  await insertRow('companies_schema', 'company_membership_projection', {
+    userId: uid('owner.beauty@example.com'),
+    companyId: beautyId,
+    role: 'owner',
+    status: 'active',
+  });
+  await insertRow('companies_schema', 'company_membership_projection', {
+    userId: uid('owner.fitness@example.com'),
+    companyId: fitnessId,
+    role: 'owner',
+    status: 'active',
+  });
+  await insertRow('companies_schema', 'company_membership_projection', {
+    userId: uid('owner.spa@example.com'),
+    companyId: spaId,
+    role: 'owner',
+    status: 'active',
+  });
+  console.log('[fill_dump_db] created 5 companies membership projections');
+
+  // services-catalog-service local membership projection (active company members only)
+  await insertRow('services_schema', 'company_membership_projection', {
+    userId: uid('owner.dental@example.com'),
+    companyId: dentalId,
+    role: 'owner',
+    status: 'active',
+  });
+  await insertRow('services_schema', 'company_membership_projection', {
+    userId: uid('manager.dental@example.com'),
+    companyId: dentalId,
+    role: 'manager',
+    status: 'active',
+  });
+  await insertRow('services_schema', 'company_membership_projection', {
+    userId: uid('owner.beauty@example.com'),
+    companyId: beautyId,
+    role: 'owner',
+    status: 'active',
+  });
+  await insertRow('services_schema', 'company_membership_projection', {
+    userId: uid('owner.fitness@example.com'),
+    companyId: fitnessId,
+    role: 'owner',
+    status: 'active',
+  });
+  await insertRow('services_schema', 'company_membership_projection', {
+    userId: uid('owner.spa@example.com'),
+    companyId: spaId,
+    role: 'owner',
+    status: 'active',
+  });
+  console.log('[fill_dump_db] created 5 services-catalog membership projections');
+
+  // company-specialists-service local membership projection (active company members only)
+  await insertRow('company_specialists_schema', 'company_membership_projection', {
+    userId: uid('owner.dental@example.com'),
+    companyId: dentalId,
+    role: 'owner',
+    status: 'active',
+  });
+  await insertRow('company_specialists_schema', 'company_membership_projection', {
+    userId: uid('manager.dental@example.com'),
+    companyId: dentalId,
+    role: 'manager',
+    status: 'active',
+  });
+  await insertRow('company_specialists_schema', 'company_membership_projection', {
+    userId: uid('owner.beauty@example.com'),
+    companyId: beautyId,
+    role: 'owner',
+    status: 'active',
+  });
+  await insertRow('company_specialists_schema', 'company_membership_projection', {
+    userId: uid('owner.fitness@example.com'),
+    companyId: fitnessId,
+    role: 'owner',
+    status: 'active',
+  });
+  await insertRow('company_specialists_schema', 'company_membership_projection', {
+    userId: uid('owner.spa@example.com'),
+    companyId: spaId,
+    role: 'owner',
+    status: 'active',
+  });
+  console.log('[fill_dump_db] created 5 company-specialists membership projections');
 
   // ---------------------------------------------------------------------
   // Specialist profiles - one of each SpecialistProfileStatus
@@ -651,6 +756,38 @@ export async function seedDatabase(): Promise<void> {
     createdAt: daysFromNow(-5),
   });
   console.log('[fill_dump_db] created 7 appointments (pending, approved, rejected, cancelled, completed x3)');
+
+  await insertRow('reviews_schema', 'appointment_review_eligibility_projection', {
+    appointmentId: completedReviewedAppointment1Id,
+    companyId: dentalId,
+    serviceId: teethCleaningId,
+    clientUserId: uid('client.iryna@example.com'),
+    specialistProfileId: olenaId,
+    serviceName: 'Teeth Cleaning',
+    completedAt: daysFromNow(-10),
+    reviewAllowed: true,
+  });
+  await insertRow('reviews_schema', 'appointment_review_eligibility_projection', {
+    appointmentId: completedReviewedAppointment2Id,
+    companyId: beautyId,
+    serviceId: manicureId,
+    clientUserId: uid('client.taras@example.com'),
+    specialistProfileId: ninaId,
+    serviceName: 'Manicure',
+    completedAt: daysFromNow(-7),
+    reviewAllowed: true,
+  });
+  await insertRow('reviews_schema', 'appointment_review_eligibility_projection', {
+    appointmentId: completedUnreviewedAppointmentId,
+    companyId: dentalId,
+    serviceId: teethWhiteningId,
+    clientUserId: uid('client.andriy@example.com'),
+    specialistProfileId: olenaId,
+    serviceName: 'Teeth Whitening',
+    completedAt: daysFromNow(-3),
+    reviewAllowed: true,
+  });
+  console.log('[fill_dump_db] created reviews-service appointment review eligibility projections');
 
   // ---------------------------------------------------------------------
   // Per-domain status history (microservice schemas)

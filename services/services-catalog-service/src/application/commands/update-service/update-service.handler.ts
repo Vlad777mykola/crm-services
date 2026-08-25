@@ -54,6 +54,7 @@ export class UpdateServiceHandler {
       await this.outbox.record(manager, {
         type: 'service.updated',
         aggregateId: updated.id,
+        correlationId: command.correlationId ?? null,
         payload: { serviceId: updated.id, companyId: command.companyId, name: updated.name, status: updated.status },
       });
 

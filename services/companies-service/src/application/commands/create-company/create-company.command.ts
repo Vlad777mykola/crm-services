@@ -3,4 +3,5 @@ import type { CreateCompanyRequestInput } from '../../../modules/companies/compa
 export interface CreateCompanyCommand {
   input: CreateCompanyRequestInput;
   creatorUserId: string;
+  correlationId?: string;
 }

@@ -18,8 +18,11 @@ Published by the backend via the outbox pattern (see [`docs/architecture/event-d
 - [`appointment.rejected.v1.json`](appointment.rejected.v1.json)
 - [`appointment.cancelled.v1.json`](appointment.cancelled.v1.json)
 - [`appointment.completed.v1.json`](appointment.completed.v1.json)
+- [`appointment.review_eligible.v1.json`](appointment.review_eligible.v1.json) - published by `services/appointments-service`, consumed by `services/reviews-service`.
 - [`review.received.v1.json`](review.received.v1.json)
 - [`auth.user_registered.v1.json`](auth.user_registered.v1.json) - published by `services/auth-service`, consumed by `services/users-service`.
+- [`user.profile_created.v1.json`](user.profile_created.v1.json) - published by `services/users-service`, consumed by `services/appointments-service`.
+- [`user.profile_updated.v1.json`](user.profile_updated.v1.json) - published by `services/users-service`, consumed by `services/appointments-service`.
 - [`company.created.v1.json`](company.created.v1.json) - published by `services/companies-service`, consumed by `services/company-members-service` (auto-creates the owner row).
 - [`company.updated.v1.json`](company.updated.v1.json) - published by `services/companies-service`.
 - [`company-member.added.v1.json`](company-member.added.v1.json) - published by `services/company-members-service`, consumed by `services/auth-service` (membership projection).

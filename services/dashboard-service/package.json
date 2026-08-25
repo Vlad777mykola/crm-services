@@ -13,6 +13,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@crm/auth-kit": "0.0.0",
+    "@crm/http-kit": "0.0.0",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",

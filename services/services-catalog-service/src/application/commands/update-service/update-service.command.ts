@@ -5,4 +5,5 @@ export interface UpdateServiceCommand {
   serviceId: string;
   requesterUserId: string;
   patch: UpdateServiceRequestInput;
+  correlationId?: string;
 }

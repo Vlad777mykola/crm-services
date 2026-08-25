@@ -1,0 +1,108 @@
+import type { Channel, ChannelModel, ConsumeMessage } from 'amqplib';
+import {
+  connectManaged,
+  declareRetryTopology,
+  handleConsumerFailure,
+  type ManagedConnectionContext,
+} from '@crm/messaging-kit';
+
+import { logger } from '../logger.js';
+import { declareTopology } from './topology.js';
+
+const SERVICE_NAME = 'reviews-service';
+const SOURCE_EXCHANGE = 'domain.events' as const;
+
+export interface BindingSpec {
+  exchange: string;
+  routingKey: string;
+}
+
+export interface ConsumeOptions {
+  url: string;
+  queue: string;
+  deadLetterExchange: string;
+  bindings: BindingSpec[];
+  onMessage: (parsedBody: unknown, routingKey: string, exchange: string) => Promise<void>;
+}
+
+export interface RabbitMqConsumer {
+  isConnected: () => boolean;
+  isReady: () => boolean;
+  close: () => Promise<void>;
+}
+
+export async function consumeFromRabbitMq(options: ConsumeOptions): Promise<RabbitMqConsumer> {
+  let channel: Channel | null = null;
+  let settleFirstReady: (() => void) | null = null;
+  const firstReady = new Promise<void>((resolve) => {
+    settleFirstReady = resolve;
+  });
+
+  async function bindAndConsume(ch: Channel): Promise<void> {
+    await declareTopology(ch);
+    await declareRetryTopology(ch, { serviceName: SERVICE_NAME, sourceExchange: SOURCE_EXCHANGE });
+    await ch.assertQueue(options.queue, {
+      durable: true,
+      arguments: { 'x-dead-letter-exchange': options.deadLetterExchange },
+    });
+    for (const binding of options.bindings) {
+      await ch.bindQueue(options.queue, binding.exchange, binding.routingKey);
+    }
+    await ch.prefetch(1);
+    await ch.consume(options.queue, (msg) => {
+      if (!msg) {
+        return;
+      }
+      void handleMessage(ch, msg, options.onMessage);
+    });
+  }
+
+  const managed = connectManaged({
+    url: options.url,
+    serviceName: SERVICE_NAME,
+    logger,
+    setup: async (connection: ChannelModel, lifecycle: ManagedConnectionContext) => {
+      const ch = await connection.createChannel();
+      channel = ch;
+      ch.once('close', () => {
+        if (channel !== ch) {
+          return;
+        }
+        channel = null;
+        lifecycle.invalidate(new Error(`${SERVICE_NAME} consumer channel closed unexpectedly`));
+      });
+      await bindAndConsume(ch);
+      settleFirstReady?.();
+      settleFirstReady = null;
+    },
+    onDisconnected: () => {
+      channel = null;
+    },
+  });
+
+  await firstReady;
+
+  return {
+    isConnected: () => managed.isReady(),
+    isReady: () => managed.isReady(),
+    close: () => managed.close(),
+  };
+}
+
+async function handleMessage(
+  channel: Channel,
+  msg: ConsumeMessage,
+  onMessage: (parsedBody: unknown, routingKey: string, exchange: string) => Promise<void>,
+): Promise<void> {
+  try {
+    const parsed = JSON.parse(msg.content.toString('utf8'));
+    await onMessage(parsed, msg.fields.routingKey, msg.fields.exchange);
+    channel.ack(msg);
+  } catch (err) {
+    logger.error(
+      { err, routingKey: msg.fields.routingKey },
+      '[rabbitmq] failed to process message - applying retry/parking policy',
+    );
+    await handleConsumerFailure(channel, msg, SERVICE_NAME, err);
+  }
+}

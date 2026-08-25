@@ -31,6 +31,7 @@ export class UnassignServiceSpecialistHandler {
       await this.outbox.record(manager, {
         type: 'specialist-service.removed',
         aggregateId: assignment.id,
+        correlationId: command.correlationId ?? null,
         payload: {
           serviceId: command.serviceId,
           companyId: service.companyId,

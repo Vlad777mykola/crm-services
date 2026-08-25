@@ -164,6 +164,21 @@ export async function ensureAllMicroserviceSchemas(): Promise<void> {
       CONSTRAINT "UQ_company_specialists_company_specialist" UNIQUE ("companyId", "specialistProfileId")
     )
   `);
+  await query(`
+    CREATE TABLE IF NOT EXISTS company_specialists_schema.company_membership_projection (
+      "companyId" uuid NOT NULL,
+      "userId" uuid NOT NULL,
+      "role" text NOT NULL,
+      "status" text NOT NULL,
+      "createdAt" timestamptz NOT NULL DEFAULT now(),
+      "updatedAt" timestamptz NOT NULL DEFAULT now(),
+      PRIMARY KEY ("companyId", "userId")
+    )
+  `);
+  await query(`
+    CREATE INDEX IF NOT EXISTS "IDX_company_specialists_membership_projection_userId"
+    ON company_specialists_schema.company_membership_projection ("userId")
+  `);
 
   await query(`CREATE SCHEMA IF NOT EXISTS services_schema`);
   await query(`
@@ -201,6 +216,21 @@ export async function ensureAllMicroserviceSchemas(): Promise<void> {
       "createdAt" timestamptz NOT NULL DEFAULT now()
     )
   `);
+  await query(`
+    CREATE TABLE IF NOT EXISTS services_schema.company_membership_projection (
+      "companyId" uuid NOT NULL,
+      "userId" uuid NOT NULL,
+      "role" text NOT NULL,
+      "status" text NOT NULL,
+      "createdAt" timestamptz NOT NULL DEFAULT now(),
+      "updatedAt" timestamptz NOT NULL DEFAULT now(),
+      PRIMARY KEY ("companyId", "userId")
+    )
+  `);
+  await query(`
+    CREATE INDEX IF NOT EXISTS "IDX_services_membership_projection_userId"
+    ON services_schema.company_membership_projection ("userId")
+  `);
 
   await query(`CREATE SCHEMA IF NOT EXISTS appointments_schema`);
   await query(`
@@ -230,6 +260,15 @@ export async function ensureAllMicroserviceSchemas(): Promise<void> {
       "createdAt" timestamptz NOT NULL DEFAULT now()
     )
   `);
+  await query(`
+    CREATE TABLE IF NOT EXISTS appointments_schema.client_profiles_projection (
+      "userId" uuid PRIMARY KEY,
+      "name" text,
+      "email" text,
+      "phone" text,
+      "updatedAt" timestamptz NOT NULL DEFAULT now()
+    )
+  `);
 
   await query(`CREATE SCHEMA IF NOT EXISTS reviews_schema`);
   await query(`
@@ -243,6 +282,19 @@ export async function ensureAllMicroserviceSchemas(): Promise<void> {
       "rating" smallint NOT NULL,
       "comment" text,
       "createdAt" timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+  await query(`
+    CREATE TABLE IF NOT EXISTS reviews_schema.appointment_review_eligibility_projection (
+      "appointmentId" uuid PRIMARY KEY,
+      "companyId" uuid NOT NULL,
+      "serviceId" uuid NOT NULL,
+      "clientUserId" uuid NOT NULL,
+      "specialistProfileId" uuid,
+      "serviceName" text,
+      "completedAt" timestamptz,
+      "reviewAllowed" boolean NOT NULL DEFAULT false,
+      "updatedAt" timestamptz NOT NULL DEFAULT now()
     )
   `);
 

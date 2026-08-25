@@ -36,6 +36,7 @@ export class RabbitMqSink implements EventSink {
 
     const published = this.channel.publish(route.exchange, route.routingKey, Buffer.from(JSON.stringify(envelope)), {
       contentType: 'application/json',
+      correlationId: event.correlationId ?? event.id,
       persistent: true,
       mandatory: true,
       messageId: event.id,

@@ -25,8 +25,8 @@ export class CompaniesService {
     this.updateCommand = new UpdateCompanyHandler(dataSource, companies, outbox);
   }
 
-  async create(input: CreateCompanyRequestInput, creatorUserId: string): Promise<CompanyRow> {
-    return this.createCommand.execute({ input, creatorUserId });
+  async create(input: CreateCompanyRequestInput, creatorUserId: string, correlationId?: string): Promise<CompanyRow> {
+    return this.createCommand.execute({ input, creatorUserId, correlationId });
   }
 
   async getPublic(
@@ -43,8 +43,13 @@ export class CompaniesService {
     return this.queries.getById(companyId, requesterUserId);
   }
 
-  async update(companyId: string, requesterUserId: string, patch: UpdateCompanyRequestInput): Promise<CompanyRow> {
-    return this.updateCommand.execute({ companyId, requesterUserId, patch });
+  async update(
+    companyId: string,
+    requesterUserId: string,
+    patch: UpdateCompanyRequestInput,
+    correlationId?: string,
+  ): Promise<CompanyRow> {
+    return this.updateCommand.execute({ companyId, requesterUserId, patch, correlationId });
   }
 
   async getStatusHistory(companyId: string, requesterUserId: string): Promise<StatusHistoryRow[]> {

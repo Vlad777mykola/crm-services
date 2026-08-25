@@ -7,6 +7,10 @@ import type {
   AiCompanyInsightCreatedData,
 } from '../application/event-handlers/record-ai-company-insight/record-ai-company-insight.event.js';
 import type { CompanyInsightRepository } from '../db/company-insight-repository.js';
+import {
+  removeMembershipProjection,
+  upsertMembershipProjection,
+} from '../db/company-membership-projection-repository.js';
 import type { ProcessedEventsRepository } from '../idempotency/processed-events-repository.js';
 import { logger } from '../logger.js';
 
@@ -35,6 +39,25 @@ export async function processInboundEvent(deps: ProcessInboundEventDeps, envelop
         manager,
         envelope.data as unknown as AiCompanyInsightCreatedData,
       );
+    } else if (envelope.type === 'company-member.added') {
+      const data = envelope.data as unknown as { companyId: string; userId: string; role: 'owner' | 'manager' };
+      await upsertMembershipProjection(manager, {
+        companyId: data.companyId,
+        userId: data.userId,
+        role: data.role,
+        status: 'active',
+      });
+    } else if (envelope.type === 'company-member.role_changed') {
+      const data = envelope.data as unknown as { companyId: string; userId: string; toRole: 'owner' | 'manager' };
+      await upsertMembershipProjection(manager, {
+        companyId: data.companyId,
+        userId: data.userId,
+        role: data.toRole,
+        status: 'active',
+      });
+    } else if (envelope.type === 'company-member.removed') {
+      const data = envelope.data as unknown as { companyId: string; userId: string };
+      await removeMembershipProjection(manager, data.companyId, data.userId);
     } else {
       logger.info({ type: envelope.type }, '[companies-service] no handler for this event type - ignoring');
     }

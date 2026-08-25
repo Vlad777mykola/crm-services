@@ -27,15 +27,21 @@ export class MembersService {
     return this.listQuery.execute({ companyId, requesterUserId });
   }
 
-  async invite(companyId: string, requesterUserId: string, email: string): Promise<MemberWithUser> {
-    return this.inviteCommand.execute({ companyId, requesterUserId, email });
+  async invite(companyId: string, requesterUserId: string, email: string, correlationId?: string): Promise<MemberWithUser> {
+    return this.inviteCommand.execute({ companyId, requesterUserId, email, correlationId });
   }
 
-  async updateStatus(companyId: string, requesterUserId: string, memberId: string, status: 'active' | 'removed'): Promise<MemberRow> {
-    return this.updateStatusCommand.execute({ companyId, requesterUserId, memberId, status });
+  async updateStatus(
+    companyId: string,
+    requesterUserId: string,
+    memberId: string,
+    status: 'active' | 'removed',
+    correlationId?: string,
+  ): Promise<MemberRow> {
+    return this.updateStatusCommand.execute({ companyId, requesterUserId, memberId, status, correlationId });
   }
 
-  async remove(companyId: string, requesterUserId: string, memberId: string): Promise<MemberRow> {
-    return this.updateStatus(companyId, requesterUserId, memberId, 'removed');
+  async remove(companyId: string, requesterUserId: string, memberId: string, correlationId?: string): Promise<MemberRow> {
+    return this.updateStatus(companyId, requesterUserId, memberId, 'removed', correlationId);
   }
 }

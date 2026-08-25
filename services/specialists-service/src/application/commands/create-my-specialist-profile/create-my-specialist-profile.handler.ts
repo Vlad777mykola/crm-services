@@ -41,6 +41,7 @@ export class CreateMySpecialistProfileHandler {
       await this.outbox.record(manager, {
         type: 'specialist.created',
         aggregateId: profile.id,
+        correlationId: command.correlationId ?? null,
         payload: { specialistProfileId: profile.id, userId: command.userId, displayName: profile.displayName },
       });
 

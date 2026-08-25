@@ -30,6 +30,7 @@ export class AcceptSpecialistCompanyRequestHandler {
       await this.outbox.record(manager, {
         type: 'company-specialist.accepted',
         aggregateId: relation.id,
+        correlationId: command.correlationId ?? null,
         payload: { companyId: request.companyId, specialistProfileId: profile.id },
       });
     });

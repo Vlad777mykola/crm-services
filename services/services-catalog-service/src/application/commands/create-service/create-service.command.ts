@@ -4,4 +4,5 @@ export interface CreateServiceCommand {
   companyId: string;
   requesterUserId: string;
   input: CreateServiceRequestInput;
+  correlationId?: string;
 }

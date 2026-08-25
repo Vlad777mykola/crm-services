@@ -22,8 +22,13 @@ export class ServicesService {
     this.updateCommand = new UpdateServiceHandler(dataSource, this.repo, outbox);
   }
 
-  async create(companyId: string, requesterUserId: string, input: CreateServiceRequestInput): Promise<ServiceRow> {
-    return this.createCommand.execute({ companyId, requesterUserId, input });
+  async create(
+    companyId: string,
+    requesterUserId: string,
+    input: CreateServiceRequestInput,
+    correlationId?: string,
+  ): Promise<ServiceRow> {
+    return this.createCommand.execute({ companyId, requesterUserId, input, correlationId });
   }
 
   async listByCompany(companyId: string, requesterUserId: string | undefined): Promise<ServiceRow[]> {
@@ -43,8 +48,9 @@ export class ServicesService {
     serviceId: string,
     requesterUserId: string,
     patch: UpdateServiceRequestInput,
+    correlationId?: string,
   ): Promise<ServiceRow> {
-    return this.updateCommand.execute({ companyId, serviceId, requesterUserId, patch });
+    return this.updateCommand.execute({ companyId, serviceId, requesterUserId, patch, correlationId });
   }
 
   async getStatusHistory(companyId: string, serviceId: string, requesterUserId: string): Promise<StatusHistoryRow[]> {

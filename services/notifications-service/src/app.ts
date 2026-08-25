@@ -1,10 +1,16 @@
 import express, { type Express } from 'express';
 import type { DataSource } from 'typeorm';
 
-import { errorHandler } from './http/error-handler.js';
-import { notFoundHandler } from './http/not-found-handler.js';
+import {
+  createErrorHandler,
+  createHealthRouter,
+  createNotFoundHandler,
+  createRequestIdMiddleware,
+  createRequestLogger,
+} from '@crm/http-kit';
+
 import { createNotificationsRouter } from './http/routes/notifications.routes.js';
-import { requestLogger } from './http/request-logger.js';
+import { logger } from './logger.js';
 import type { NotificationsHttpService } from './modules/notifications/notifications.service.js';
 import type { RabbitMqConsumer } from './rabbitmq/consumer.js';
 
@@ -15,29 +21,25 @@ export function createApp(
 ): Express {
   const app = express();
 
+  app.use(createRequestIdMiddleware());
   app.use(express.json());
-  app.use(requestLogger);
+  app.use(createRequestLogger(logger));
 
-  app.get('/health/live', (_req, res) => {
-    res.status(200).json({ status: 'ok' });
-  });
-
-  app.get('/health/ready', (_req, res) => {
-    dataSource
-      .query('SELECT 1')
-      .then(() => {
+  app.use(
+    createHealthRouter({
+      readiness: async () => {
+        await dataSource.query('SELECT 1');
         if (!consumer.isReady()) {
           throw new Error('RabbitMQ is not connected');
         }
-        res.status(200).json({ status: 'ok' });
-      })
-      .catch(() => res.status(503).json({ status: 'not-ready' }));
-  });
+      },
+    }),
+  );
 
   app.use(createNotificationsRouter(notificationsService));
 
-  app.use(notFoundHandler);
-  app.use(errorHandler);
+  app.use(createNotFoundHandler());
+  app.use(createErrorHandler(logger));
 
   return app;
 }

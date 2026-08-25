@@ -19,7 +19,11 @@ export function createSpecialistsRouter(specialistsService: SpecialistsService):
 
   router.post('/specialists/profile', requireAuth, validate(createSpecialistProfileRequestSchema, 'body'), async (req, res, next) => {
     try {
-      const profile = await specialistsService.createMine(req.auth!.userId, req.body as CreateSpecialistProfileRequestInput);
+      const profile = await specialistsService.createMine(
+        req.auth!.userId,
+        req.body as CreateSpecialistProfileRequestInput,
+        req.context.requestId,
+      );
       res.status(201).json({ message: 'Specialist profile created', data: profile });
     } catch (err) {
       next(err);
@@ -38,7 +42,11 @@ export function createSpecialistsRouter(specialistsService: SpecialistsService):
 
   router.patch('/specialists/me', requireAuth, validate(updateSpecialistProfileRequestSchema, 'body'), async (req, res, next) => {
     try {
-      const profile = await specialistsService.updateMine(req.auth!.userId, req.body as UpdateSpecialistProfileRequestInput);
+      const profile = await specialistsService.updateMine(
+        req.auth!.userId,
+        req.body as UpdateSpecialistProfileRequestInput,
+        req.context.requestId,
+      );
       res.status(200).json({ message: 'Specialist profile updated', data: profile });
     } catch (err) {
       next(err);

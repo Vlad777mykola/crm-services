@@ -4,4 +4,5 @@ export interface AssignServiceSpecialistCommand {
   serviceId: string;
   requesterUserId: string;
   input: AssignServiceSpecialistInput;
+  correlationId?: string;
 }

@@ -3,4 +3,5 @@ import type { CreateSpecialistProfileRequestInput } from '../../../modules/speci
 export interface CreateMySpecialistProfileCommand {
   userId: string;
   input: CreateSpecialistProfileRequestInput;
+  correlationId?: string;
 }

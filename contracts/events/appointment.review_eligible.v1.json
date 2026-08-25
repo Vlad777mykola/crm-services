@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crm-services/contracts/events/appointment.review_eligible.v1.json",
+  "title": "appointment.review_eligible.v1",
+  "description": "Published when an appointment has enough completed-appointment context for reviews-service to accept a review. Exchange: domain.events. Routing key: appointment.review_eligible.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["appointmentId", "companyId", "serviceId", "clientUserId", "specialistProfileId", "serviceName", "completedAt"],
+  "properties": {
+    "appointmentId": { "type": "string", "format": "uuid" },
+    "companyId": { "type": "string", "format": "uuid" },
+    "serviceId": { "type": "string", "format": "uuid" },
+    "clientUserId": { "type": "string", "format": "uuid" },
+    "specialistProfileId": { "type": ["string", "null"], "format": "uuid" },
+    "serviceName": { "type": "string" },
+    "completedAt": { "type": "string", "format": "date-time" }
+  }
+}

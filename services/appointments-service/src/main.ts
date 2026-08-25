@@ -36,6 +36,8 @@ async function bootstrap(): Promise<void> {
       { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'service.updated' },
       { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'specialist-service.assigned' },
       { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'specialist-service.removed' },
+      { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'user.profile_created' },
+      { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'user.profile_updated' },
       { exchange: ANALYTICS_EVENTS_EXCHANGE, routingKey: 'ai.appointment_recommendation_created' },
     ],
     onMessage: async (parsedBody) => {

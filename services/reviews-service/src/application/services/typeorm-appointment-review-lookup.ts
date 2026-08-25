@@ -1,6 +1,6 @@
 import type { DataSource } from 'typeorm';
 
-import { findCompletedAppointmentForClient } from '../../db/legacy-appointments-bridge.js';
+import { findCompletedAppointmentForClient } from '../../db/appointment-review-eligibility-projection-repository.js';
 import type { AppointmentForReview, AppointmentReviewLookup } from '../ports/appointment-review-lookup.js';
 
 export class TypeOrmAppointmentReviewLookup implements AppointmentReviewLookup {

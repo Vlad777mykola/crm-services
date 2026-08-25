@@ -35,6 +35,7 @@ export class CreateServiceHandler {
       await this.outbox.record(manager, {
         type: 'service.created',
         aggregateId: service.id,
+        correlationId: command.correlationId ?? null,
         payload: { serviceId: service.id, companyId: command.companyId, name: service.name, status: service.status },
       });
 

@@ -33,3 +33,10 @@ export interface AiRecommendationCreatedData {
   summary: string;
   confidence: number;
 }
+
+export interface UserProfileEventData {
+  userId: string;
+  email: string | null;
+  name: string | null;
+  phone: string | null;
+}

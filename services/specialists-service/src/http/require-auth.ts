@@ -1,40 +1,6 @@
-import type { NextFunction, Request, Response } from 'express';
+import { createOptionalAuth, createRequireAuth } from '@crm/auth-kit';
 
-import { AppError } from '../errors/AppError.js';
-import { verifyAccessToken } from '../security/jwt.js';
+import { env } from '../env.js';
 
-function extractBearerToken(req: Request): string | undefined {
-  const header = req.headers.authorization;
-  if (!header?.startsWith('Bearer ')) return undefined;
-  return header.slice('Bearer '.length);
-}
-
-export function requireAuth(req: Request, _res: Response, next: NextFunction): void {
-  const token = extractBearerToken(req);
-  if (!token) {
-    next(new AppError('Authentication required', 401));
-    return;
-  }
-  try {
-    const { userId } = verifyAccessToken(token);
-    req.auth = { userId };
-    next();
-  } catch {
-    next(new AppError('Invalid or expired access token', 401));
-  }
-}
-
-export function optionalAuth(req: Request, _res: Response, next: NextFunction): void {
-  const token = extractBearerToken(req);
-  if (!token) {
-    next();
-    return;
-  }
-  try {
-    const { userId } = verifyAccessToken(token);
-    req.auth = { userId };
-  } catch {
-    // Ignore invalid/expired tokens on optional-auth routes - treat as anonymous.
-  }
-  next();
-}
+export const requireAuth = createRequireAuth({ jwtSecret: env.JWT_ACCESS_SECRET });
+export const optionalAuth = createOptionalAuth({ jwtSecret: env.JWT_ACCESS_SECRET });

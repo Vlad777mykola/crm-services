@@ -29,6 +29,7 @@ function requestMeta(req: Request): RequestMeta {
   return {
     userAgent: req.headers['user-agent'] ?? null,
     ipAddress: req.ip ?? null,
+    correlationId: req.context.requestId,
   };
 }
 

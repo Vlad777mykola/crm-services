@@ -11,6 +11,7 @@ export type AppointmentDomainEventName =
   | 'appointment.approved'
   | 'appointment.rejected'
   | 'appointment.completed'
+  | 'appointment.review_eligible'
   | 'appointment.cancelled';
 
 export const appointmentEventRouting: Record<AppointmentDomainEventName, { exchange: string; routingKey: string }> = {
@@ -18,6 +19,7 @@ export const appointmentEventRouting: Record<AppointmentDomainEventName, { excha
   'appointment.approved': { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'appointment.approved' },
   'appointment.rejected': { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'appointment.rejected' },
   'appointment.completed': { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'appointment.completed' },
+  'appointment.review_eligible': { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'appointment.review_eligible' },
   'appointment.cancelled': { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'appointment.cancelled' },
 };
 
@@ -25,6 +27,8 @@ export interface RecordOutboxEventInput {
   type: AppointmentDomainEventName;
   payload: Record<string, unknown>;
   aggregateId: string;
+  correlationId?: string | null;
+  causationId?: string | null;
 }
 
 export async function recordOutboxEvent(manager: EntityManager, input: RecordOutboxEventInput): Promise<void> {
@@ -38,6 +42,8 @@ export async function recordOutboxEvent(manager: EntityManager, input: RecordOut
       aggregateType: 'appointment',
       aggregateId: input.aggregateId,
       payload: input.payload,
+      correlationId: input.correlationId ?? null,
+      causationId: input.causationId ?? null,
     }),
   );
 }

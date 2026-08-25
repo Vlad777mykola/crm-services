@@ -12,6 +12,10 @@ export interface PublishResult {
   error?: string;
 }
 
+export interface PublishOptions {
+  correlationId?: string;
+}
+
 const RECONNECT_BASE_MS = 1000;
 const RECONNECT_MAX_MS = 30_000;
 
@@ -40,6 +44,7 @@ export class RabbitMqPublisher {
     exchange: string,
     routingKey: string,
     body: Buffer,
+    options: PublishOptions = {},
   ): Promise<PublishResult> {
     const channel = this.channel;
     if (!channel) {
@@ -71,6 +76,7 @@ export class RabbitMqPublisher {
         body,
         {
           contentType: 'application/json',
+          correlationId: options.correlationId,
           persistent: true,
           mandatory: true,
           messageId: eventId,

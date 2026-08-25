@@ -55,6 +55,7 @@ export class UpdateCompanyHandler {
       await this.outbox.record(manager, {
         type: 'company.updated',
         aggregateId: command.companyId,
+        correlationId: command.correlationId ?? null,
         payload: { companyId: command.companyId, name: updated.name, status: updated.status },
       });
 

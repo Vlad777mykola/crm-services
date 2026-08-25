@@ -88,7 +88,7 @@ export function createCompanySpecialistsRouter(service: CompanySpecialistsServic
     async (req, res, next) => {
       try {
         const { requestId } = req.params as unknown as RequestIdParamsInput;
-        const request = await service.acceptSpecialistCompanyRequest(requestId, req.auth!.userId);
+        const request = await service.acceptSpecialistCompanyRequest(requestId, req.auth!.userId, req.context.requestId);
         res.status(200).json({ message: 'Request accepted', data: request });
       } catch (err) {
         next(err);

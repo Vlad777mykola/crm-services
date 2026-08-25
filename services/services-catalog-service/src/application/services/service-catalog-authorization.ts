@@ -1,6 +1,6 @@
 import type { DataSource } from 'typeorm';
 
-import { findActiveMembershipRole } from '../../db/legacy-company-members-bridge.js';
+import { findActiveMembershipRole } from '../../db/company-membership-projection-repository.js';
 import { AppError } from '../../errors/AppError.js';
 
 export async function requireOwnerOrManager(dataSource: DataSource, companyId: string, userId: string): Promise<void> {

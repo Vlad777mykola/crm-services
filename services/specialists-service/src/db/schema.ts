@@ -117,12 +117,19 @@ export async function ensureSpecialistsSchema(dataSource: DataSource): Promise<v
       "aggregateType" varchar(100) NOT NULL,
       "aggregateId" uuid NOT NULL,
       "payload" jsonb NOT NULL,
+      "correlationId" text,
+      "causationId" text,
       "status" varchar(20) NOT NULL DEFAULT 'pending',
       "attempts" int NOT NULL DEFAULT 0,
       "nextRetryAt" timestamptz NOT NULL DEFAULT now(),
       "createdAt" timestamptz NOT NULL DEFAULT now(),
       "publishedAt" timestamptz
     )
+  `);
+  await dataSource.query(`
+    ALTER TABLE specialists_schema.outbox_events
+      ADD COLUMN IF NOT EXISTS "correlationId" text,
+      ADD COLUMN IF NOT EXISTS "causationId" text
   `);
   await dataSource.query(`
     CREATE INDEX IF NOT EXISTS "IDX_specialists_outbox_events_status" ON specialists_schema.outbox_events ("status")

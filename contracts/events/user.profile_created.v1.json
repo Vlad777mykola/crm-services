@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crm-services/contracts/events/user.profile_created.v1.json",
+  "title": "user.profile_created.v1",
+  "description": "Published when users-service creates a user profile from auth.user_registered. Exchange: domain.events. Routing key: user.profile_created.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["userId", "email", "name", "phone"],
+  "properties": {
+    "userId": { "type": "string", "format": "uuid" },
+    "email": { "type": "string", "format": "email" },
+    "name": { "type": "string", "minLength": 1 },
+    "phone": { "type": ["string", "null"] }
+  }
+}

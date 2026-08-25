@@ -66,6 +66,22 @@ export async function ensureCompaniesSchema(dataSource: DataSource): Promise<voi
   `);
 
   await dataSource.query(`
+    CREATE TABLE IF NOT EXISTS companies_schema.company_membership_projection (
+      "companyId" uuid NOT NULL,
+      "userId" uuid NOT NULL,
+      "role" text NOT NULL,
+      "status" text NOT NULL,
+      "createdAt" timestamptz NOT NULL DEFAULT now(),
+      "updatedAt" timestamptz NOT NULL DEFAULT now(),
+      PRIMARY KEY ("companyId", "userId")
+    )
+  `);
+  await dataSource.query(`
+    CREATE INDEX IF NOT EXISTS "IDX_companies_membership_projection_userId"
+    ON companies_schema.company_membership_projection ("userId")
+  `);
+
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS companies_schema.processed_events (
       "event_id" uuid NOT NULL,
       "consumer_name" varchar(100) NOT NULL,
@@ -83,12 +99,19 @@ export async function ensureCompaniesSchema(dataSource: DataSource): Promise<voi
       "aggregateType" varchar(100) NOT NULL,
       "aggregateId" uuid NOT NULL,
       "payload" jsonb NOT NULL,
+      "correlationId" text,
+      "causationId" text,
       "status" varchar(20) NOT NULL DEFAULT 'pending',
       "attempts" int NOT NULL DEFAULT 0,
       "nextRetryAt" timestamptz NOT NULL DEFAULT now(),
       "createdAt" timestamptz NOT NULL DEFAULT now(),
       "publishedAt" timestamptz
     )
+  `);
+  await dataSource.query(`
+    ALTER TABLE companies_schema.outbox_events
+      ADD COLUMN IF NOT EXISTS "correlationId" text,
+      ADD COLUMN IF NOT EXISTS "causationId" text
   `);
   await dataSource.query(`
     CREATE INDEX IF NOT EXISTS "IDX_companies_outbox_events_eventType" ON companies_schema.outbox_events ("eventType")

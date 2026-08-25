@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://crm-services/contracts/events/user.profile_updated.v1.json",
+  "title": "user.profile_updated.v1",
+  "description": "Published when users-service updates a user profile via PATCH /users/me. Exchange: domain.events. Routing key: user.profile_updated.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["userId", "email", "name", "phone"],
+  "properties": {
+    "userId": { "type": "string", "format": "uuid" },
+    "email": { "type": ["string", "null"], "format": "email" },
+    "name": { "type": "string", "minLength": 1 },
+    "phone": { "type": ["string", "null"] }
+  }
+}

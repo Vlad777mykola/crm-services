@@ -53,6 +53,7 @@ export class UpdateMySpecialistProfileHandler {
       await this.outbox.record(manager, {
         type: 'specialist.updated',
         aggregateId: updated.id,
+        correlationId: command.correlationId ?? null,
         payload: { specialistProfileId: updated.id, userId: command.userId, status: updated.status },
       });
 

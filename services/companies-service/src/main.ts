@@ -8,7 +8,7 @@ import { ProcessedEventsRepository } from './idempotency/processed-events-reposi
 import { logger } from './logger.js';
 import { CompaniesService } from './modules/companies/companies.service.js';
 import { consumeFromRabbitMq } from './rabbitmq/consumer.js';
-import { ANALYTICS_EVENTS_EXCHANGE, DOMAIN_EVENTS_DLX } from './rabbitmq/topology.js';
+import { ANALYTICS_EVENTS_EXCHANGE, DOMAIN_EVENTS_DLX, DOMAIN_EVENTS_EXCHANGE } from './rabbitmq/topology.js';
 
 const QUEUE_NAME = 'companies-service.q';
 
@@ -25,7 +25,12 @@ async function bootstrap(): Promise<void> {
     url: env.RABBITMQ_URL,
     queue: QUEUE_NAME,
     deadLetterExchange: DOMAIN_EVENTS_DLX,
-    bindings: [{ exchange: ANALYTICS_EVENTS_EXCHANGE, routingKey: 'ai.company_insight_created' }],
+    bindings: [
+      { exchange: ANALYTICS_EVENTS_EXCHANGE, routingKey: 'ai.company_insight_created' },
+      { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'company-member.added' },
+      { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'company-member.role_changed' },
+      { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'company-member.removed' },
+    ],
     onMessage: async (parsedBody) => {
       const envelope = parsedBody as { id: string; type: string; data: Record<string, unknown> };
       await processInboundEvent({ dataSource, processedEvents, insights }, envelope);

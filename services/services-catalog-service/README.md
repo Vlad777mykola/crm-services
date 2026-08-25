@@ -28,7 +28,7 @@ implemented, matches legacy (no new functionality without approval).
 
 `services_schema`: `services`, `service_specialists`, `service_status_history`
 (new, per `docs/architecture/shared-polymorphic-table-audit.md`),
-`processed_events`, `outbox_events`. Real table names only —
+`company_membership_projection`, `processed_events`, `outbox_events`. Real table names only —
 **not** `company_services`/`specialist_company_services` (neither ever
 existed, see `docs/architecture/table-ownership-matrix.md`).
 
@@ -41,24 +41,29 @@ existed, see `docs/architecture/table-ownership-matrix.md`).
 | `specialist-service.assigned` | A specialist is assigned to a service. |
 | `specialist-service.removed` | A specialist is unassigned from a service. |
 
-No consumers exist yet — reserved for appointments-service (Phase 9).
+## Consumed events
+
+| Event | Purpose |
+|---|---|
+| `company-member.added` | Upserts local owner/manager membership projection. |
+| `company-member.role_changed` | Updates local owner/manager membership projection. |
+| `company-member.removed` | Removes the local membership projection row. |
 
 ## Known temporary compromise
 
-Three cross-schema reads, same pattern/rationale as other services in this
+Two cross-schema reads, same pattern/rationale as other services in this
 phase of the migration:
 
-- [`src/db/legacy-company-members-bridge.ts`](src/db/legacy-company-members-bridge.ts) —
-  owner/manager permission checks on create/update/status-history/assign/unassign,
-  and visibility checks on draft/suspended services.
 - [`src/db/legacy-specialists-bridge.ts`](src/db/legacy-specialists-bridge.ts) —
   resolves "my specialist profile id" from `userId` for `GET /specialists/me/services`.
 - [`src/db/legacy-company-specialists-bridge.ts`](src/db/legacy-company-specialists-bridge.ts) —
   checks a specialist is an active company-specialist before assigning them to
   a service.
 
-None are required to fix by the checklist, but all are candidates for a
-future event-fed local projection instead of direct cross-schema reads.
+The company-members bridge has been replaced by the local
+`company_membership_projection` table fed from company-member domain events.
+The remaining bridges are candidates for future event-fed local projections
+instead of direct cross-schema reads.
 
 ## Required environment variables
 

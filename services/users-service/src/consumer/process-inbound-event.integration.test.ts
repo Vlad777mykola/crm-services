@@ -8,6 +8,7 @@ import { createDataSource } from '../db/data-source.js';
 import { ensureUsersSchema } from '../db/schema.js';
 import { UserRepository } from '../db/user-repository.js';
 import { CONSUMER_NAME, ProcessedEventsRepository } from '../idempotency/processed-events-repository.js';
+import { OutboxRepository } from '../outbox/outbox-repository.js';
 
 const hasDatabase = process.env.USERS_INTEGRATION_TEST === '1';
 
@@ -33,6 +34,7 @@ async function profileExists(dataSource: DataSource, userId: string): Promise<bo
 describe.skipIf(!hasDatabase)('processInboundEvent integration', () => {
   let dataSource: DataSource;
   const processedEvents = new ProcessedEventsRepository();
+  const outbox = new OutboxRepository();
   let users: UserRepository;
 
   beforeAll(async () => {
@@ -50,14 +52,17 @@ describe.skipIf(!hasDatabase)('processInboundEvent integration', () => {
     await dataSource.query('DELETE FROM users_schema.user_profiles');
     await dataSource.query('DELETE FROM users_schema.users');
     await dataSource.query('DELETE FROM users_schema.processed_events');
+    await dataSource.query('DELETE FROM users_schema.outbox_events');
   });
+
+  const deps = () => ({ dataSource, processedEvents, users, outbox });
 
   it('happy path: processed_events and profile created', async () => {
     const eventId = randomUUID();
     const userId = randomUUID();
 
     await processInboundEvent(
-      { dataSource, processedEvents, users },
+      deps(),
       {
         id: eventId,
         type: 'auth.user_registered',
@@ -84,6 +89,7 @@ describe.skipIf(!hasDatabase)('processInboundEvent integration', () => {
           dataSource,
           processedEvents,
           users,
+          outbox,
           afterMarkProcessed: () => {
             throw new Error('simulated handler failure');
           },
@@ -95,7 +101,7 @@ describe.skipIf(!hasDatabase)('processInboundEvent integration', () => {
     expect(await countProcessedEvents(dataSource, eventId)).toBe(0);
     expect(await profileExists(dataSource, userId)).toBe(false);
 
-    await processInboundEvent({ dataSource, processedEvents, users }, envelope);
+    await processInboundEvent(deps(), envelope);
 
     expect(await countProcessedEvents(dataSource, eventId)).toBe(1);
     expect(await profileExists(dataSource, userId)).toBe(true);
@@ -110,8 +116,8 @@ describe.skipIf(!hasDatabase)('processInboundEvent integration', () => {
       data: { userId, email: 'carol@example.com', name: 'Carol' },
     };
 
-    await processInboundEvent({ dataSource, processedEvents, users }, envelope);
-    await processInboundEvent({ dataSource, processedEvents, users }, envelope);
+    await processInboundEvent(deps(), envelope);
+    await processInboundEvent(deps(), envelope);
 
     expect(await countProcessedEvents(dataSource, eventId)).toBe(1);
     expect(await profileExists(dataSource, userId)).toBe(true);

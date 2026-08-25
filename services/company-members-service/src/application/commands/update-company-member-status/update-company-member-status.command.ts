@@ -3,4 +3,5 @@ export interface UpdateCompanyMemberStatusCommand {
   requesterUserId: string;
   memberId: string;
   status: 'active' | 'removed';
+  correlationId?: string;
 }

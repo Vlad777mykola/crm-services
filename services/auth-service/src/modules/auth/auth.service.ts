@@ -10,6 +10,7 @@ import { SessionRepository } from '../../db/session-repository.js';
 export interface RequestMeta {
   userAgent: string | null;
   ipAddress: string | null;
+  correlationId?: string;
 }
 
 /**

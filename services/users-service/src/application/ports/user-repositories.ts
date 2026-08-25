@@ -21,5 +21,10 @@ export interface UserReadRepository {
 
 export interface UserWriteRepository {
   createProfileIfMissing(manager: EntityManager, input: CreateUserProfileIfMissingInput): Promise<void>;
-  updateProfile(userId: string, patch: UpdateUserProfilePatch): Promise<UserProfileRow | null>;
+  updateProfile(
+    manager: EntityManager,
+    userId: string,
+    patch: UpdateUserProfilePatch,
+  ): Promise<UserProfileRow | null>;
+  withTransaction<T>(fn: (manager: EntityManager) => Promise<T>): Promise<T>;
 }

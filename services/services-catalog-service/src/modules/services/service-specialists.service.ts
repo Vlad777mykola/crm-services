@@ -28,16 +28,22 @@ export class ServiceSpecialistsService {
     serviceId: string,
     requesterUserId: string,
     input: AssignServiceSpecialistInput,
+    correlationId?: string,
   ): Promise<ServiceSpecialistRow> {
-    return this.assignCommand.execute({ serviceId, requesterUserId, input });
+    return this.assignCommand.execute({ serviceId, requesterUserId, input, correlationId });
   }
 
   async list(serviceId: string, requesterUserId: string | undefined): Promise<ServiceSpecialistWithSpecialistRow[]> {
     return this.queries.list(serviceId, requesterUserId);
   }
 
-  async unassign(serviceId: string, specialistProfileId: string, requesterUserId: string): Promise<ServiceSpecialistRow> {
-    return this.unassignCommand.execute({ serviceId, specialistProfileId, requesterUserId });
+  async unassign(
+    serviceId: string,
+    specialistProfileId: string,
+    requesterUserId: string,
+    correlationId?: string,
+  ): Promise<ServiceSpecialistRow> {
+    return this.unassignCommand.execute({ serviceId, specialistProfileId, requesterUserId, correlationId });
   }
 
   async listMine(userId: string): Promise<ServiceSpecialistRow[]> {

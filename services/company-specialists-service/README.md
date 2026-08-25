@@ -26,7 +26,8 @@ naming collision noted in `docs/architecture/route-inventory.md`.
 ## Owned tables / schema
 
 `company_specialists_schema`: `company_specialist_requests`,
-`company_specialists`, `processed_events`, `outbox_events`.
+`company_specialists`, `company_membership_projection`, `processed_events`,
+`outbox_events`.
 
 ## Published events
 
@@ -40,22 +41,28 @@ published** — legacy has no code path that removes a relation (no removal
 endpoint exists today). `company-specialist.requested`/`.rejected` were not
 added — no confirmed consumer (see `docs/architecture/event-catalog.md`).
 
+## Consumed events
+
+| Event | Purpose |
+|---|---|
+| `company-member.added` | Upserts local owner/manager membership projection. |
+| `company-member.role_changed` | Updates local owner/manager membership projection. |
+| `company-member.removed` | Removes the local membership projection row. |
+
 ## Known temporary compromise
 
-Two cross-schema reads, same pattern/rationale as
-`services/companies-service/src/db/legacy-company-members-bridge.ts`:
+One cross-schema read remains, same pattern/rationale as other temporary
+bridges:
 
-- [`src/db/legacy-company-members-bridge.ts`](src/db/legacy-company-members-bridge.ts) —
-  reads `company_members_schema.company_members` directly to check
-  owner/manager permission on `POST .../requests` and
-  `GET .../specialist-requests`.
 - [`src/db/legacy-specialists-bridge.ts`](src/db/legacy-specialists-bridge.ts) —
   reads `specialists_schema.specialist_profiles` directly to validate a
   `specialistProfileId` exists, and to resolve "my specialist profile id"
   from `userId`.
 
-Neither is required to fix by the checklist, but both are candidates for a
-future event-fed local projection instead of direct cross-schema reads.
+The company-members bridge has been replaced by the local
+`company_membership_projection` table fed from company-member domain events.
+The remaining specialists bridge is a candidate for a future event-fed local
+projection instead of direct cross-schema reads.
 
 ## Required environment variables
 

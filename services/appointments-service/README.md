@@ -34,7 +34,7 @@ all explicitly **not implemented** (confirmed not to exist in legacy either).
   safe to drop and rebuild.
 - `processed_events`, `outbox_events`.
 
-No data migration — every table starts empty; the four projections backfill
+No data migration — every table starts empty; the local projections backfill
 themselves as producers republish/re-emit their events (or immediately for
 anything created after this service goes live).
 
@@ -42,9 +42,10 @@ anything created after this service goes live).
 
 `company.created`, `company.updated`, `company-member.added`,
 `company-member.removed`, `service.created`, `service.updated`,
-`specialist-service.assigned`, `specialist-service.removed` — all purely to
-keep the four local projections warm. **No cross-schema SQL** for any of
-these (Task 9.3). Also consumes `ai.appointment_recommendation_created` (from
+`specialist-service.assigned`, `specialist-service.removed`,
+`user.profile_created`, `user.profile_updated` — all purely to keep local
+projections warm. **No cross-schema SQL** for any of these (Task 9.3). Also
+consumes `ai.appointment_recommendation_created` (from
 `analytics.events`, published by `ai-service`) to feed
 `appointment_recommendation_projections` — moved from
 `backend-projection-service` in Phase 12 (see
@@ -60,13 +61,6 @@ from legacy): `appointment.requested`, `appointment.approved`,
 
 ## Known gaps / temporary compromises
 
-- **`clientName` cross-schema read** (`src/db/legacy-users-bridge.ts`):
-  `appointment.requested.v1.json`/`appointment.cancelled.v1.json` require a
-  `clientName` string, but there is no `user.*` event carrying a display name
-  today (`user.profile_created` is unconfirmed/unimplemented — see
-  `docs/architecture/event-catalog.md`). Reads `users_schema.user_profiles`
-  directly instead of via a projection. Remove once users-service publishes a
-  profile-changed event and a real `appointment_client_projection` exists.
 - **`hasReview` is always `false`**: legacy computed this per-appointment
   response field via a same-database join against `reviews`.
   `review.received.v1.json` does not carry `appointmentId`, so a projection

@@ -9,10 +9,12 @@ import type {
 import type { UserRepository } from '../db/user-repository.js';
 import type { ProcessedEventsRepository } from '../idempotency/processed-events-repository.js';
 import { logger } from '../logger.js';
+import type { OutboxRepository } from '../outbox/outbox-repository.js';
 
 export interface InboundEnvelope {
   id: string;
   type: string;
+  correlationId?: string;
   data: Record<string, unknown>;
 }
 
@@ -20,6 +22,7 @@ export interface ProcessInboundEventDeps {
   dataSource: DataSource;
   processedEvents: ProcessedEventsRepository;
   users: UserRepository;
+  outbox: OutboxRepository;
   /** Test hook: throw after processed_events insert to verify rollback. */
   afterMarkProcessed?: () => void | Promise<void>;
 }
@@ -42,9 +45,10 @@ export async function processInboundEvent(
     await deps.afterMarkProcessed?.();
 
     if (envelope.type === 'auth.user_registered') {
-      await new CreateProfileFromAuthUserRegisteredHandler(deps.users).handle(
+      await new CreateProfileFromAuthUserRegisteredHandler(deps.users, deps.outbox).handle(
         manager,
         envelope.data as unknown as AuthUserRegisteredData,
+        { correlationId: envelope.correlationId ?? envelope.id, causationId: envelope.id },
       );
       return;
     }

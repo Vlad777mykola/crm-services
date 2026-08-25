@@ -29,7 +29,12 @@ export function createServicesRouter(servicesService: ServicesService): Router {
     async (req, res, next) => {
       try {
         const { companyId } = req.params as unknown as CompanyIdParamsInput;
-        const service = await servicesService.create(companyId, req.auth!.userId, req.body as CreateServiceRequestInput);
+        const service = await servicesService.create(
+          companyId,
+          req.auth!.userId,
+          req.body as CreateServiceRequestInput,
+          req.context.requestId,
+        );
         res.status(201).json({ message: 'Service created', data: service });
       } catch (err) {
         next(err);
@@ -65,6 +70,7 @@ export function createServicesRouter(servicesService: ServicesService): Router {
           serviceId,
           req.auth!.userId,
           req.body as UpdateServiceRequestInput,
+          req.context.requestId,
         );
         res.status(200).json({ message: 'Service updated', data: service });
       } catch (err) {

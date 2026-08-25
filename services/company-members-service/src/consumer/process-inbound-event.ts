@@ -14,6 +14,8 @@ import { logger } from '../logger.js';
 export interface InboundEnvelope {
   id: string;
   type: string;
+  correlationId?: string | null;
+  causationId?: string | null;
   data: Record<string, unknown>;
 }
 
@@ -35,6 +37,7 @@ export async function processInboundEvent(deps: ProcessInboundEventDeps, envelop
       await new CreateOwnerFromCompanyCreatedHandler(deps.members, new TypeOrmCompanyMemberEventOutbox()).handle(
         manager,
         envelope.data as unknown as CompanyCreatedData,
+        { correlationId: envelope.correlationId ?? envelope.id, causationId: envelope.id },
       );
       return;
     }

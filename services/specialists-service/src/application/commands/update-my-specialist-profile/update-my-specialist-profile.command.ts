@@ -3,4 +3,5 @@ import type { UpdateSpecialistProfileRequestInput } from '../../../modules/speci
 export interface UpdateMySpecialistProfileCommand {
   userId: string;
   patch: UpdateSpecialistProfileRequestInput;
+  correlationId?: string;
 }

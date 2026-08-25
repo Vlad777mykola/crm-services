@@ -29,8 +29,13 @@ export class ReviewsService {
     this.listSpecialistReviewsQuery = new ListSpecialistReviewsHandler(reviews);
   }
 
-  async create(appointmentId: string, clientUserId: string, input: CreateReviewInput): Promise<ReviewRow> {
-    return this.createReviewCommand.execute({ appointmentId, clientUserId, input });
+  async create(
+    appointmentId: string,
+    clientUserId: string,
+    input: CreateReviewInput,
+    correlationId?: string,
+  ): Promise<ReviewRow> {
+    return this.createReviewCommand.execute({ appointmentId, clientUserId, input, correlationId });
   }
 
   listForCompany(companyId: string): Promise<ReviewRow[]> {

@@ -71,8 +71,12 @@ export class CompanySpecialistsService {
     return this.listMyCompaniesQuery.execute({ userId });
   }
 
-  async acceptSpecialistCompanyRequest(requestId: string, userId: string): Promise<CompanySpecialistRequestRow> {
-    return this.acceptRequestCommand.execute({ requestId, userId });
+  async acceptSpecialistCompanyRequest(
+    requestId: string,
+    userId: string,
+    correlationId?: string,
+  ): Promise<CompanySpecialistRequestRow> {
+    return this.acceptRequestCommand.execute({ requestId, userId, correlationId });
   }
 
   async rejectSpecialistCompanyRequest(requestId: string, userId: string): Promise<CompanySpecialistRequestRow> {

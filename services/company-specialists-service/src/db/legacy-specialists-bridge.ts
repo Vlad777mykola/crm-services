@@ -1,12 +1,11 @@
 import type { DataSource, EntityManager } from 'typeorm';
 
 /**
- * TEMPORARY, EXPLICITLY FLAGGED CROSS-SCHEMA READ - same pattern/rationale as
- * legacy-company-members-bridge.ts. Needs specialists-service's data to
- * validate a `specialistProfileId` exists on `sendSpecialistRequest`, and to
- * resolve "my specialist profile id" from a `userId` for the
- * specialist-facing endpoints. No public lookup endpoint exists on
- * specialists-service yet.
+ * TEMPORARY, EXPLICITLY FLAGGED CROSS-SCHEMA READ. Needs
+ * specialists-service's data to validate a `specialistProfileId` exists on
+ * `sendSpecialistRequest`, and to resolve "my specialist profile id" from a
+ * `userId` for the specialist-facing endpoints. No local specialist profile
+ * projection exists here yet.
  */
 
 export interface SpecialistProfileRow {

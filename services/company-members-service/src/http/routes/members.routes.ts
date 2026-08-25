@@ -42,7 +42,7 @@ export function createMembersRouter(membersService: MembersService): Router {
       try {
         const { companyId } = req.params as unknown as CompanyIdParamsInput;
         const { email } = req.body as InviteMemberRequestInput;
-        const member = await membersService.invite(companyId, req.auth!.userId, email);
+        const member = await membersService.invite(companyId, req.auth!.userId, email, req.context.requestId);
         res.status(201).json({ message: 'Member added', data: member });
       } catch (err) {
         next(err);
@@ -59,7 +59,13 @@ export function createMembersRouter(membersService: MembersService): Router {
       try {
         const { companyId, memberId } = req.params as unknown as MemberIdParamsInput;
         const { status } = req.body as UpdateMemberRequestInput;
-        const member = await membersService.updateStatus(companyId, req.auth!.userId, memberId, status);
+        const member = await membersService.updateStatus(
+          companyId,
+          req.auth!.userId,
+          memberId,
+          status,
+          req.context.requestId,
+        );
         res.status(200).json({ message: 'Member updated', data: member });
       } catch (err) {
         next(err);
@@ -74,7 +80,7 @@ export function createMembersRouter(membersService: MembersService): Router {
     async (req, res, next) => {
       try {
         const { companyId, memberId } = req.params as unknown as MemberIdParamsInput;
-        const member = await membersService.remove(companyId, req.auth!.userId, memberId);
+        const member = await membersService.remove(companyId, req.auth!.userId, memberId, req.context.requestId);
         res.status(200).json({ message: 'Member removed', data: member });
       } catch (err) {
         next(err);

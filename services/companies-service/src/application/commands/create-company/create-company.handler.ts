@@ -39,6 +39,7 @@ export class CreateCompanyHandler {
       await this.outbox.record(manager, {
         type: 'company.created',
         aggregateId: company.id,
+        correlationId: command.correlationId ?? null,
         payload: {
           companyId: company.id,
           name: company.name,

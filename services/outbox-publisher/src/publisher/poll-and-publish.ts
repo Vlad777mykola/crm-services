@@ -1,5 +1,3 @@
-import { randomUUID } from 'node:crypto';
-
 import type { OutboxRepository, OutboxRow } from '../db/outbox-repository.js';
 import { env } from '../env.js';
 import { logger } from '../logger.js';
@@ -11,13 +9,15 @@ export function computeBackoffMs(attempts: number): number {
 }
 
 function toWireEnvelope(row: OutboxRow): Record<string, unknown> {
+  const correlationId = row.correlationId ?? row.id;
+
   return {
     id: row.id,
     type: row.eventType,
     source: 'outbox-publisher',
     version: '1.0',
     time: row.createdAt.toISOString(),
-    correlationId: row.correlationId ?? randomUUID(),
+    correlationId,
     causationId: row.causationId ?? null,
     data: row.payload,
   };
@@ -37,8 +37,11 @@ export async function publishPendingBatch(repository: OutboxRepository, publishe
 
   for (const row of rows) {
     try {
-      const body = Buffer.from(JSON.stringify(toWireEnvelope(row)));
-      const result = await publisher.publishConfirmed(row.id, row.exchange, row.routingKey, body);
+      const envelope = toWireEnvelope(row);
+      const body = Buffer.from(JSON.stringify(envelope));
+      const result = await publisher.publishConfirmed(row.id, row.exchange, row.routingKey, body, {
+        correlationId: String(envelope.correlationId),
+      });
 
       if (result.ok) {
         try {

@@ -13,6 +13,10 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@crm/auth-kit": "0.0.0",
+    "@crm/http-kit": "0.0.0",
+    "@crm/messaging-kit": "0.0.0",
+    "amqplib": "^0.10.9",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
@@ -28,6 +32,7 @@
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^26.1.2",
+    "@types/amqplib": "^0.10.7",
     "@types/pg": "^8.11.6",
     "eslint": "^10.8.0",
     "globals": "^17.8.0",

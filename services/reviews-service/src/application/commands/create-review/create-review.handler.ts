@@ -47,6 +47,7 @@ export class CreateReviewHandler {
       await this.outbox.record(manager, {
         type: 'review.received',
         aggregateId: review.id,
+        correlationId: command.correlationId ?? null,
         payload: {
           reviewId: review.id,
           companyId: review.companyId,

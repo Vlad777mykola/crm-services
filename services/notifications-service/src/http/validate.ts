@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 import type { ZodType } from 'zod';
 
-import { AppError } from '../errors/AppError.js';
+import { AppError } from '@crm/http-kit';
 
 type ValidationTarget = 'body' | 'params';
 

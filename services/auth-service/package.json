@@ -13,6 +13,8 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@crm/auth-kit": "0.0.0",
+    "@crm/http-kit": "0.0.0",
     "@crm/messaging-kit": "0.0.0",
     "amqplib": "^0.10.9",
     "bcryptjs": "^3.0.3",

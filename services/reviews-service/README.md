@@ -17,30 +17,19 @@ starts with `/reviews`):
 ## Owned tables / schema (`reviews_schema`)
 
 - `reviews` (new, empty — no data migration).
-- `processed_events`, `outbox_events` (reserved for consistency; no consumer
-  exists in this phase).
+- `appointment_review_eligibility_projection` (fed by appointments-service).
+- `processed_events`, `outbox_events`.
 
 ## Consumed events
 
-None.
+| Event | Purpose |
+|---|---|
+| `appointment.review_eligible` | Upserts completed appointment context used to validate and denormalize new reviews. |
 
 ## Published events
 
 Reuses the existing `review.received.v1.json` contract as-is (Task 10.4 — no
 v2, payload unchanged from legacy).
-
-## Known gaps / temporary compromises
-
-- **`legacy-appointments-bridge.ts`** (temporary, explicitly flagged
-  cross-schema read of `appointments_schema.appointments`/
-  `appointment_service_projection`): validates the requester owns a
-  **completed** appointment, and denormalizes `companyId`/`serviceId`/
-  `specialistProfileId`/`serviceName` onto the review row.
-  `appointment.completed.v1.json` (and every other `appointment.*` event -
-  Task 9.5 reused those as-is) does not carry `specialistProfileId`, so a
-  purely event-fed projection can't support `GET /specialists/:specialistId/reviews`
-  (one of this phase's 4 confirmed routes) without that field. Revisit if/when
-  an `appointment.*` contract gains `specialistProfileId`.
 
 ## Required environment variables
 

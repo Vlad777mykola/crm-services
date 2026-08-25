@@ -30,6 +30,7 @@ export class UpdateCompanyMemberStatusHandler {
         await this.outbox.record(manager, {
           type: 'company-member.removed',
           aggregateId: command.memberId,
+          correlationId: command.correlationId ?? null,
           payload: { companyId: command.companyId, userId: updated.userId },
         });
       }

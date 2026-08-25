@@ -38,16 +38,24 @@ export class SpecialistsService {
     this.updateMineCommand = new UpdateMySpecialistProfileHandler(dataSource, specialists, specialists, outbox);
   }
 
-  async createMine(userId: string, input: CreateSpecialistProfileRequestInput): Promise<SpecialistProfileRow> {
-    return this.createMineCommand.execute({ userId, input });
+  async createMine(
+    userId: string,
+    input: CreateSpecialistProfileRequestInput,
+    correlationId?: string,
+  ): Promise<SpecialistProfileRow> {
+    return this.createMineCommand.execute({ userId, input, correlationId });
   }
 
   async getMine(userId: string): Promise<SpecialistProfileRow> {
     return this.getMineQuery.execute({ userId });
   }
 
-  async updateMine(userId: string, patch: UpdateSpecialistProfileRequestInput): Promise<SpecialistProfileRow> {
-    return this.updateMineCommand.execute({ userId, patch });
+  async updateMine(
+    userId: string,
+    patch: UpdateSpecialistProfileRequestInput,
+    correlationId?: string,
+  ): Promise<SpecialistProfileRow> {
+    return this.updateMineCommand.execute({ userId, patch, correlationId });
   }
 
   async getMyStatusHistory(userId: string): Promise<StatusHistoryRow[]> {

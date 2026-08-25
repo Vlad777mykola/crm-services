@@ -1,6 +1,6 @@
 import type { DataSource } from 'typeorm';
 
-import { findActiveMembershipRole } from '../../db/legacy-company-members-bridge.js';
+import { findActiveMembershipRole } from '../../db/company-membership-projection-repository.js';
 import type { CompanyMemberRole, CompanyRoleLookup } from '../ports/company-role-lookup.js';
 
 export class TypeOrmCompanyRoleLookup implements CompanyRoleLookup {

@@ -9,6 +9,7 @@ import { AppointmentServiceSpecialistProjectionEntity } from './entities/appoint
 import { AppointmentServiceProjectionEntity } from './entities/appointment-service-projection.entity.js';
 import { AppointmentStatusHistoryEntity } from './entities/appointment-status-history.entity.js';
 import { AppointmentEntity } from './entities/appointment.entity.js';
+import { ClientProfileProjectionEntity } from './entities/client-profile-projection.entity.js';
 import { OutboxEventEntity } from './entities/outbox-event.entity.js';
 import { ProcessedEventEntity } from './entities/processed-event.entity.js';
 
@@ -24,6 +25,7 @@ export function createDataSource(): DataSource {
       AppointmentServiceProjectionEntity,
       AppointmentServiceSpecialistProjectionEntity,
       AppointmentRecommendationProjectionEntity,
+      ClientProfileProjectionEntity,
       ProcessedEventEntity,
       OutboxEventEntity,
     ],

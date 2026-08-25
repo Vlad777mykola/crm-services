@@ -15,12 +15,17 @@ export class AppointmentsService {
   constructor(dataSource: DataSource) {
     const appointments = new AppointmentRepository(dataSource);
     const projections = new ProjectionsRepository(dataSource);
-    this.commands = new AppointmentCommands(dataSource, appointments, projections, new TypeOrmAppointmentEventOutbox());
+    this.commands = new AppointmentCommands(appointments, projections, new TypeOrmAppointmentEventOutbox());
     this.queries = new AppointmentQueries(appointments, projections);
   }
 
-  async create(companyId: string, clientUserId: string, input: CreateAppointmentInput): Promise<AppointmentResponse> {
-    return this.commands.create(companyId, clientUserId, input);
+  async create(
+    companyId: string,
+    clientUserId: string,
+    input: CreateAppointmentInput,
+    correlationId?: string,
+  ): Promise<AppointmentResponse> {
+    return this.commands.create(companyId, clientUserId, input, correlationId);
   }
 
   async listForCompany(companyId: string, requesterUserId: string): Promise<AppointmentResponse[]> {
@@ -36,19 +41,25 @@ export class AppointmentsService {
     appointmentId: string,
     requesterUserId: string,
     input: RespondToAppointmentInput,
+    correlationId?: string,
   ): Promise<AppointmentResponse> {
-    return this.commands.respond(companyId, appointmentId, requesterUserId, input);
+    return this.commands.respond(companyId, appointmentId, requesterUserId, input, correlationId);
   }
 
-  async complete(companyId: string, appointmentId: string, requesterUserId: string): Promise<AppointmentResponse> {
-    return this.commands.complete(companyId, appointmentId, requesterUserId);
+  async complete(
+    companyId: string,
+    appointmentId: string,
+    requesterUserId: string,
+    correlationId?: string,
+  ): Promise<AppointmentResponse> {
+    return this.commands.complete(companyId, appointmentId, requesterUserId, correlationId);
   }
 
   async getStatusHistory(appointmentId: string, requesterUserId: string) {
     return this.queries.getStatusHistory(appointmentId, requesterUserId);
   }
 
-  async cancel(appointmentId: string, clientUserId: string): Promise<AppointmentResponse> {
-    return this.commands.cancel(appointmentId, clientUserId);
+  async cancel(appointmentId: string, clientUserId: string, correlationId?: string): Promise<AppointmentResponse> {
+    return this.commands.cancel(appointmentId, clientUserId, correlationId);
   }
 }

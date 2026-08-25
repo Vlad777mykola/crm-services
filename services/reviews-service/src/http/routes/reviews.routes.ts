@@ -27,7 +27,12 @@ export function createReviewsRouter(reviewsService: ReviewsService): Router {
     async (req, res, next) => {
       try {
         const { appointmentId } = req.params as unknown as AppointmentOnlyIdParamsInput;
-        const review = await reviewsService.create(appointmentId, req.auth!.userId, req.body as CreateReviewInput);
+        const review = await reviewsService.create(
+          appointmentId,
+          req.auth!.userId,
+          req.body as CreateReviewInput,
+          req.context.requestId,
+        );
         res.status(201).json({ message: 'Review created', data: review });
       } catch (err) {
         next(err);

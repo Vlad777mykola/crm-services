@@ -6,8 +6,12 @@ export const SEEDED_TABLES = [
   'notifications_schema.email_logs',
   'notifications_schema.notifications',
   'reviews_schema.reviews',
+  'reviews_schema.appointment_review_eligibility_projection',
   'appointments_schema.appointments',
+  'appointments_schema.client_profiles_projection',
   'services_schema.services',
+  'services_schema.company_membership_projection',
+  'company_specialists_schema.company_membership_projection',
   'company_specialists_schema.company_specialists',
   'company_specialists_schema.company_specialist_requests',
   'specialists_schema.public_specialist_rating_summary',
@@ -17,6 +21,7 @@ export const SEEDED_TABLES = [
   'specialists_schema.public_company_projection',
   'specialists_schema.specialist_profiles',
   'company_members_schema.company_members',
+  'companies_schema.company_membership_projection',
   'companies_schema.companies',
   'auth_schema.auth_membership_projection',
   'auth_schema.auth_identities',
@@ -31,6 +36,7 @@ export const RESETTABLE_APPLICATION_TABLES = [
   // appointments_schema
   'appointments_schema.appointments',
   'appointments_schema.appointment_status_history',
+  'appointments_schema.client_profiles_projection',
   'appointments_schema.appointment_membership_projection',
   'appointments_schema.appointment_company_projection',
   'appointments_schema.appointment_service_projection',
@@ -52,12 +58,14 @@ export const RESETTABLE_APPLICATION_TABLES = [
   'companies_schema.companies',
   'companies_schema.company_status_history',
   'companies_schema.company_insight_projections',
+  'companies_schema.company_membership_projection',
   'companies_schema.processed_events',
   'companies_schema.outbox_events',
   // services_schema
   'services_schema.services',
   'services_schema.service_specialists',
   'services_schema.service_status_history',
+  'services_schema.company_membership_projection',
   'services_schema.processed_events',
   'services_schema.outbox_events',
   // auth_schema
@@ -68,6 +76,7 @@ export const RESETTABLE_APPLICATION_TABLES = [
   'auth_schema.outbox_events',
   // reviews_schema
   'reviews_schema.reviews',
+  'reviews_schema.appointment_review_eligibility_projection',
   'reviews_schema.processed_events',
   'reviews_schema.outbox_events',
   // notifications_schema
@@ -87,6 +96,7 @@ export const RESETTABLE_APPLICATION_TABLES = [
   // company_specialists_schema
   'company_specialists_schema.company_specialist_requests',
   'company_specialists_schema.company_specialists',
+  'company_specialists_schema.company_membership_projection',
   'company_specialists_schema.processed_events',
   'company_specialists_schema.outbox_events',
 ];

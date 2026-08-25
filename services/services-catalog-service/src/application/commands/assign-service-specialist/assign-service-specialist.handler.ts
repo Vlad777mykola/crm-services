@@ -45,6 +45,7 @@ export class AssignServiceSpecialistHandler {
       await this.outbox.record(manager, {
         type: 'specialist-service.assigned',
         aggregateId: assignment.id,
+        correlationId: command.correlationId ?? null,
         payload: {
           serviceId: command.serviceId,
           companyId: service.companyId,

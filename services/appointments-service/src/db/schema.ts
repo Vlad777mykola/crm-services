@@ -112,6 +112,18 @@ export async function ensureAppointmentsSchema(dataSource: DataSource): Promise<
   `);
   await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_appointment_recommendation_projections_appointmentId" ON appointments_schema.appointment_recommendation_projections ("appointmentId")`);
 
+  // Fed by user.profile_created/.updated (users-service) to avoid direct
+  // reads from users_schema when enriching appointment events.
+  await dataSource.query(`
+    CREATE TABLE IF NOT EXISTS appointments_schema.client_profiles_projection (
+      "userId" uuid PRIMARY KEY,
+      "name" text,
+      "email" text,
+      "phone" text,
+      "updatedAt" timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+
   await dataSource.query(`
     CREATE TABLE IF NOT EXISTS appointments_schema.processed_events (
       "event_id" uuid NOT NULL,
@@ -130,12 +142,19 @@ export async function ensureAppointmentsSchema(dataSource: DataSource): Promise<
       "aggregateType" varchar(100) NOT NULL,
       "aggregateId" uuid NOT NULL,
       "payload" jsonb NOT NULL,
+      "correlationId" text,
+      "causationId" text,
       "status" varchar(20) NOT NULL DEFAULT 'pending',
       "attempts" int NOT NULL DEFAULT 0,
       "nextRetryAt" timestamptz NOT NULL DEFAULT now(),
       "createdAt" timestamptz NOT NULL DEFAULT now(),
       "publishedAt" timestamptz
     )
+  `);
+  await dataSource.query(`
+    ALTER TABLE appointments_schema.outbox_events
+      ADD COLUMN IF NOT EXISTS "correlationId" text,
+      ADD COLUMN IF NOT EXISTS "causationId" text
   `);
   await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_appointments_outbox_events_status" ON appointments_schema.outbox_events ("status")`);
   await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_appointments_outbox_events_nextRetryAt" ON appointments_schema.outbox_events ("nextRetryAt")`);

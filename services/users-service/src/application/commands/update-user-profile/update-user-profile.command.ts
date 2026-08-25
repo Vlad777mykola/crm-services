@@ -3,4 +3,5 @@ import type { UpdateUserRequestInput } from '../../../modules/users/users.schema
 export interface UpdateUserProfileCommand {
   userId: string;
   patch: UpdateUserRequestInput;
+  correlationId?: string;
 }

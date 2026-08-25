@@ -31,29 +31,25 @@ legacy-backend until their own phases (5, 7, 8, 9, 10, 15).
   source-of-truth; safe to drop and rebuild. No HTTP route exposes this
   projection yet; it existed in the old service purely as a write target with
   no confirmed reader.
+- `company_membership_projection` — local owner/manager projection fed by
+  `company-member.*` events. Used for company authorization and
+  `GET /companies/me`; this service no longer reads `company_members_schema`.
 - `processed_events`, `outbox_events` — reserved/outbox plumbing.
 
-## Known temporary compromise: `company_members` read bridge
+## Membership projection
 
-As of Phase 5, `company-members-service` owns `company_members_schema.company_members`
-(and creates the `owner` row itself, via its own `company.created` consumer —
-this service no longer writes membership rows). This service still reads
-that schema directly (cross-schema, same Postgres instance, read-only) for
-its own authorization needs: owner/manager permission checks on
-PATCH/status-history, and `GET /companies/me`. This is intentionally flagged
-and not the target architecture — see
-[`src/db/legacy-company-members-bridge.ts`](src/db/legacy-company-members-bridge.ts).
-A future cleanup could replace this with a local projection fed by
-`company-member.*` events, the same pattern auth-service uses for
-`auth_membership_projection` (Task 5.4).
+As of the shared HTTP/auth foundation cleanup, company authorization reads
+`companies_schema.company_membership_projection`. The projection is updated
+from `company-member.added`, `company-member.role_changed`, and
+`company-member.removed`.
 
 ## Consumed events
 
-`ai.company_insight_created` (from `analytics.events`, published by
-`ai-service`) — feeds `company_insight_projections`. Moved here from
-`backend-projection-service` in Phase 12 (see
-`docs/architecture/table-ownership-matrix.md`); this service now runs its own
-RabbitMQ consumer alongside its HTTP API, so `RABBITMQ_URL` is required.
+- `ai.company_insight_created` (from `analytics.events`, published by
+  `ai-service`) — feeds `company_insight_projections`.
+- `company-member.added`, `company-member.role_changed`,
+  `company-member.removed` (from `domain.events`) — feed
+  `company_membership_projection`.
 
 ## Published events
 

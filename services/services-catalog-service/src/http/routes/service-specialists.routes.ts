@@ -22,7 +22,12 @@ export function createServiceSpecialistsRouter(service: ServiceSpecialistsServic
     async (req, res, next) => {
       try {
         const { serviceId } = req.params as unknown as ServiceOnlyIdParamsInput;
-        const assignment = await service.assign(serviceId, req.auth!.userId, req.body as AssignServiceSpecialistInput);
+        const assignment = await service.assign(
+          serviceId,
+          req.auth!.userId,
+          req.body as AssignServiceSpecialistInput,
+          req.context.requestId,
+        );
         res.status(201).json({ message: 'Specialist assigned', data: assignment });
       } catch (err) {
         next(err);
@@ -52,7 +57,7 @@ export function createServiceSpecialistsRouter(service: ServiceSpecialistsServic
     async (req, res, next) => {
       try {
         const { serviceId, specialistProfileId } = req.params as unknown as ServiceSpecialistParamsInput;
-        const assignment = await service.unassign(serviceId, specialistProfileId, req.auth!.userId);
+        const assignment = await service.unassign(serviceId, specialistProfileId, req.auth!.userId, req.context.requestId);
         res.status(200).json({ message: 'Specialist unassigned', data: assignment });
       } catch (err) {
         next(err);

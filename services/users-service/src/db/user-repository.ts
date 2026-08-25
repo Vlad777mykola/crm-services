@@ -27,6 +27,8 @@ interface UserProfileRaw {
   updatedAt: Date;
 }
 
+type Queryable = DataSource | EntityManager;
+
 function toProfileRow(row: UserProfileRaw): UserProfileRow {
   return {
     id: row.id,
@@ -43,6 +45,10 @@ function toProfileRow(row: UserProfileRaw): UserProfileRow {
 
 export class UserRepository {
   constructor(private readonly dataSource: DataSource) {}
+
+  withTransaction<T>(fn: (manager: EntityManager) => Promise<T>): Promise<T> {
+    return this.dataSource.transaction(fn);
+  }
 
   /**
    * Idempotent: `orIgnore()` means a redelivered `auth.user_registered` event
@@ -70,22 +76,24 @@ export class UserRepository {
   }
 
   async findById(userId: string): Promise<UserProfileRow | null> {
-    const row = await this.profileQuery().where('u.id = :userId', { userId }).getRawOne<UserProfileRaw>();
+    const row = await this.profileQuery(this.dataSource).where('u.id = :userId', { userId }).getRawOne<UserProfileRaw>();
     return row ? toProfileRow(row) : null;
   }
 
   async updateProfile(
+    manager: EntityManager,
     userId: string,
     patch: { name?: string; phone?: string | null; city?: string | null; bio?: string | null },
   ): Promise<UserProfileRow | null> {
     if (Object.keys(patch).length > 0) {
-      await this.dataSource.getRepository(UserProfileEntity).update({ userId }, { ...patch, updatedAt: new Date() });
+      await manager.getRepository(UserProfileEntity).update({ userId }, { ...patch, updatedAt: new Date() });
     }
-    return this.findById(userId);
+    const row = await this.profileQuery(manager).where('u.id = :userId', { userId }).getRawOne<UserProfileRaw>();
+    return row ? toProfileRow(row) : null;
   }
 
-  private profileQuery() {
-    return this.dataSource
+  private profileQuery(client: Queryable) {
+    return client
       .getRepository(UserEntity)
       .createQueryBuilder('u')
       .innerJoin('users_schema.user_profiles', 'p', 'p."userId" = u.id')

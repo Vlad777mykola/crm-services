@@ -45,9 +45,7 @@ export async function ensureUsersSchema(dataSource: DataSource): Promise<void> {
     )
   `);
 
-  // Not used yet in Phase 2 (this service doesn't publish until Phase 3's
-  // user.profile_created/updated, if confirmed - see event-catalog.md).
-  // Reserved now per Task 2.5.
+  // Used for user.profile_created/updated events consumed by appointments-service.
   await dataSource.query(`
     CREATE TABLE IF NOT EXISTS users_schema.outbox_events (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -57,11 +55,18 @@ export async function ensureUsersSchema(dataSource: DataSource): Promise<void> {
       "aggregateType" varchar(100) NOT NULL,
       "aggregateId" uuid NOT NULL,
       "payload" jsonb NOT NULL,
+      "correlationId" text,
+      "causationId" text,
       "status" varchar(20) NOT NULL DEFAULT 'pending',
       "attempts" int NOT NULL DEFAULT 0,
       "nextRetryAt" timestamptz NOT NULL DEFAULT now(),
       "createdAt" timestamptz NOT NULL DEFAULT now(),
       "publishedAt" timestamptz
     )
+  `);
+  await dataSource.query(`
+    ALTER TABLE users_schema.outbox_events
+      ADD COLUMN IF NOT EXISTS "correlationId" text,
+      ADD COLUMN IF NOT EXISTS "causationId" text
   `);
 }

@@ -4,4 +4,5 @@ export interface CreateReviewCommand {
   appointmentId: string;
   clientUserId: string;
   input: CreateReviewInput;
+  correlationId?: string;
 }

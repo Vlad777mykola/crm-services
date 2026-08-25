@@ -25,8 +25,24 @@ export async function ensureReviewsSchema(dataSource: DataSource): Promise<void>
   await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_reviews_serviceId" ON reviews_schema.reviews ("serviceId")`);
   await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_reviews_specialistProfileId" ON reviews_schema.reviews ("specialistProfileId")`);
 
-  // Not used yet - no consumer exists in this phase. Reserved for consistency
-  // with every other service's schema.
+  await dataSource.query(`
+    CREATE TABLE IF NOT EXISTS reviews_schema.appointment_review_eligibility_projection (
+      "appointmentId" uuid PRIMARY KEY,
+      "companyId" uuid NOT NULL,
+      "serviceId" uuid NOT NULL,
+      "clientUserId" uuid NOT NULL,
+      "specialistProfileId" uuid,
+      "serviceName" text,
+      "completedAt" timestamptz,
+      "reviewAllowed" boolean NOT NULL DEFAULT false,
+      "updatedAt" timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+  await dataSource.query(`
+    CREATE INDEX IF NOT EXISTS "IDX_reviews_eligibility_clientUserId"
+    ON reviews_schema.appointment_review_eligibility_projection ("clientUserId")
+  `);
+
   await dataSource.query(`
     CREATE TABLE IF NOT EXISTS reviews_schema.processed_events (
       "event_id" uuid NOT NULL,
@@ -45,12 +61,19 @@ export async function ensureReviewsSchema(dataSource: DataSource): Promise<void>
       "aggregateType" varchar(100) NOT NULL,
       "aggregateId" uuid NOT NULL,
       "payload" jsonb NOT NULL,
+      "correlationId" text,
+      "causationId" text,
       "status" varchar(20) NOT NULL DEFAULT 'pending',
       "attempts" int NOT NULL DEFAULT 0,
       "nextRetryAt" timestamptz NOT NULL DEFAULT now(),
       "createdAt" timestamptz NOT NULL DEFAULT now(),
       "publishedAt" timestamptz
     )
+  `);
+  await dataSource.query(`
+    ALTER TABLE reviews_schema.outbox_events
+      ADD COLUMN IF NOT EXISTS "correlationId" text,
+      ADD COLUMN IF NOT EXISTS "causationId" text
   `);
   await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_reviews_outbox_events_status" ON reviews_schema.outbox_events ("status")`);
   await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_reviews_outbox_events_nextRetryAt" ON reviews_schema.outbox_events ("nextRetryAt")`);

@@ -36,6 +36,7 @@ export class InviteCompanyMemberHandler {
       await this.outbox.record(manager, {
         type: 'company-member.added',
         aggregateId: row.id,
+        correlationId: command.correlationId ?? null,
         payload: { companyId: command.companyId, userId: invitedUserId, role: row.role },
       });
 
