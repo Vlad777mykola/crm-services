@@ -23,7 +23,7 @@ async function bootstrap(): Promise<void> {
   const recipients = new RecipientRepository();
   const notifications = new NotificationRepository(dataSource);
   const emailLogs = new EmailLogRepository();
-  const notificationsHttpService = new NotificationsHttpService(notifications);
+  const notificationsHttpService = new NotificationsHttpService(notifications, notifications);
 
   const consumer = await consumeFromRabbitMq({
     url: env.RABBITMQ_URL,

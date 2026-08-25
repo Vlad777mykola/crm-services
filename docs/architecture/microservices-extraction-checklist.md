@@ -8,6 +8,8 @@ Route-parity-first strangler extraction. Read alongside:
 - `table-ownership-matrix.md` — every table's future owner.
 - `shared-polymorphic-table-audit.md` — `status_history_entries` split plan.
 - `event-catalog.md` — implemented vs. planned events, contract-first gate.
+- `cqrs-ddd-migration-plan.md` — architecture-first CQRS/DDD migration rules
+  for existing Express services and future NestJS pilots.
 - `gateway-routing.md` — Traefik routing/priority rules (gateway is Traefik, not nginx).
 - `service-skeleton-standard.md` — one folder structure, middleware baseline, and README template for every new service.
 - `dockerfile-standard.md` — one multi-stage Docker build pattern for every new service.

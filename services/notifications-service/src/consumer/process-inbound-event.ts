@@ -1,10 +1,10 @@
 import type { DataSource } from 'typeorm';
 
+import { RecordAnalyticsNotificationsHandler } from '../application/event-handlers/record-analytics-notifications/record-analytics-notifications.handler.js';
+import { RecordDomainNotificationsHandler } from '../application/event-handlers/record-domain-notifications/record-domain-notifications.handler.js';
 import type { EmailLogRepository } from '../db/email-log-repository.js';
 import type { NotificationRepository } from '../db/notification-repository.js';
 import type { RecipientRepository } from '../db/recipient-repository.js';
-import { handleAnalyticsEvent } from '../handlers/analytics-events.js';
-import { handleDomainEvent } from '../handlers/domain-events.js';
 import type { ProcessedEventsRepository } from '../idempotency/processed-events-repository.js';
 import { logger } from '../logger.js';
 import { ANALYTICS_EVENTS_EXCHANGE } from '../rabbitmq/topology.js';
@@ -38,16 +38,16 @@ export async function processInboundEvent(
     }
 
     if (exchange === ANALYTICS_EVENTS_EXCHANGE) {
-      await handleAnalyticsEvent(manager, envelope, {
+      await new RecordAnalyticsNotificationsHandler({
         recipients: deps.recipients,
         notifications: deps.notifications,
-      });
+      }).handle(manager, envelope);
     } else {
-      await handleDomainEvent(manager, parsedBody as WireEventEnvelope, {
+      await new RecordDomainNotificationsHandler({
         recipients: deps.recipients,
         notifications: deps.notifications,
         emailLogs: deps.emailLogs,
-      });
+      }).handle(manager, parsedBody as WireEventEnvelope);
     }
   });
 }

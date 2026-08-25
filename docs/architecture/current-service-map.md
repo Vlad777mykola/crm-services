@@ -1,29 +1,80 @@
 # Current Service Map
 
-Snapshot of the repository's deployable units before the microservices refactor (see the sibling documents in this folder for the target state).
+Snapshot of the deployable units that exist in this repository now. This file is
+code-reality oriented; use it with `current-to-target-delta.md` when reading older
+migration notes.
 
-## Deploy units today
+## Application Edge
 
-| Service | Language | Location | Dockerfile | Command | Ports | Database | RabbitMQ |
-|---|---|---|---|---|---|---|---|
-| frontend | React + Vite | `frontend/` | `frontend/Dockerfile` | nginx serves `dist/` | 8080 (local only) | none | no |
-| backend API | Node.js + Express | `backend/` | `backend/Dockerfile` | `node dist/main.js` | 4000 | main-postgres | optional publish (unset by default) |
-| notifications-worker | Node.js | `backend/src/workers/` | `backend/Dockerfile.worker` | `node dist/workers/notifications.worker.js` | — | main-postgres | consumer |
-| metrics-worker | Node.js | `backend/src/workers/` | `backend/Dockerfile.worker` | `node dist/workers/metrics.worker.js` | 4100 | none | observer |
-| analytics-worker | Node.js | `backend/src/workers/` | `backend/Dockerfile.worker` | `node dist/workers/analytics.worker.js` | — | shared SQLite | consumer |
-| python-analytics-worker | Python | `python-worker/` | `python-worker/Dockerfile` | `python worker.py` | — | shared SQLite | consumer + publisher |
-| python-metrics-worker | Python | `python-worker/` | `python-worker/Dockerfile` | `python metrics_worker.py` | 4200 | none | observer |
+| Unit | Location | Role |
+|---|---|---|
+| frontend | `frontend/` | React + Vite UI, served as static assets in Docker. |
+| gateway | `services/gateway/` + `docker/*/traefik/` | Traefik routing layer. It routes public HTTP paths to the owning backend service. |
 
-## Known gaps (drove this refactor)
+## Domain HTTP Services
 
-- Node workers import backend business modules directly (`@/modules/*`, `AppDataSource`) — not independently deployable in code, only in process.
-- No outbox pattern: business writes and RabbitMQ publish are not atomic.
-- RabbitMQ starts by default in Compose, but the backend does not publish to it — confusing "looks event-driven but isn't" state.
-- Python analytics uses a SQLite file shared with the Node analytics worker — not a real service-owned datastore.
-- No CI/CD workflows.
-- Backend exposes a single `/health` endpoint; several workers have no health check at all.
-- Redis is wired into Compose but unused by any application code.
-- No idempotency tracking (`processed_events`) in any consumer.
-- No dead-letter queues.
+All services below are Node.js services using Express, Zod validation, TypeORM,
+Postgres, structured logging, and `/health/live` + `/health/ready` unless noted.
 
-See [`target-production-architecture.md`](target-production-architecture.md) for the structure this repository is being migrated to, and [`service-ownership.md`](service-ownership.md) / [`event-driven-model.md`](event-driven-model.md) for the data and event contracts that make the migration safe.
+| Service | Location | Owns | Consumes | Publishes through outbox |
+|---|---|---|---|---|
+| auth-service | `services/auth-service/` | identity, sessions, JWT issuance, membership projection | `company-member.added`, `company-member.removed` | `auth.user_registered` |
+| users-service | `services/users-service/` | users and user profiles | `auth.user_registered` | none active today |
+| companies-service | `services/companies-service/` | company profiles, company status history, AI insight projections | `ai.company_insight_created` | `company.created`, `company.updated` |
+| company-members-service | `services/company-members-service/` | company members and invitations | `company.created` | `company-member.added`, `company-member.removed` |
+| specialists-service | `services/specialists-service/` | specialist profiles and specialist status history | none | `specialist.created`, `specialist.updated` |
+| company-specialists-service | `services/company-specialists-service/` | company-specialist requests and accepted working relationships | none | `company-specialist.accepted` |
+| services-catalog-service | `services/services-catalog-service/` | services, service-specialist assignments, service status history | none | `service.created`, `service.updated`, `specialist-service.assigned`, `specialist-service.removed` |
+| appointments-service | `services/appointments-service/` | appointment lifecycle, status history, local company/member/service/specialist projections, AI recommendation projections | company, company-member, service, specialist-service, and AI recommendation events | `appointment.requested`, `appointment.approved`, `appointment.rejected`, `appointment.completed`, `appointment.cancelled` |
+| reviews-service | `services/reviews-service/` | reviews | none | `review.received` |
+| notifications-service | `services/notifications-service/` | notifications, email logs, processed events | `appointment.*`, `review.received`, `analytics.company_rating_updated` | none |
+| dashboard-service | `services/dashboard-service/` | read-only dashboard summaries | none | none |
+
+## Messaging / Infrastructure Services
+
+| Service | Location | Role |
+|---|---|---|
+| outbox-publisher | `services/outbox-publisher/` | Polls one configured `outbox_events` table, publishes pending rows to RabbitMQ, and marks rows published/failed. The same image is intended to run once per owning schema. |
+| metrics-service | `services/metrics-service/` | Observes `domain.events` and `analytics.events`, records RabbitMQ metrics, and exposes Prometheus `/metrics`. |
+| ai-service | `services/ai-service/` | Python AI/analytics service with its own datastore. Consumes source events and publishes AI/analytics result events. |
+| messaging-kit | `services/messaging-kit/` | Shared Node RabbitMQ infrastructure package: managed connection lifecycle, retry topology, reliable republish, consumer failure handling. |
+| event-delivery | `services/event-delivery/` | RFC2 skeleton for broker-neutral delivery from `outbox_deliveries`; not the main production delivery path yet. |
+| rabbitmq-lab-service | `services/rabbitmq-lab-service/` | Development/student-only RabbitMQ learning service. Not a CRM production service. |
+
+## Common Runtime Pattern
+
+```text
+HTTP route
+  -> module/application service
+  -> TypeORM repository
+  -> service-owned Postgres schema
+  -> outbox_events row, when an integration event is needed
+  -> outbox-publisher
+  -> RabbitMQ
+  -> consumer service
+  -> processed_events idempotency
+  -> local projection / side effect
+```
+
+## Architecture Status
+
+Already present:
+
+- independent service folders under `services/`
+- per-service schemas and `processed_events` for DB-backed consumers
+- RabbitMQ topic exchanges for domain and analytics events
+- transactional outbox tables for publishing services
+- event contracts in `contracts/events/`
+- REST contracts in `contracts/openapi/`
+- shared RabbitMQ infrastructure in `@crm/messaging-kit`
+
+Still inconsistent:
+
+- internal CQRS command/query/event-handler structure
+- pure domain entities separated from TypeORM persistence entities
+- read/write repository separation
+- runtime validation at every inbound event boundary
+- documentation freshness across older extraction-plan files
+
+See `cqrs-ddd-migration-plan.md` for the current architecture-first migration
+direction.
