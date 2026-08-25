@@ -15,7 +15,10 @@ const QUEUE_NAME = 'specialists-service.q';
 async function bootstrap(): Promise<void> {
   const dataSource = createDataSource();
   await dataSource.initialize();
-  await ensureSpecialistsSchema(dataSource);
+  if (env.AUTO_DDL) {
+    logger.warn('[specialists-service] AUTO_DDL is enabled; use only for temporary local compatibility');
+    await ensureSpecialistsSchema(dataSource);
+  }
 
   const processedEvents = new ProcessedEventsRepository();
   const projections = new PublicSpecialistProjectionRepository(dataSource);

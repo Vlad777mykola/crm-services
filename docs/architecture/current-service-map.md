@@ -70,6 +70,9 @@ Already present:
 
 Still inconsistent:
 
+- database migration ownership is mid-rollout: `users-service` and
+  `specialists-service` own TypeORM migrations, while older services still rely
+  on bootstrap DDL
 - internal CQRS command/query/event-handler structure
 - pure domain entities separated from TypeORM persistence entities
 - read/write repository separation
@@ -78,3 +81,4 @@ Still inconsistent:
 
 See `cqrs-ddd-migration-plan.md` for the current architecture-first migration
 direction.
+See `database-migrations.md` for the database migration rollout rules.

@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 
+import { assertRequiredTablesExist } from './assert-required-tables.js';
 import { SHARED_TEST_PASSWORD, TEST_ACCOUNTS } from './data/credentials.js';
 import { ensureAllMicroserviceSchemas } from './ensure-schemas.js';
 import { daysFromNow, insertQualified, insertRow } from './insert.js';
@@ -9,6 +10,17 @@ const BCRYPT_SALT_ROUNDS = 10;
 
 export async function seedDatabase(): Promise<void> {
   await ensureAllMicroserviceSchemas();
+  await assertRequiredTablesExist([
+    'users_schema.users',
+    'users_schema.user_profiles',
+    'specialists_schema.specialist_profiles',
+    'specialists_schema.public_company_projection',
+    'specialists_schema.public_specialist_company_projection',
+    'specialists_schema.public_service_projection',
+    'specialists_schema.public_specialist_service_projection',
+    'specialists_schema.public_specialist_rating_summary',
+  ]);
+
   const passwordHash = await bcrypt.hash(SHARED_TEST_PASSWORD, BCRYPT_SALT_ROUNDS);
 
   // ---------------------------------------------------------------------

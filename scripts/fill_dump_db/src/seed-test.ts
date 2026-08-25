@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 
+import { assertRequiredTablesExist } from './assert-required-tables.js';
 import { TEST_FIXTURE_ACCOUNTS, TEST_FIXTURE_PASSWORD } from './data/test-fixtures.js';
 import { pool } from './db.js';
 import { insertQualified, insertRow } from './insert.js';
@@ -35,6 +36,7 @@ async function seedTestUsers(): Promise<void> {
 
 async function main(): Promise<void> {
   await resetDatabase();
+  await assertRequiredTablesExist(['users_schema.users', 'users_schema.user_profiles']);
   await seedMinimalPublishedCompanies();
   await seedTestUsers();
   console.log(

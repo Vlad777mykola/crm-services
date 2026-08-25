@@ -2,6 +2,11 @@ import 'dotenv/config';
 
 import { z } from 'zod';
 
+const booleanFlag = z.preprocess((value) => {
+  if (typeof value !== 'string') return value;
+  return ['1', 'true', 'yes', 'on'].includes(value.toLowerCase());
+}, z.boolean());
+
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(4002),
@@ -11,6 +16,7 @@ const envSchema = z.object({
   // service only verifies tokens (GET/PATCH /users/me), it never issues them.
   JWT_ACCESS_SECRET: z.string().min(1).default('dev-access-secret-change-me'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
+  AUTO_DDL: booleanFlag.default(false),
 });
 
 export type Env = z.infer<typeof envSchema>;

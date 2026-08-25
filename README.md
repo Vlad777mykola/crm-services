@@ -17,7 +17,7 @@ crm-services/
 │   ├── dev/               # `yarn dev <feature>`
 │   ├── verify/            # `yarn verify:startup`
 │   ├── test/              # `yarn test:integration` / `test:e2e`
-│   └── fill_dump_db/      # `yarn db:migrate` / `yarn db:seed`
+│   └── fill_dump_db/      # legacy bootstrap + seed data
 └── docs/architecture/     # extraction checklist, routing, ownership
 ```
 
@@ -43,6 +43,8 @@ See [`scripts/dev/README.md`](scripts/dev/README.md) for features, `yarn dev sto
 
 ```bash
 yarn db:migrate --target dev
+yarn db:migration:status --target dev
+yarn db:bootstrap:legacy --target dev   # temporary bootstrap for non-migrated schemas
 yarn db:backup --target dev
 yarn db:restore --target dev --file db/backups/my.dump
 yarn db:baseline:pull && yarn db:baseline:restore --target dev
@@ -50,6 +52,12 @@ yarn dev dashboard --fresh      # deterministic reset + seed
 ```
 
 Profiles: `db:seed:companies`, `db:seed:full`, `db:seed:test`. See [`scripts/db/README.md`](scripts/db/README.md).
+
+Database migration rollout note: `users-service` and `specialists-service` now
+own versioned TypeORM migrations under `src/db/migrations`. The root
+`db:migrate` orchestrates migrated services; `db:bootstrap:legacy` is kept
+temporarily for the older bootstrap DDL path. See
+[`docs/architecture/database-migrations.md`](docs/architecture/database-migrations.md).
 
 ## Root scripts
 

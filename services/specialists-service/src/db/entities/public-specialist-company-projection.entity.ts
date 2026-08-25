@@ -15,4 +15,5 @@ export const PublicSpecialistCompanyProjectionEntity = new EntitySchema<PublicSp
     companyId: { type: 'uuid', primary: true },
     updatedAt: { type: 'timestamptz', updateDate: true },
   },
+  indices: [{ name: 'IDX_public_specialist_company_companyId', columns: ['companyId'] }],
 });

@@ -10,7 +10,12 @@
     "start": "node dist/main.js",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "db:migrate": "tsx src/db/migration-runner.ts run",
+    "db:migrate:revert": "tsx src/db/migration-runner.ts revert",
+    "db:migration:status": "tsx src/db/migration-runner.ts status",
+    "db:migration:create": "typeorm migration:create src/db/migrations",
+    "db:migration:generate": "typeorm-ts-node-esm migration:generate -d src/db/data-source.ts"
   },
   "dependencies": {
     "@crm/auth-kit": "0.0.0",

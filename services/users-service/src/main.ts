@@ -16,7 +16,10 @@ const QUEUE_NAME = 'users-service.q';
 async function bootstrap(): Promise<void> {
   const dataSource = createDataSource();
   await dataSource.initialize();
-  await ensureUsersSchema(dataSource);
+  if (env.AUTO_DDL) {
+    logger.warn('[users-service] AUTO_DDL is enabled; use only for temporary local compatibility');
+    await ensureUsersSchema(dataSource);
+  }
 
   const processedEvents = new ProcessedEventsRepository();
   const users = new UserRepository(dataSource);

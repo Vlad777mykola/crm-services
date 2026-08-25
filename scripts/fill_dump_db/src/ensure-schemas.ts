@@ -28,27 +28,7 @@ export async function ensureAllMicroserviceSchemas(): Promise<void> {
     )
   `);
 
-  await query(`CREATE SCHEMA IF NOT EXISTS users_schema`);
-  await query(`
-    CREATE TABLE IF NOT EXISTS users_schema.users (
-      "id" uuid PRIMARY KEY,
-      "email" varchar(255),
-      "status" varchar(20) NOT NULL DEFAULT 'active',
-      "createdAt" timestamptz NOT NULL DEFAULT now(),
-      "updatedAt" timestamptz NOT NULL DEFAULT now()
-    )
-  `);
-  await query(`
-    CREATE TABLE IF NOT EXISTS users_schema.user_profiles (
-      "userId" uuid PRIMARY KEY REFERENCES users_schema.users ("id") ON DELETE CASCADE,
-      "name" varchar(255) NOT NULL,
-      "phone" varchar(30),
-      "city" varchar(255),
-      "bio" text,
-      "createdAt" timestamptz NOT NULL DEFAULT now(),
-      "updatedAt" timestamptz NOT NULL DEFAULT now()
-    )
-  `);
+  // users_schema is managed by users-service TypeORM migrations.
 
   await ensureCompaniesSchema();
 
@@ -66,76 +46,7 @@ export async function ensureAllMicroserviceSchemas(): Promise<void> {
     )
   `);
 
-  await query(`CREATE SCHEMA IF NOT EXISTS specialists_schema`);
-  await query(`
-    CREATE TABLE IF NOT EXISTS specialists_schema.specialist_profiles (
-      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-      "userId" uuid NOT NULL UNIQUE,
-      "displayName" varchar(255) NOT NULL,
-      "headline" varchar(255),
-      "bio" text,
-      "category" varchar(100),
-      "city" varchar(255),
-      "isRemoteSupported" boolean NOT NULL DEFAULT false,
-      "status" varchar(20) NOT NULL DEFAULT 'draft',
-      "createdAt" timestamptz NOT NULL DEFAULT now(),
-      "updatedAt" timestamptz NOT NULL DEFAULT now()
-    )
-  `);
-  await query(`
-    CREATE TABLE IF NOT EXISTS specialists_schema.specialist_status_history (
-      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-      "specialistProfileId" uuid NOT NULL REFERENCES specialists_schema.specialist_profiles ("id") ON DELETE CASCADE,
-      "fromStatus" varchar(50),
-      "toStatus" varchar(50) NOT NULL,
-      "changedByUserId" uuid,
-      "reason" text,
-      "createdAt" timestamptz NOT NULL DEFAULT now()
-    )
-  `);
-  await query(`
-    CREATE TABLE IF NOT EXISTS specialists_schema.public_company_projection (
-      "companyId" uuid PRIMARY KEY,
-      "name" varchar(255) NOT NULL,
-      "slug" varchar(255),
-      "status" varchar(20) NOT NULL,
-      "updatedAt" timestamptz NOT NULL DEFAULT now()
-    )
-  `);
-  await query(`
-    CREATE TABLE IF NOT EXISTS specialists_schema.public_specialist_company_projection (
-      "specialistProfileId" uuid NOT NULL,
-      "companyId" uuid NOT NULL,
-      "updatedAt" timestamptz NOT NULL DEFAULT now(),
-      PRIMARY KEY ("specialistProfileId", "companyId")
-    )
-  `);
-  await query(`
-    CREATE TABLE IF NOT EXISTS specialists_schema.public_service_projection (
-      "serviceId" uuid PRIMARY KEY,
-      "companyId" uuid NOT NULL,
-      "name" varchar(255) NOT NULL,
-      "status" varchar(20) NOT NULL,
-      "updatedAt" timestamptz NOT NULL DEFAULT now()
-    )
-  `);
-  await query(`
-    CREATE TABLE IF NOT EXISTS specialists_schema.public_specialist_service_projection (
-      "serviceId" uuid NOT NULL,
-      "companyId" uuid NOT NULL,
-      "specialistProfileId" uuid NOT NULL,
-      "updatedAt" timestamptz NOT NULL DEFAULT now(),
-      PRIMARY KEY ("serviceId", "specialistProfileId")
-    )
-  `);
-  await query(`
-    CREATE TABLE IF NOT EXISTS specialists_schema.public_specialist_rating_summary (
-      "specialistProfileId" uuid PRIMARY KEY,
-      "ratingSum" int NOT NULL DEFAULT 0,
-      "reviewsCount" int NOT NULL DEFAULT 0,
-      "updatedAt" timestamptz NOT NULL DEFAULT now()
-    )
-  `);
+  // specialists_schema is managed by specialists-service TypeORM migrations.
 
   await query(`CREATE SCHEMA IF NOT EXISTS company_specialists_schema`);
   await query(`

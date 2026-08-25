@@ -4,7 +4,8 @@ Four separate concerns:
 
 | Command family | Purpose |
 |----------------|---------|
-| `db:migrate` | Structure source of truth |
+| `db:migrate` | Runs TypeORM migrations for migrated services |
+| `db:bootstrap:legacy` | Temporary bootstrap DDL for services not migrated yet |
 | `db:seed:*` | Deterministic scenarios |
 | `db:backup` / `db:restore` | Personal snapshots (`db/backups/`, gitignored) |
 | `db:baseline:*` | Sanitized team artifact |
@@ -15,8 +16,16 @@ All destructive commands use `--target` (`dev`, `test`, `verify`, `smoke`) and e
 
 ```powershell
 yarn db:migrate --target dev
+yarn db:migration:status --target dev
+yarn db:migrate:revert --service users-service --target dev
+yarn db:migration:generate --service users-service --name AddUserPhone --target dev
+yarn db:bootstrap:legacy --target dev # temporary during migration rollout
 yarn db:reset --target dev          # all application state; preserves structure
 ```
+
+Migrated services currently: `users-service`, `specialists-service`. Their
+database source of truth is `services/*/src/db/migrations`. Older services still
+use bootstrap DDL until they are migrated.
 
 ## Seeds
 

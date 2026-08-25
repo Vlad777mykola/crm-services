@@ -1,7 +1,10 @@
 import { EntitySchema } from 'typeorm';
 
+import type { UserRow } from './user.entity.js';
+
 export interface UserProfileEntityRow {
   userId: string;
+  user?: UserRow;
   name: string;
   phone: string | null;
   city: string | null;
@@ -22,5 +25,16 @@ export const UserProfileEntity = new EntitySchema<UserProfileEntityRow>({
     bio: { type: 'text', nullable: true },
     createdAt: { type: 'timestamptz', createDate: true },
     updatedAt: { type: 'timestamptz', updateDate: true },
+  },
+  relations: {
+    user: {
+      type: 'one-to-one',
+      target: 'User',
+      joinColumn: {
+        name: 'userId',
+        referencedColumnName: 'id',
+      },
+      onDelete: 'CASCADE',
+    },
   },
 });

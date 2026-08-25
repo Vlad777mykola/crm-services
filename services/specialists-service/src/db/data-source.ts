@@ -11,11 +11,13 @@ import { PublicSpecialistRatingSummaryEntity } from './entities/public-specialis
 import { PublicSpecialistServiceProjectionEntity } from './entities/public-specialist-service-projection.entity.js';
 import { SpecialistProfileEntity } from './entities/specialist-profile.entity.js';
 import { SpecialistStatusHistoryEntity } from './entities/specialist-status-history.entity.js';
+import { InitSpecialistsSchema2026082500001 } from './migrations/2026082500001-InitSpecialistsSchema.js';
 
 export function createDataSource(): DataSource {
   return new DataSource({
     type: 'postgres',
     url: env.DATABASE_URL,
+    schema: 'specialists_schema',
     entities: [
       SpecialistProfileEntity,
       SpecialistStatusHistoryEntity,
@@ -27,7 +29,11 @@ export function createDataSource(): DataSource {
       PublicSpecialistServiceProjectionEntity,
       PublicSpecialistRatingSummaryEntity,
     ],
+    migrations: [InitSpecialistsSchema2026082500001],
+    migrationsTableName: 'typeorm_migrations_specialists',
     synchronize: false,
     logging: false,
   });
 }
+
+export const dataSource = createDataSource();
