@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, Button, Card, Form, Input, Spin } from 'antd';
 import { Controller, useForm } from 'react-hook-form';
 
+import { useAuth } from '@/features/auth/model/useAuth';
 import { fetchMyProfile, updateMyProfile } from '@/features/profile/api/profileApi';
 import { profileFormSchema, type ProfileFormValues } from '@/features/profile/model/schemas';
 
@@ -11,6 +12,7 @@ const PROFILE_QUERY_KEY = ['profile', 'me'];
 
 export function ProfileForm() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const {
@@ -41,8 +43,18 @@ export function ProfileForm() {
         city: profile.city ?? '',
         bio: profile.bio ?? '',
       });
+      return;
     }
-  }, [profile, reset]);
+
+    if (profile === null) {
+      reset({
+        name: user?.name ?? user?.email?.split('@')[0] ?? '',
+        phone: user?.phone ?? '',
+        city: user?.city ?? '',
+        bio: user?.bio ?? '',
+      });
+    }
+  }, [profile, reset, user]);
 
   const mutation = useMutation({
     mutationFn: (values: ProfileFormValues) =>
@@ -54,7 +66,7 @@ export function ProfileForm() {
       }),
     onSuccess: (updated) => {
       queryClient.setQueryData(PROFILE_QUERY_KEY, updated);
-      setSuccessMessage('Profile updated');
+      setSuccessMessage(profile ? 'Profile updated' : 'Profile created');
     },
   });
 
@@ -79,6 +91,14 @@ export function ProfileForm() {
 
   return (
     <Card title="My profile" style={{ maxWidth: 480, margin: '2rem auto' }}>
+      {profile === null && (
+        <Alert
+          type="info"
+          message="Complete your profile"
+          style={{ marginBottom: 16 }}
+          showIcon
+        />
+      )}
       {successMessage && <Alert type="success" message={successMessage} style={{ marginBottom: 16 }} showIcon />}
       {mutation.isError && (
         <Alert

@@ -40,6 +40,6 @@ The old bootstrap command is still available during rollout:
 yarn db:bootstrap:legacy --target dev
 ```
 
-Service startup must not mutate production database structure. The temporary
-`AUTO_DDL=true` flag exists only for local compatibility while each service is
-converted.
+Service startup must not mutate production database structure. During rollout,
+`AUTO_DDL` defaults to true outside production for local compatibility and false
+in production. Set it explicitly when a deployment needs stricter behavior.

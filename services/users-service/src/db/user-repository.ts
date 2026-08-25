@@ -92,11 +92,41 @@ export class UserRepository {
     return row ? toProfileRow(row) : null;
   }
 
+  async createProfileFromPatch(
+    manager: EntityManager,
+    userId: string,
+    patch: { name: string; phone?: string | null; city?: string | null; bio?: string | null },
+  ): Promise<UserProfileRow | null> {
+    await manager
+      .createQueryBuilder()
+      .insert()
+      .into(UserEntity)
+      .values({ id: userId })
+      .orIgnore()
+      .execute();
+
+    await manager
+      .createQueryBuilder()
+      .insert()
+      .into(UserProfileEntity)
+      .values({
+        userId,
+        name: patch.name,
+        phone: patch.phone ?? null,
+        city: patch.city ?? null,
+        bio: patch.bio ?? null,
+      })
+      .orIgnore()
+      .execute();
+
+    return this.updateProfile(manager, userId, patch);
+  }
+
   private profileQuery(client: Queryable) {
     return client
       .getRepository(UserEntity)
       .createQueryBuilder('u')
-      .innerJoin('users_schema.user_profiles', 'p', 'p."userId" = u.id')
+      .innerJoin(UserProfileEntity, 'p', 'p.userId = u.id')
       .select([
         'u.id AS "id"',
         'u.email AS "email"',

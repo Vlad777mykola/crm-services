@@ -14,8 +14,11 @@ const envSchema = z.object({
   RABBITMQ_URL: z.string().default('amqp://crm:crm_local_only@localhost:5672/crm-dev'),
   JWT_ACCESS_SECRET: z.string().min(1).default('dev-access-secret-change-me'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
-  AUTO_DDL: booleanFlag.default(false),
-});
+  AUTO_DDL: booleanFlag.optional(),
+}).transform((parsed) => ({
+  ...parsed,
+  AUTO_DDL: parsed.AUTO_DDL ?? parsed.NODE_ENV !== 'production',
+}));
 
 export type Env = z.infer<typeof envSchema>;
 

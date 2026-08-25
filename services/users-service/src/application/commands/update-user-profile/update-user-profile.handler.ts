@@ -12,12 +12,17 @@ export class UpdateUserProfileHandler {
   ) {}
 
   async execute(command: UpdateUserProfileCommand): Promise<UserProfileRow> {
-    const existing = await this.reads.findById(command.userId);
-    if (!existing) {
-      throw new AppError('User not found', 404);
-    }
     return this.writes.withTransaction(async (manager) => {
-      const updated = await this.writes.updateProfile(manager, command.userId, command.patch);
+      const existing = await this.reads.findById(command.userId);
+      const updated = existing
+        ? await this.writes.updateProfile(manager, command.userId, command.patch)
+        : command.patch.name
+          ? await this.writes.createProfileFromPatch(manager, command.userId, {
+              ...command.patch,
+              name: command.patch.name,
+            })
+          : null;
+
       if (!updated) {
         throw new AppError('User not found', 404);
       }

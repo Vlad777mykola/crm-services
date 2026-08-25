@@ -24,8 +24,11 @@ async function parseJsonOrThrow<T>(response: Response): Promise<T> {
   return body as T;
 }
 
-export async function fetchMyProfile(): Promise<UserProfile> {
+export async function fetchMyProfile(): Promise<UserProfile | null> {
   const response = await authorizedFetch('/users/me');
+  if (response.status === 404) {
+    return null;
+  }
   const body = await parseJsonOrThrow<{ data: UserProfile }>(response);
   return body.data;
 }

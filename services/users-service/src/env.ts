@@ -16,8 +16,11 @@ const envSchema = z.object({
   // service only verifies tokens (GET/PATCH /users/me), it never issues them.
   JWT_ACCESS_SECRET: z.string().min(1).default('dev-access-secret-change-me'),
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
-  AUTO_DDL: booleanFlag.default(false),
-});
+  AUTO_DDL: booleanFlag.optional(),
+}).transform((parsed) => ({
+  ...parsed,
+  AUTO_DDL: parsed.AUTO_DDL ?? parsed.NODE_ENV !== 'production',
+}));
 
 export type Env = z.infer<typeof envSchema>;
 
