@@ -91,11 +91,13 @@ export function AppHomePage() {
       <Card
         title="My companies"
         extra={
-          <Link to="/company/create">
-            <Button type="primary" size="small">
-              Create company
-            </Button>
-          </Link>
+          summary && summary.companies.length === 0 ? (
+            <Link to="/company/create">
+              <Button type="primary" size="small">
+                Create company
+              </Button>
+            </Link>
+          ) : undefined
         }
       >
         {summary && summary.companies.length === 0 && <Empty description="You don't manage any companies yet" />}

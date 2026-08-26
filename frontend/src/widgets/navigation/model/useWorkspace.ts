@@ -35,25 +35,41 @@ export function useWorkspace() {
 
   const workspaceOptions = useMemo<WorkspaceOption[]>(() => {
     const summary = summaryQuery.data;
-    const options: WorkspaceOption[] = [{ key: 'client', label: 'Client workspace', path: '/app', kind: 'client' }];
+    const companies = summary?.companies ?? [];
+    const hasSpecialist = Boolean(summary?.specialist);
+    const hasCompany = companies.length > 0;
 
-    options.push({
-      key: 'specialist',
-      label: summary?.specialist ? 'Specialist workspace' : 'Create specialist profile',
-      path: summary?.specialist ? '/specialist' : '/specialist/profile',
-      kind: 'specialist',
-    });
+    const options: WorkspaceOption[] = [
+      { key: 'client', label: 'Client', path: '/app', kind: 'client' },
+      {
+        key: 'specialist',
+        label: hasSpecialist ? 'Specialist' : 'Create specialist profile',
+        path: hasSpecialist ? '/specialist' : '/specialist/profile',
+        kind: 'specialist',
+        sectionStart: true,
+      },
+    ];
 
-    for (const company of summary?.companies ?? []) {
+    companies.forEach((company, index) => {
       options.push({
         key: `company:${company.id}`,
         label: company.name,
         path: `/company/${company.id}/dashboard`,
         kind: 'company',
+        sectionStart: index === 0,
+      });
+    });
+
+    if (!hasCompany) {
+      options.push({
+        key: 'create-company',
+        label: 'Create company',
+        path: '/company/create',
+        kind: 'company',
+        sectionStart: true,
       });
     }
 
-    options.push({ key: 'create-company', label: 'Create company', path: '/company/create', kind: 'company' });
     return options;
   }, [summaryQuery.data]);
 

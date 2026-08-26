@@ -34,6 +34,23 @@
   min-width: 220px;
 }
 
+.workspace-switcher__dropdown .workspace-switcher__section-start {
+  margin-top: 4px;
+  border-top: 1px solid #eaecf0;
+}
+
+.workspace-switcher__dropdown .workspace-switcher__section-start .ant-select-item-option-content {
+  padding-top: 4px;
+}
+
+.workspace-switcher__dropdown .ant-select-item-option {
+  padding-inline: 12px;
+}
+
+.workspace-switcher__dropdown .ant-select-item-option + .ant-select-item-option {
+  margin-top: 2px;
+}
+
 .page-header {
   display: flex;
   align-items: flex-start;

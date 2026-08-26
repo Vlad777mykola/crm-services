@@ -15,4 +15,5 @@ export interface WorkspaceOption {
   label: string;
   path: string;
   kind: WorkspaceKind;
+  sectionStart?: boolean;
 }
