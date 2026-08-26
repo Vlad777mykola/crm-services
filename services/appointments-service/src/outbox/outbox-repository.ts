@@ -12,6 +12,7 @@ export type AppointmentDomainEventName =
   | 'appointment.rejected'
   | 'appointment.completed'
   | 'appointment.review_eligible'
+  | 'appointment.rescheduled'
   | 'appointment.cancelled';
 
 export const appointmentEventRouting: Record<AppointmentDomainEventName, { exchange: string; routingKey: string }> = {
@@ -20,6 +21,7 @@ export const appointmentEventRouting: Record<AppointmentDomainEventName, { excha
   'appointment.rejected': { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'appointment.rejected' },
   'appointment.completed': { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'appointment.completed' },
   'appointment.review_eligible': { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'appointment.review_eligible' },
+  'appointment.rescheduled': { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'appointment.rescheduled' },
   'appointment.cancelled': { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'appointment.cancelled' },
 };
 

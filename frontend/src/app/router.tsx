@@ -12,6 +12,7 @@ import { RequestAppointmentPage } from '@/pages/appointments/RequestAppointmentP
 import { CompaniesListPage } from '@/pages/companies/CompaniesListPage';
 import { CompanyPublicPage } from '@/pages/companies/CompanyPublicPage';
 import { CompanyAppointmentsPage } from '@/pages/company/CompanyAppointmentsPage';
+import { CompanyAvailabilityPage } from '@/pages/company/CompanyAvailabilityPage';
 import { CompanyDashboardPage } from '@/pages/company/CompanyDashboardPage';
 import { CompanyMembersPage } from '@/pages/company/CompanyMembersPage';
 import { CompanyProfilePage } from '@/pages/company/CompanyProfilePage';
@@ -156,6 +157,14 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <CompanyAppointmentsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/company/:companyId/availability',
+        element: (
+          <ProtectedRoute>
+            <CompanyAvailabilityPage />
           </ProtectedRoute>
         ),
       },

@@ -1,10 +1,11 @@
+import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Alert, Button, Card, Form, Input, Result, Select, Spin } from 'antd';
-import { Controller, useForm } from 'react-hook-form';
+import { Alert, Button, Card, Empty, Form, Input, Result, Select, Spin } from 'antd';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { Link, useNavigate, useParams } from 'react-router';
 
-import { createAppointment } from '@/features/appointments/api/appointmentsApi';
+import { createAppointment, fetchAvailableSlots } from '@/features/appointments/api/appointmentsApi';
 import { appointmentRequestFormSchema, type AppointmentRequestFormValues } from '@/features/appointments/model/schemas';
 import { fetchServiceSpecialists } from '@/features/service-specialists/api/serviceSpecialistsApi';
 import { fetchServiceById } from '@/features/services/api/servicesApi';
@@ -15,9 +16,22 @@ const EMPTY_VALUES: AppointmentRequestFormValues = {
   notes: '',
 };
 
+function dayRange(value: string): { from: string; to: string } | null {
+  if (!value) return null;
+  const from = new Date(`${value}T00:00:00`);
+  const to = new Date(from);
+  to.setDate(to.getDate() + 1);
+  return { from: from.toISOString(), to: to.toISOString() };
+}
+
+function formatSlot(value: string): string {
+  return new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
 export function RequestAppointmentPage() {
   const { serviceId } = useParams<{ serviceId: string }>();
   const navigate = useNavigate();
+  const [selectedDate, setSelectedDate] = useState('');
 
   const { data: service, isLoading: isLoadingService } = useQuery({
     queryKey: ['service', serviceId],
@@ -34,18 +48,35 @@ export function RequestAppointmentPage() {
   const {
     control,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<AppointmentRequestFormValues>({
     resolver: zodResolver(appointmentRequestFormSchema),
     defaultValues: EMPTY_VALUES,
+  });
+  const specialistProfileId = useWatch({ control, name: 'specialistProfileId' });
+  const range = dayRange(selectedDate);
+
+  const { data: slots, isFetching: isFetchingSlots } = useQuery({
+    queryKey: ['appointments', 'available-slots', service?.companyId, service?.id, specialistProfileId, selectedDate],
+    queryFn: () =>
+      fetchAvailableSlots({
+        companyId: service!.companyId,
+        serviceId: service!.id,
+        specialistProfileId,
+        from: range!.from,
+        to: range!.to,
+        slotStepMinutes: 15,
+      }),
+    enabled: Boolean(service?.companyId && service?.id && specialistProfileId && range),
   });
 
   const requestMutation = useMutation({
     mutationFn: (values: AppointmentRequestFormValues) =>
       createAppointment(service!.companyId, {
         serviceId: service!.id,
-        specialistProfileId: values.specialistProfileId || null,
-        requestedStartAt: new Date(values.requestedStartAt).toISOString(),
+        specialistProfileId: values.specialistProfileId,
+        requestedStartAt: values.requestedStartAt,
         notes: values.notes || null,
       }),
   });
@@ -83,12 +114,13 @@ export function RequestAppointmentPage() {
     );
   }
 
-  const specialistOptions = [
-    { value: '', label: 'No preference' },
-    ...(specialists ?? [])
-      .filter((entry) => entry.specialist)
-      .map((entry) => ({ value: entry.specialistProfileId, label: entry.specialist!.displayName })),
-  ];
+  const specialistOptions = (specialists ?? [])
+    .filter((entry) => entry.specialist)
+    .map((entry) => ({ value: entry.specialistProfileId, label: entry.specialist!.displayName }));
+  const slotOptions = (slots ?? []).map((slot) => ({
+    value: slot.startAt,
+    label: `${formatSlot(slot.startAt)} - ${formatSlot(slot.endAt)}`,
+  }));
 
   return (
     <Card
@@ -106,24 +138,54 @@ export function RequestAppointmentPage() {
       )}
       <Form layout="vertical" onFinish={handleSubmit((values) => requestMutation.mutate(values))}>
         <Controller
+          name="specialistProfileId"
+          control={control}
+          render={({ field }) => (
+            <Form.Item
+              label="Specialist"
+              validateStatus={errors.specialistProfileId ? 'error' : ''}
+              help={errors.specialistProfileId?.message}
+            >
+              <Select
+                {...field}
+                options={specialistOptions}
+                onChange={(value) => {
+                  field.onChange(value);
+                  setValue('requestedStartAt', '');
+                }}
+                placeholder="Choose specialist"
+              />
+            </Form.Item>
+          )}
+        />
+        <Form.Item label="Date">
+          <Input
+            type="date"
+            value={selectedDate}
+            onChange={(event) => {
+              setSelectedDate(event.target.value);
+              setValue('requestedStartAt', '');
+            }}
+          />
+        </Form.Item>
+        <Controller
           name="requestedStartAt"
           control={control}
           render={({ field }) => (
             <Form.Item
-              label="Preferred date and time"
+              label="Available slot"
               validateStatus={errors.requestedStartAt ? 'error' : ''}
               help={errors.requestedStartAt?.message}
             >
-              <Input {...field} type="datetime-local" />
-            </Form.Item>
-          )}
-        />
-        <Controller
-          name="specialistProfileId"
-          control={control}
-          render={({ field }) => (
-            <Form.Item label="Preferred specialist (optional)">
-              <Select {...field} options={specialistOptions} onChange={(value) => field.onChange(value)} />
+              <Select
+                {...field}
+                disabled={!specialistProfileId || !selectedDate}
+                loading={isFetchingSlots}
+                options={slotOptions}
+                onChange={(value) => field.onChange(value)}
+                placeholder="Choose a slot"
+                notFoundContent={isFetchingSlots ? <Spin size="small" /> : <Empty description="No slots" />}
+              />
             </Form.Item>
           )}
         />

@@ -126,17 +126,17 @@ export class UserRepository {
     return client
       .getRepository(UserEntity)
       .createQueryBuilder('u')
-      .innerJoin(UserProfileEntity, 'p', 'p.userId = u.id')
+      .innerJoin('users_schema.user_profiles', 'p', 'p."userId" = u."id"')
       .select([
-        'u.id AS "id"',
-        'u.email AS "email"',
-        'u.status AS "status"',
-        'u.createdAt AS "userCreatedAt"',
-        'p.name AS "name"',
-        'p.phone AS "phone"',
-        'p.city AS "city"',
-        'p.bio AS "bio"',
-        'p.updatedAt AS "updatedAt"',
+        'u."id" AS "id"',
+        'u."email" AS "email"',
+        'u."status" AS "status"',
+        'u."createdAt" AS "userCreatedAt"',
+        'p."name" AS "name"',
+        'p."phone" AS "phone"',
+        'p."city" AS "city"',
+        'p."bio" AS "bio"',
+        'p."updatedAt" AS "updatedAt"',
       ]);
   }
 }

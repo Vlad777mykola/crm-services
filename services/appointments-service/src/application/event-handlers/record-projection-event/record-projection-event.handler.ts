@@ -55,6 +55,7 @@ export class RecordProjectionEventHandler {
           companyId: event.companyId,
           name: event.name,
           status: event.status,
+          durationMinutes: event.durationMinutes,
         });
         return true;
       }

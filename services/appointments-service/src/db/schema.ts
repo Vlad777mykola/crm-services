@@ -19,6 +19,7 @@ import type { DataSource } from 'typeorm';
  */
 export async function ensureAppointmentsSchema(dataSource: DataSource): Promise<void> {
   await dataSource.query(`CREATE SCHEMA IF NOT EXISTS appointments_schema`);
+  await dataSource.query(`CREATE EXTENSION IF NOT EXISTS btree_gist`);
 
   await dataSource.query(`
     CREATE TABLE IF NOT EXISTS appointments_schema.appointments (
@@ -28,7 +29,10 @@ export async function ensureAppointmentsSchema(dataSource: DataSource): Promise<
       "specialistProfileId" uuid,
       "clientUserId" uuid NOT NULL,
       "requestedStartAt" timestamptz NOT NULL,
+      "startAt" timestamptz NOT NULL,
+      "endAt" timestamptz NOT NULL,
       "status" varchar(20) NOT NULL DEFAULT 'pending',
+      "createdByUserId" uuid,
       "notes" text,
       "respondedAt" timestamptz,
       "completedAt" timestamptz,
@@ -36,9 +40,51 @@ export async function ensureAppointmentsSchema(dataSource: DataSource): Promise<
       "updatedAt" timestamptz NOT NULL DEFAULT now()
     )
   `);
+  await dataSource.query(`ALTER TABLE appointments_schema.appointments ADD COLUMN IF NOT EXISTS "startAt" timestamptz`);
+  await dataSource.query(`ALTER TABLE appointments_schema.appointments ADD COLUMN IF NOT EXISTS "endAt" timestamptz`);
+  await dataSource.query(`ALTER TABLE appointments_schema.appointments ADD COLUMN IF NOT EXISTS "createdByUserId" uuid`);
+  await dataSource.query(`UPDATE appointments_schema.appointments SET "startAt" = COALESCE("startAt", "requestedStartAt") WHERE "startAt" IS NULL`);
+  await dataSource.query(`UPDATE appointments_schema.appointments SET "endAt" = COALESCE("endAt", "requestedStartAt" + interval '60 minutes') WHERE "endAt" IS NULL`);
+  await dataSource.query(`ALTER TABLE appointments_schema.appointments ALTER COLUMN "startAt" SET NOT NULL`);
+  await dataSource.query(`ALTER TABLE appointments_schema.appointments ALTER COLUMN "endAt" SET NOT NULL`);
+  await dataSource.query(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'appointments_time_order'
+          AND conrelid = 'appointments_schema.appointments'::regclass
+      ) THEN
+        ALTER TABLE appointments_schema.appointments
+          ADD CONSTRAINT appointments_time_order CHECK ("startAt" < "endAt");
+      END IF;
+    END $$;
+  `);
   await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_appointments_companyId" ON appointments_schema.appointments ("companyId")`);
   await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_appointments_serviceId" ON appointments_schema.appointments ("serviceId")`);
   await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_appointments_clientUserId" ON appointments_schema.appointments ("clientUserId")`);
+  await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_appointments_specialistProfileId" ON appointments_schema.appointments ("specialistProfileId")`);
+  await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_appointments_startAt" ON appointments_schema.appointments ("startAt")`);
+  await dataSource.query(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'appointments_no_specialist_overlap'
+          AND conrelid = 'appointments_schema.appointments'::regclass
+      ) THEN
+        ALTER TABLE appointments_schema.appointments
+          ADD CONSTRAINT appointments_no_specialist_overlap
+          EXCLUDE USING gist (
+            "specialistProfileId" WITH =,
+            tstzrange("startAt", "endAt", '[)') WITH &&
+          )
+          WHERE ("specialistProfileId" IS NOT NULL AND "status" IN ('pending', 'approved'));
+      END IF;
+    END $$;
+  `);
 
   await dataSource.query(`
     CREATE TABLE IF NOT EXISTS appointments_schema.appointment_status_history (
@@ -80,9 +126,77 @@ export async function ensureAppointmentsSchema(dataSource: DataSource): Promise<
       "companyId" uuid NOT NULL,
       "name" varchar(255) NOT NULL,
       "status" varchar(20) NOT NULL,
+      "durationMinutes" int NOT NULL DEFAULT 60,
       "updatedAt" timestamptz NOT NULL DEFAULT now()
     )
   `);
+  await dataSource.query(`ALTER TABLE appointments_schema.appointment_service_projection ADD COLUMN IF NOT EXISTS "durationMinutes" int NOT NULL DEFAULT 60`);
+
+  await dataSource.query(`
+    CREATE TABLE IF NOT EXISTS appointments_schema.company_availability_rules (
+      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      "companyId" uuid NOT NULL,
+      "weekday" smallint NOT NULL,
+      "startTime" time NOT NULL,
+      "endTime" time NOT NULL,
+      "timezone" varchar(100) NOT NULL DEFAULT 'UTC',
+      "active" boolean NOT NULL DEFAULT true,
+      "createdAt" timestamptz NOT NULL DEFAULT now(),
+      "updatedAt" timestamptz NOT NULL DEFAULT now(),
+      CONSTRAINT "CHK_company_availability_weekday" CHECK ("weekday" BETWEEN 0 AND 6),
+      CONSTRAINT "CHK_company_availability_time_order" CHECK ("startTime" < "endTime")
+    )
+  `);
+  await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_company_availability_rules_companyId" ON appointments_schema.company_availability_rules ("companyId")`);
+  await dataSource.query(`CREATE UNIQUE INDEX IF NOT EXISTS "UQ_company_availability_rules_active_window" ON appointments_schema.company_availability_rules ("companyId", "weekday", "startTime", "endTime", "timezone") WHERE "active" = true`);
+
+  await dataSource.query(`
+    CREATE TABLE IF NOT EXISTS appointments_schema.company_time_blocks (
+      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      "companyId" uuid NOT NULL,
+      "startsAt" timestamptz NOT NULL,
+      "endsAt" timestamptz NOT NULL,
+      "reason" text,
+      "createdByUserId" uuid,
+      "createdAt" timestamptz NOT NULL DEFAULT now(),
+      CONSTRAINT "CHK_company_time_blocks_time_order" CHECK ("startsAt" < "endsAt")
+    )
+  `);
+  await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_company_time_blocks_company_range" ON appointments_schema.company_time_blocks ("companyId", "startsAt", "endsAt")`);
+
+  await dataSource.query(`
+    CREATE TABLE IF NOT EXISTS appointments_schema.specialist_availability_rules (
+      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      "companyId" uuid NOT NULL,
+      "specialistProfileId" uuid NOT NULL,
+      "weekday" smallint NOT NULL,
+      "startTime" time NOT NULL,
+      "endTime" time NOT NULL,
+      "timezone" varchar(100) NOT NULL DEFAULT 'UTC',
+      "active" boolean NOT NULL DEFAULT true,
+      "createdAt" timestamptz NOT NULL DEFAULT now(),
+      "updatedAt" timestamptz NOT NULL DEFAULT now(),
+      CONSTRAINT "CHK_specialist_availability_weekday" CHECK ("weekday" BETWEEN 0 AND 6),
+      CONSTRAINT "CHK_specialist_availability_time_order" CHECK ("startTime" < "endTime")
+    )
+  `);
+  await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_specialist_availability_rules_specialist" ON appointments_schema.specialist_availability_rules ("companyId", "specialistProfileId")`);
+  await dataSource.query(`CREATE UNIQUE INDEX IF NOT EXISTS "UQ_specialist_availability_rules_active_window" ON appointments_schema.specialist_availability_rules ("companyId", "specialistProfileId", "weekday", "startTime", "endTime", "timezone") WHERE "active" = true`);
+
+  await dataSource.query(`
+    CREATE TABLE IF NOT EXISTS appointments_schema.specialist_time_blocks (
+      "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+      "companyId" uuid NOT NULL,
+      "specialistProfileId" uuid NOT NULL,
+      "startsAt" timestamptz NOT NULL,
+      "endsAt" timestamptz NOT NULL,
+      "reason" text,
+      "createdByUserId" uuid,
+      "createdAt" timestamptz NOT NULL DEFAULT now(),
+      CONSTRAINT "CHK_specialist_time_blocks_time_order" CHECK ("startsAt" < "endsAt")
+    )
+  `);
+  await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_specialist_time_blocks_specialist_range" ON appointments_schema.specialist_time_blocks ("companyId", "specialistProfileId", "startsAt", "endsAt")`);
 
   // Fed by specialist-service.assigned/.removed (services-catalog-service) -
   // used to validate a client's preferred specialist is actually assigned to

@@ -5,6 +5,7 @@ export interface ServiceProjectionRow {
   companyId: string;
   name: string;
   status: string;
+  durationMinutes: number;
   updatedAt: Date;
 }
 
@@ -17,6 +18,7 @@ export const AppointmentServiceProjectionEntity = new EntitySchema<ServiceProjec
     companyId: { type: 'uuid' },
     name: { type: String, length: 255 },
     status: { type: String, length: 20 },
+    durationMinutes: { type: Number, default: 60 },
     updatedAt: { type: 'timestamptz', updateDate: true },
   },
 });

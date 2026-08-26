@@ -143,6 +143,7 @@ const TARGET_BY_NAME = {
 };
 
 const SAFE_TARGETS = new Set(Object.keys(TARGET_BY_NAME));
+const DEVELOPMENT_DATA_TARGETS = new Set(['dev', 'test', 'verify', 'smoke']);
 
 /**
  * @param {string} [targetName]
@@ -166,6 +167,16 @@ export function resolveTarget(targetName = 'dev') {
 export function assertSafeDatabaseTarget(target, operation) {
   if (!SAFE_TARGETS.has(target.name)) {
     throw new Error(`Destructive operation "${operation}" blocked for target "${target.name}"`);
+  }
+}
+
+/**
+ * @param {typeof TARGET_BY_NAME.dev} target
+ * @param {string} operation
+ */
+export function assertDevelopmentDataTarget(target, operation) {
+  if (!DEVELOPMENT_DATA_TARGETS.has(target.name)) {
+    throw new Error(`${operation} is development/test only and is blocked for target "${target.name}"`);
   }
 }
 

@@ -17,6 +17,7 @@ export function resolveEmailRecipient(event: WireEventEnvelope): EmailRecipientS
     }
     case 'appointment.approved':
     case 'appointment.rejected':
+    case 'appointment.rescheduled':
     case 'appointment.completed': {
       const { clientUserId } = event.data as DomainEventDataMap['appointment.approved'];
       return { kind: 'user', userId: clientUserId };

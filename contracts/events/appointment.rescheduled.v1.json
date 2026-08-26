@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://crm-services/contracts/events/appointment.rescheduled.v1.json",
+  "title": "appointment.rescheduled",
+  "description": "Published when a company reschedules a pending or approved appointment. Exchange: domain.events. Routing key: appointment.rescheduled.",
+  "type": "object",
+  "required": [
+    "appointmentId",
+    "companyId",
+    "serviceId",
+    "clientUserId",
+    "specialistProfileId",
+    "companyName",
+    "serviceName",
+    "previousStartAt",
+    "previousEndAt",
+    "requestedStartAt",
+    "startAt",
+    "endAt"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "appointmentId": { "type": "string", "format": "uuid" },
+    "companyId": { "type": "string", "format": "uuid" },
+    "serviceId": { "type": "string", "format": "uuid" },
+    "clientUserId": { "type": "string", "format": "uuid" },
+    "specialistProfileId": { "type": "string", "format": "uuid" },
+    "companyName": { "type": "string" },
+    "serviceName": { "type": "string" },
+    "previousStartAt": { "type": "string", "format": "date-time" },
+    "previousEndAt": { "type": "string", "format": "date-time" },
+    "requestedStartAt": { "type": "string", "format": "date-time" },
+    "startAt": { "type": "string", "format": "date-time" },
+    "endAt": { "type": "string", "format": "date-time" }
+  }
+}

@@ -13,4 +13,11 @@ export const MIGRATABLE_SERVICES = [
     migrationsTable: 'typeorm_migrations_specialists',
     schema: 'specialists_schema',
   },
+  {
+    name: 'appointments-service',
+    workspace: '@crm/appointments-service',
+    path: 'services/appointments-service',
+    migrationsTable: 'typeorm_migrations_appointments',
+    schema: 'appointments_schema',
+  },
 ];

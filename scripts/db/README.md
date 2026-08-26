@@ -27,6 +27,10 @@ Migrated services currently: `users-service`, `specialists-service`. Their
 database source of truth is `services/*/src/db/migrations`. Older services still
 use bootstrap DDL until they are migrated.
 
+Seed/fill commands are development/test only (`dev`, `test`, `verify`,
+`smoke`). Production must use migrations, backup/restore, and smoke/preflight
+checks instead of dev fill data.
+
 ## Seeds
 
 ```powershell

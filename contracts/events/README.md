@@ -16,6 +16,7 @@ Published by the backend via the outbox pattern (see [`docs/architecture/event-d
 - [`appointment.requested.v1.json`](appointment.requested.v1.json)
 - [`appointment.approved.v1.json`](appointment.approved.v1.json)
 - [`appointment.rejected.v1.json`](appointment.rejected.v1.json)
+- [`appointment.rescheduled.v1.json`](appointment.rescheduled.v1.json)
 - [`appointment.cancelled.v1.json`](appointment.cancelled.v1.json)
 - [`appointment.completed.v1.json`](appointment.completed.v1.json)
 - [`appointment.review_eligible.v1.json`](appointment.review_eligible.v1.json) - published by `services/appointments-service`, consumed by `services/reviews-service`.

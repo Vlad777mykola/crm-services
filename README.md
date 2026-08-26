@@ -53,8 +53,8 @@ yarn dev dashboard --fresh      # deterministic reset + seed
 
 Profiles: `db:seed:companies`, `db:seed:full`, `db:seed:test`. See [`scripts/db/README.md`](scripts/db/README.md).
 
-Database migration rollout note: `users-service` and `specialists-service` now
-own versioned TypeORM migrations under `src/db/migrations`. The root
+Database migration rollout note: `users-service`, `specialists-service`, and
+`appointments-service` now own versioned TypeORM migrations under `src/db/migrations`. The root
 `db:migrate` orchestrates migrated services; `db:bootstrap:legacy` is kept
 temporarily for the older bootstrap DDL path. See
 [`docs/architecture/database-migrations.md`](docs/architecture/database-migrations.md).

@@ -16,7 +16,10 @@ const QUEUE_NAME = 'appointments-service.q';
 async function bootstrap(): Promise<void> {
   const dataSource = createDataSource();
   await dataSource.initialize();
-  await ensureAppointmentsSchema(dataSource);
+  if (env.AUTO_DDL) {
+    logger.warn('[appointments-service] AUTO_DDL is enabled; use only for temporary local compatibility');
+    await ensureAppointmentsSchema(dataSource);
+  }
 
   const processedEvents = new ProcessedEventsRepository();
   const projections = new ProjectionsRepository(dataSource);

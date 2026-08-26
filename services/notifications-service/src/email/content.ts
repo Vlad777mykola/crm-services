@@ -33,6 +33,13 @@ export function buildEmailContent(event: WireEventEnvelope): EmailContent | null
         body: `${companyName} was unable to confirm your request for ${new Date(requestedStartAt).toLocaleString()}.`,
       };
     }
+    case 'appointment.rescheduled': {
+      const { serviceName, companyName, startAt } = event.data as DomainEventDataMap['appointment.rescheduled'];
+      return {
+        subject: `Your appointment for ${serviceName} was rescheduled`,
+        body: `${companyName} moved your appointment to ${new Date(startAt).toLocaleString()}.`,
+      };
+    }
     case 'appointment.completed': {
       const { serviceName, companyName } = event.data as DomainEventDataMap['appointment.completed'];
       return {

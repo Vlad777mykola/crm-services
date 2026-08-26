@@ -56,6 +56,11 @@ http:
       service: appointments-service
       entryPoints: [web]
       priority: 90
+    appointments-service-company-availability: # appointments-service availability
+      rule: "PathRegexp(`^/companies/[^/]+/(availability|time-blocks)|^/companies/[^/]+/specialists/[^/]+/(availability|time-blocks)`)"
+      service: appointments-service
+      entryPoints: [web]
+      priority: 90
     company-specialists-service-requests-create: # company-specialists-service (Phase 7)
       rule: "PathRegexp(`^/companies/[^/]+/specialists/requests$`)"
       service: company-specialists-service
@@ -187,6 +192,11 @@ http:
       service: appointments-service
       entryPoints: [web]
       priority: 80
+    appointments-service-prefix: # appointments-service availability/detail/query routes
+      rule: "PathPrefix(`/appointments`)"
+      service: appointments-service
+      entryPoints: [web]
+      priority: 70
 
     # ---- Notifications (Phase 11: notifications-service HTTP API) ----
     notifications-service:

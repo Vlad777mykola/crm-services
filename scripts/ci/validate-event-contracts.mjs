@@ -17,6 +17,7 @@ const REQUIRED_ROUTING = {
   'company.created': 'domain.events',
   'company-member.added': 'domain.events',
   'appointment.requested': 'domain.events',
+  'appointment.rescheduled': 'domain.events',
   'review.received': 'domain.events',
   'analytics.company_rating_updated': 'analytics.events',
   'ai.appointment_recommendation_created': 'analytics.events',

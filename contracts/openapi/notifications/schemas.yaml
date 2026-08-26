@@ -10,6 +10,7 @@ Notification:
         - appointment.requested
         - appointment.approved
         - appointment.rejected
+        - appointment.rescheduled
         - appointment.cancelled
         - appointment.completed
         - review.received

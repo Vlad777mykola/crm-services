@@ -15,7 +15,19 @@ export interface CreateAppointmentInput {
   specialistProfileId: string | null;
   clientUserId: string;
   requestedStartAt: Date;
+  startAt: Date;
+  endAt: Date;
+  createdByUserId: string;
   notes: string | null;
+}
+
+export interface ListAppointmentsFilters {
+  from?: Date;
+  to?: Date;
+  status?: string;
+  serviceId?: string;
+  specialistProfileId?: string;
+  limit?: number;
 }
 
 export class AppointmentRepository {
@@ -38,18 +50,24 @@ export class AppointmentRepository {
     return this.dataSource.getRepository(AppointmentEntity).findOne({ where: { id, clientUserId } });
   }
 
-  async listByCompany(companyId: string): Promise<AppointmentRow[]> {
-    return this.dataSource.getRepository(AppointmentEntity).find({
-      where: { companyId },
-      order: { createdAt: 'DESC' },
-    });
+  async listByCompany(companyId: string, filters: ListAppointmentsFilters = {}): Promise<AppointmentRow[]> {
+    const query = this.appointmentListQuery().where('appointment.companyId = :companyId', { companyId });
+    this.applyListFilters(query, filters);
+    return query.getMany();
   }
 
-  async listByClient(clientUserId: string): Promise<AppointmentRow[]> {
-    return this.dataSource.getRepository(AppointmentEntity).find({
-      where: { clientUserId },
-      order: { createdAt: 'DESC' },
+  async listByClient(clientUserId: string, filters: ListAppointmentsFilters = {}): Promise<AppointmentRow[]> {
+    const query = this.appointmentListQuery().where('appointment.clientUserId = :clientUserId', { clientUserId });
+    this.applyListFilters(query, filters);
+    return query.getMany();
+  }
+
+  async listBySpecialist(specialistProfileId: string, filters: ListAppointmentsFilters = {}): Promise<AppointmentRow[]> {
+    const query = this.appointmentListQuery().where('appointment.specialistProfileId = :specialistProfileId', {
+      specialistProfileId,
     });
+    this.applyListFilters(query, filters);
+    return query.getMany();
   }
 
   async updateStatus(
@@ -63,6 +81,25 @@ export class AppointmentRepository {
 
     const repository = manager.getRepository(AppointmentEntity);
     await repository.update({ id }, patch);
+    return (await repository.findOne({ where: { id } }))!;
+  }
+
+  async updateSchedule(
+    manager: EntityManager,
+    id: string,
+    fields: { specialistProfileId: string; requestedStartAt: Date; startAt: Date; endAt: Date },
+  ): Promise<AppointmentRow> {
+    const repository = manager.getRepository(AppointmentEntity);
+    await repository.update(
+      { id },
+      {
+        specialistProfileId: fields.specialistProfileId,
+        requestedStartAt: fields.requestedStartAt,
+        startAt: fields.startAt,
+        endAt: fields.endAt,
+        updatedAt: new Date(),
+      },
+    );
     return (await repository.findOne({ where: { id } }))!;
   }
 
@@ -89,5 +126,29 @@ export class AppointmentRepository {
 
   async withTransaction<T>(fn: (manager: EntityManager) => Promise<T>): Promise<T> {
     return this.dataSource.transaction(fn);
+  }
+
+  private appointmentListQuery() {
+    return this.dataSource
+      .getRepository(AppointmentEntity)
+      .createQueryBuilder('appointment')
+      .orderBy('appointment.startAt', 'DESC')
+      .addOrderBy('appointment.createdAt', 'DESC');
+  }
+
+  private applyListFilters(
+    query: ReturnType<AppointmentRepository['appointmentListQuery']>,
+    filters: ListAppointmentsFilters,
+  ): void {
+    if (filters.from) query.andWhere('appointment.endAt > :from', { from: filters.from });
+    if (filters.to) query.andWhere('appointment.startAt < :to', { to: filters.to });
+    if (filters.status) query.andWhere('appointment.status = :status', { status: filters.status });
+    if (filters.serviceId) query.andWhere('appointment.serviceId = :serviceId', { serviceId: filters.serviceId });
+    if (filters.specialistProfileId) {
+      query.andWhere('appointment.specialistProfileId = :specialistProfileId', {
+        specialistProfileId: filters.specialistProfileId,
+      });
+    }
+    if (filters.limit) query.take(filters.limit);
   }
 }

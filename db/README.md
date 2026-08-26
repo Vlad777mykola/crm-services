@@ -12,6 +12,9 @@ Four separate concerns:
 Temporary rollout note: `db:bootstrap:legacy` still exists for non-migrated
 schemas while services move to `services/*/src/db/migrations`.
 
+Seed/fill commands are development/test only. Production must use migrations,
+backup/restore, and smoke/preflight checks instead of dev fill data.
+
 See [`scripts/db/README.md`](scripts/db/README.md) for commands.
 
 ```text

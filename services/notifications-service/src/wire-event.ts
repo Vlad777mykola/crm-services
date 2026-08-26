@@ -24,6 +24,21 @@ export interface AppointmentRespondedData {
   requestedStartAt: string;
 }
 
+export interface AppointmentRescheduledData {
+  appointmentId: string;
+  companyId: string;
+  serviceId: string;
+  clientUserId: string;
+  specialistProfileId: string;
+  companyName: string;
+  serviceName: string;
+  previousStartAt: string;
+  previousEndAt: string;
+  requestedStartAt: string;
+  startAt: string;
+  endAt: string;
+}
+
 export interface AppointmentCompletedData {
   appointmentId: string;
   companyId: string;
@@ -55,6 +70,7 @@ export interface DomainEventDataMap {
   'appointment.requested': AppointmentRequestedData;
   'appointment.approved': AppointmentRespondedData;
   'appointment.rejected': AppointmentRespondedData;
+  'appointment.rescheduled': AppointmentRescheduledData;
   'appointment.completed': AppointmentCompletedData;
   'appointment.cancelled': AppointmentCancelledData;
   'review.received': ReviewReceivedData;

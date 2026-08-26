@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { parseDbCliArgs } from './lib/cli-args.mjs';
 import { runDestructiveOperation } from './lib/destructive.mjs';
 import { envForTarget, runFillDumpDb } from './lib/fill-dump.mjs';
-import { printOperationBanner, resolveTarget } from './lib/target.mjs';
+import { assertDevelopmentDataTarget, printOperationBanner, resolveTarget } from './lib/target.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -50,6 +50,7 @@ if (!yarnScript) {
 }
 
 const target = resolveTarget(cliArgs.target);
+assertDevelopmentDataTarget(target, 'db:seed');
 printOperationBanner({ action: `SEED ${profileArg}`, target });
 
 async function runSeed() {

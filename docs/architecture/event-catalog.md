@@ -11,11 +11,12 @@ Every message uses the `envelope.v1.json` wrapper (`id`, `type`, `source`, `vers
 
 | Event | Exchange | Routing key | Publisher | Consumers | Schema file |
 |---|---|---|---|---|---|
-| `appointment.requested` | `domain.events` | `appointment.requested` | backend (via outbox) | notifications-service, ai-service, appointments-service (indirectly via ai.*, Phase 12) | `appointment.requested.v1.json` |
-| `appointment.approved` | `domain.events` | `appointment.approved` | backend (via outbox) | notifications-service, ai-service | `appointment.approved.v1.json` |
-| `appointment.rejected` | `domain.events` | `appointment.rejected` | backend (via outbox) | notifications-service | `appointment.rejected.v1.json` |
-| `appointment.cancelled` | `domain.events` | `appointment.cancelled` | backend (via outbox) | notifications-service | `appointment.cancelled.v1.json` |
-| `appointment.completed` | `domain.events` | `appointment.completed` | backend (via outbox) | notifications-service, ai-service | `appointment.completed.v1.json` |
+| `appointment.requested` | `domain.events` | `appointment.requested` | appointments-service (via outbox) | notifications-service, ai-service, appointments-service (indirectly via ai.*, Phase 12) | `appointment.requested.v1.json` |
+| `appointment.approved` | `domain.events` | `appointment.approved` | appointments-service (via outbox) | notifications-service, ai-service | `appointment.approved.v1.json` |
+| `appointment.rejected` | `domain.events` | `appointment.rejected` | appointments-service (via outbox) | notifications-service | `appointment.rejected.v1.json` |
+| `appointment.rescheduled` | `domain.events` | `appointment.rescheduled` | appointments-service (via outbox) | notifications-service | `appointment.rescheduled.v1.json` |
+| `appointment.cancelled` | `domain.events` | `appointment.cancelled` | appointments-service (via outbox) | notifications-service | `appointment.cancelled.v1.json` |
+| `appointment.completed` | `domain.events` | `appointment.completed` | appointments-service (via outbox) | notifications-service, ai-service | `appointment.completed.v1.json` |
 | `appointment.review_eligible` | `domain.events` | `appointment.review_eligible` | appointments-service (via its own outbox) | reviews-service (`appointment_review_eligibility_projection`) | `appointment.review_eligible.v1.json` |
 | `review.received` | `domain.events` | `review.received` | reviews-service (via outbox) | notifications-service, specialists-service (`public_specialist_rating_summary`) | `review.received.v1.json` |
 | `analytics.company_rating_updated` | `analytics.events` | `analytics.company_rating_updated` | ai-service | notifications-service | `analytics.company_rating_updated.v1.json` |
@@ -43,11 +44,9 @@ Every message uses the `envelope.v1.json` wrapper (`id`, `type`, `source`, `vers
 **not published** — no code path in company-members-service changes a member's role
 after creation (legacy parity: PATCH only ever changes status).
 
-Routing confirmed from `backend/src/infrastructure/outbox/event-routing.ts` — the
-`domainEventRouting` map currently has exactly these 6 entries: `appointment.requested`,
-`appointment.approved`, `appointment.rejected`, `appointment.completed`,
-`appointment.cancelled`, `review.received`. Nothing else is wired through the outbox
-today.
+Routing is now service-owned for extracted publishers. `appointments-service`
+publishes appointment lifecycle events from its own outbox; legacy backend
+routing notes are historical for already-extracted appointment paths.
 
 ## Planned — schema does not exist yet (contract-first gate applies)
 

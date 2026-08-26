@@ -3,7 +3,7 @@ import type { ZodType } from 'zod';
 
 import { AppError } from '../errors/AppError.js';
 
-type ValidationTarget = 'body' | 'params';
+type ValidationTarget = 'body' | 'params' | 'query';
 
 export function validate(schema: ZodType, target: ValidationTarget = 'body') {
   return (req: Request, _res: Response, next: NextFunction): void => {

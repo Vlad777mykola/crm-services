@@ -25,6 +25,7 @@ Older schemas still use bootstrap DDL until their service receives migrations.
 |---|---|---|
 | `users-service` | `users_schema` | `typeorm_migrations_users` |
 | `specialists-service` | `specialists_schema` | `typeorm_migrations_specialists` |
+| `appointments-service` | `appointments_schema` | `typeorm_migrations_appointments` |
 
 Run migrations from the repo root:
 

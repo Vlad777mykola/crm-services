@@ -8,17 +8,26 @@ specialists, company-specialists, and services-catalog were stable.
 ## Owned routes
 
 - `POST /companies/:companyId/appointments` - client requests an appointment.
-- `GET /companies/:companyId/appointments` - company (owner/manager) lists its appointments.
+- `GET /companies/:companyId/appointments` - company (owner/manager) lists its appointments; accepts `from`, `to`, `status`, `serviceId`, `specialistProfileId`, `limit`.
+- `GET /companies/:companyId/appointments/requests` - company lists pending appointment requests.
 - `PATCH /companies/:companyId/appointments/:appointmentId` - company approves/rejects (body: `{ "status": "approved" | "rejected" }`).
 - `POST /companies/:companyId/appointments/:appointmentId/complete` - company marks an approved appointment completed.
-- `GET /appointments/me` - client lists their own appointments.
+- `POST /companies/:companyId/appointments/:appointmentId/reschedule` - company reschedules a pending/approved appointment.
+- `GET /companies/:companyId/availability`, `PUT /companies/:companyId/availability` - company availability rules.
+- `POST /companies/:companyId/time-blocks`, `DELETE /companies/:companyId/time-blocks/:blockId` - company blocks.
+- `GET /companies/:companyId/specialists/:specialistProfileId/availability`, `PUT .../availability` - specialist availability in a company.
+- `POST /companies/:companyId/specialists/:specialistProfileId/time-blocks`, `DELETE .../time-blocks/:blockId` - specialist blocks.
+- `GET /appointments/available-slots` - slot search for a company/service/specialist/time range.
+- `GET /appointments/me` - client lists their own appointments; accepts the same range/filter query params.
+- `GET /appointments/company/:companyId`, `GET /appointments/company/:companyId/requests` - query aliases for company views.
+- `GET /appointments/specialist/:specialistProfileId` - company-authorized specialist appointment view; requires `companyId` query param.
+- `GET /appointments/:appointmentId` - client (own) or company owner/manager appointment details.
 - `GET /appointments/:appointmentId/status-history` - client (own) or company owner/manager.
 - `POST /appointments/:appointmentId/cancel` - client cancels their own pending/approved appointment.
 
-**Exactly these 7** — per Task 9.2, `POST .../approve`, `POST .../reject`
-(separate endpoints), plain `GET /appointments/:appointmentId`,
-`GET /specialists/me/appointments`, and an `appointment.no_show` status are
-all explicitly **not implemented** (confirmed not to exist in legacy either).
+`POST .../approve`, `POST .../reject` (separate endpoints),
+`GET /specialists/me/appointments`, and an `appointment.no_show` status remain
+not implemented.
 
 ## Owned tables / schema (`appointments_schema`)
 
@@ -28,6 +37,8 @@ all explicitly **not implemented** (confirmed not to exist in legacy either).
 - `appointment_company_projection` — fed by `company.created`/`.updated`.
 - `appointment_service_projection` — fed by `service.created`/`.updated`.
 - `appointment_service_specialist_projection` — fed by `specialist-service.assigned`/`.removed`.
+- `company_availability_rules`, `company_time_blocks`,
+  `specialist_availability_rules`, `specialist_time_blocks`.
 - `appointment_recommendation_projections` — moved here from
   `backend-projection-service` in Phase 12; fed by
   `ai.appointment_recommendation_created`. AI-derived, not source-of-truth;
@@ -57,7 +68,8 @@ no confirmed reader.
 
 Reuses the existing v1 contracts as-is (Task 9.5 — no v2, payload unchanged
 from legacy): `appointment.requested`, `appointment.approved`,
-`appointment.rejected`, `appointment.completed`, `appointment.cancelled`.
+`appointment.rejected`, `appointment.rescheduled`, `appointment.completed`,
+`appointment.cancelled`.
 
 ## Known gaps / temporary compromises
 

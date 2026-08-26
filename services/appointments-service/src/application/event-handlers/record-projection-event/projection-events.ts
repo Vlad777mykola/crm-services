@@ -19,6 +19,7 @@ export interface ServiceEventData {
   companyId: string;
   name: string;
   status: string;
+  durationMinutes?: number;
 }
 
 export interface SpecialistServiceEventData {

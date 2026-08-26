@@ -9,6 +9,7 @@ export enum NotificationType {
   APPOINTMENT_REQUESTED = 'appointment.requested',
   APPOINTMENT_APPROVED = 'appointment.approved',
   APPOINTMENT_REJECTED = 'appointment.rejected',
+  APPOINTMENT_RESCHEDULED = 'appointment.rescheduled',
   APPOINTMENT_CANCELLED = 'appointment.cancelled',
   APPOINTMENT_COMPLETED = 'appointment.completed',
   REVIEW_RECEIVED = 'review.received',

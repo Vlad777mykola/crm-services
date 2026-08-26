@@ -13,6 +13,7 @@ const NOTIFICATION_TYPE_BY_EVENT: Partial<Record<string, NotificationType>> = {
   'appointment.requested': NotificationType.APPOINTMENT_REQUESTED,
   'appointment.approved': NotificationType.APPOINTMENT_APPROVED,
   'appointment.rejected': NotificationType.APPOINTMENT_REJECTED,
+  'appointment.rescheduled': NotificationType.APPOINTMENT_RESCHEDULED,
   'appointment.cancelled': NotificationType.APPOINTMENT_CANCELLED,
   'appointment.completed': NotificationType.APPOINTMENT_COMPLETED,
   'review.received': NotificationType.REVIEW_RECEIVED,

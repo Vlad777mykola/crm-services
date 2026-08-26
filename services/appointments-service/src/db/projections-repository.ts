@@ -19,7 +19,9 @@ export type { CompanyProjectionRow } from './entities/appointment-company-projec
 export type { ServiceProjectionRow } from './entities/appointment-service-projection.entity.js';
 export type { ClientProfileProjectionRow } from './entities/client-profile-projection.entity.js';
 
-export type UpsertServiceProjectionInput = Omit<ServiceProjectionRow, 'updatedAt'>;
+export type UpsertServiceProjectionInput = Omit<ServiceProjectionRow, 'updatedAt' | 'durationMinutes'> & {
+  durationMinutes?: number;
+};
 
 export class ProjectionsRepository {
   constructor(private readonly dataSource: DataSource) {}
@@ -55,7 +57,7 @@ export class ProjectionsRepository {
   async upsertService(manager: EntityManager, input: UpsertServiceProjectionInput): Promise<void> {
     await manager
       .getRepository(AppointmentServiceProjectionEntity)
-      .upsert({ ...input, updatedAt: new Date() }, { conflictPaths: ['serviceId'] });
+      .upsert({ ...input, durationMinutes: input.durationMinutes ?? 60, updatedAt: new Date() }, { conflictPaths: ['serviceId'] });
   }
 
   async findService(serviceId: string): Promise<ServiceProjectionRow | null> {

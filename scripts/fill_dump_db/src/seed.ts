@@ -7,6 +7,47 @@ import { daysFromNow, insertQualified, insertRow } from './insert.js';
 
 // Same cost factor as auth-service password hashing.
 const BCRYPT_SALT_ROUNDS = 10;
+const TEETH_CLEANING_DURATION_MINUTES = 30;
+const TEETH_WHITENING_DURATION_MINUTES = 60;
+const HAIRCUT_DURATION_MINUTES = 45;
+const MANICURE_DURATION_MINUTES = 40;
+const WEEKDAYS = [1, 2, 3, 4, 5] as const;
+
+function addMinutes(date: Date, minutes: number): Date {
+  return new Date(date.getTime() + minutes * 60_000);
+}
+
+async function seedCompanyWeekdayAvailability(companyId: string): Promise<void> {
+  for (const weekday of WEEKDAYS) {
+    await insertRow('appointments_schema', 'company_availability_rules', {
+      companyId,
+      weekday,
+      startTime: '09:00',
+      endTime: '18:00',
+      timezone: 'UTC',
+      active: true,
+    });
+  }
+}
+
+async function seedSpecialistWeekdayAvailability(
+  companyId: string,
+  specialistProfileId: string,
+  startTime = '09:00',
+  endTime = '18:00',
+): Promise<void> {
+  for (const weekday of WEEKDAYS) {
+    await insertRow('appointments_schema', 'specialist_availability_rules', {
+      companyId,
+      specialistProfileId,
+      weekday,
+      startTime,
+      endTime,
+      timezone: 'UTC',
+      active: true,
+    });
+  }
+}
 
 export async function seedDatabase(): Promise<void> {
   await ensureAllMicroserviceSchemas();
@@ -643,24 +684,28 @@ export async function seedDatabase(): Promise<void> {
     companyId: dentalId,
     name: 'Teeth Cleaning',
     status: 'published',
+    durationMinutes: TEETH_CLEANING_DURATION_MINUTES,
   });
   await insertRow('appointments_schema', 'appointment_service_projection', {
     serviceId: teethWhiteningId,
     companyId: dentalId,
     name: 'Teeth Whitening',
     status: 'published',
+    durationMinutes: TEETH_WHITENING_DURATION_MINUTES,
   });
   await insertRow('appointments_schema', 'appointment_service_projection', {
     serviceId: haircutId,
     companyId: beautyId,
     name: 'Haircut & Styling',
     status: 'published',
+    durationMinutes: HAIRCUT_DURATION_MINUTES,
   });
   await insertRow('appointments_schema', 'appointment_service_projection', {
     serviceId: manicureId,
     companyId: beautyId,
     name: 'Manicure',
     status: 'published',
+    durationMinutes: MANICURE_DURATION_MINUTES,
   });
   await insertRow('appointments_schema', 'appointment_service_specialist_projection', {
     serviceId: teethCleaningId,
@@ -684,83 +729,118 @@ export async function seedDatabase(): Promise<void> {
   });
   console.log('[fill_dump_db] created appointments-service projections (companies, memberships, services, assignments)');
 
+  await seedCompanyWeekdayAvailability(dentalId);
+  await seedCompanyWeekdayAvailability(beautyId);
+  await seedSpecialistWeekdayAvailability(dentalId, olenaId);
+  await seedSpecialistWeekdayAvailability(beautyId, ninaId);
+  await seedSpecialistWeekdayAvailability(beautyId, olenaId, '10:00', '16:00');
+  console.log('[fill_dump_db] created appointments-service weekday availability rules');
+
   // ---------------------------------------------------------------------
   // Appointments - one of each AppointmentStatus (3x completed: 2 reviewed, 1 not)
   // ---------------------------------------------------------------------
+  const pendingStartAt = daysFromNow(3);
   const pendingAppointmentId = await insertQualified('appointments_schema', 'appointments', {
     companyId: dentalId,
     serviceId: teethCleaningId,
     specialistProfileId: olenaId,
     clientUserId: uid('client.andriy@example.com'),
-    requestedStartAt: daysFromNow(3),
+    requestedStartAt: pendingStartAt,
+    startAt: pendingStartAt,
+    endAt: addMinutes(pendingStartAt, TEETH_CLEANING_DURATION_MINUTES),
+    createdByUserId: uid('client.andriy@example.com'),
     status: 'pending',
     notes: 'First visit, please call to confirm.',
     respondedAt: null,
     completedAt: null,
   });
+  const approvedStartAt = daysFromNow(5);
   const approvedAppointmentId = await insertQualified('appointments_schema', 'appointments', {
     companyId: dentalId,
     serviceId: teethWhiteningId,
     specialistProfileId: olenaId,
     clientUserId: uid('client.iryna@example.com'),
-    requestedStartAt: daysFromNow(5),
+    requestedStartAt: approvedStartAt,
+    startAt: approvedStartAt,
+    endAt: addMinutes(approvedStartAt, TEETH_WHITENING_DURATION_MINUTES),
+    createdByUserId: uid('client.iryna@example.com'),
     status: 'approved',
     notes: null,
     respondedAt: daysFromNow(-1),
     completedAt: null,
   });
+  const rejectedStartAt = daysFromNow(2);
   const rejectedAppointmentId = await insertQualified('appointments_schema', 'appointments', {
     companyId: beautyId,
     serviceId: haircutId,
     specialistProfileId: ninaId,
     clientUserId: uid('client.taras@example.com'),
-    requestedStartAt: daysFromNow(2),
+    requestedStartAt: rejectedStartAt,
+    startAt: rejectedStartAt,
+    endAt: addMinutes(rejectedStartAt, HAIRCUT_DURATION_MINUTES),
+    createdByUserId: uid('client.taras@example.com'),
     status: 'rejected',
     notes: null,
     respondedAt: daysFromNow(-1),
     completedAt: null,
   });
+  const cancelledStartAt = daysFromNow(4);
   const cancelledAppointmentId = await insertQualified('appointments_schema', 'appointments', {
     companyId: beautyId,
     serviceId: manicureId,
     specialistProfileId: ninaId,
     clientUserId: uid('client.andriy@example.com'),
-    requestedStartAt: daysFromNow(4),
+    requestedStartAt: cancelledStartAt,
+    startAt: cancelledStartAt,
+    endAt: addMinutes(cancelledStartAt, MANICURE_DURATION_MINUTES),
+    createdByUserId: uid('client.andriy@example.com'),
     status: 'cancelled',
     notes: 'Client cancelled - change of plans.',
     respondedAt: null,
     completedAt: null,
   });
+  const completedReviewedStartAt1 = daysFromNow(-10);
   const completedReviewedAppointment1Id = await insertQualified('appointments_schema', 'appointments', {
     companyId: dentalId,
     serviceId: teethCleaningId,
     specialistProfileId: olenaId,
     clientUserId: uid('client.iryna@example.com'),
-    requestedStartAt: daysFromNow(-10),
+    requestedStartAt: completedReviewedStartAt1,
+    startAt: completedReviewedStartAt1,
+    endAt: addMinutes(completedReviewedStartAt1, TEETH_CLEANING_DURATION_MINUTES),
+    createdByUserId: uid('client.iryna@example.com'),
     status: 'completed',
     notes: null,
     respondedAt: daysFromNow(-10),
     completedAt: daysFromNow(-10),
     createdAt: daysFromNow(-12),
   });
+  const completedReviewedStartAt2 = daysFromNow(-7);
   const completedReviewedAppointment2Id = await insertQualified('appointments_schema', 'appointments', {
     companyId: beautyId,
     serviceId: manicureId,
     specialistProfileId: ninaId,
     clientUserId: uid('client.taras@example.com'),
-    requestedStartAt: daysFromNow(-7),
+    requestedStartAt: completedReviewedStartAt2,
+    startAt: completedReviewedStartAt2,
+    endAt: addMinutes(completedReviewedStartAt2, MANICURE_DURATION_MINUTES),
+    createdByUserId: uid('client.taras@example.com'),
     status: 'completed',
     notes: null,
     respondedAt: daysFromNow(-7),
     completedAt: daysFromNow(-7),
     createdAt: daysFromNow(-9),
   });
+  const completedUnreviewedStartAt = daysFromNow(-3);
   const completedUnreviewedAppointmentId = await insertQualified('appointments_schema', 'appointments', {
     companyId: dentalId,
     serviceId: teethWhiteningId,
     specialistProfileId: olenaId,
     clientUserId: uid('client.andriy@example.com'),
-    requestedStartAt: daysFromNow(-3),
+    requestedStartAt: completedUnreviewedStartAt,
+    startAt: completedUnreviewedStartAt,
+    endAt: addMinutes(completedUnreviewedStartAt, TEETH_WHITENING_DURATION_MINUTES),
+    createdByUserId: uid('client.andriy@example.com'),
     status: 'completed',
     notes: null,
     respondedAt: daysFromNow(-3),

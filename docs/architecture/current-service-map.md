@@ -25,7 +25,7 @@ Postgres, structured logging, and `/health/live` + `/health/ready` unless noted.
 | specialists-service | `services/specialists-service/` | specialist profiles, specialist status history, public specialist discovery projections | company, company-specialist, service, specialist-service, and review events | `specialist.created`, `specialist.updated` |
 | company-specialists-service | `services/company-specialists-service/` | company-specialist requests and accepted working relationships | none | `company-specialist.accepted` |
 | services-catalog-service | `services/services-catalog-service/` | services, service-specialist assignments, service status history | none | `service.created`, `service.updated`, `specialist-service.assigned`, `specialist-service.removed` |
-| appointments-service | `services/appointments-service/` | appointment lifecycle, status history, local company/member/service/specialist projections, AI recommendation projections | company, company-member, service, specialist-service, and AI recommendation events | `appointment.requested`, `appointment.approved`, `appointment.rejected`, `appointment.completed`, `appointment.cancelled` |
+| appointments-service | `services/appointments-service/` | appointment lifecycle, availability, status history, local company/member/service/specialist projections, AI recommendation projections | company, company-member, service, specialist-service, and AI recommendation events | `appointment.requested`, `appointment.approved`, `appointment.rejected`, `appointment.rescheduled`, `appointment.completed`, `appointment.cancelled` |
 | reviews-service | `services/reviews-service/` | reviews | none | `review.received` |
 | notifications-service | `services/notifications-service/` | notifications, email logs, processed events | `appointment.*`, `review.received`, `analytics.company_rating_updated` | none |
 | dashboard-service | `services/dashboard-service/` | read-only dashboard summaries | none | none |
@@ -70,9 +70,9 @@ Already present:
 
 Still inconsistent:
 
-- database migration ownership is mid-rollout: `users-service` and
-  `specialists-service` own TypeORM migrations, while older services still rely
-  on bootstrap DDL
+- database migration ownership is mid-rollout: `users-service`,
+  `specialists-service`, and `appointments-service` own TypeORM migrations,
+  while older services still rely on bootstrap DDL
 - internal CQRS command/query/event-handler structure
 - pure domain entities separated from TypeORM persistence entities
 - read/write repository separation

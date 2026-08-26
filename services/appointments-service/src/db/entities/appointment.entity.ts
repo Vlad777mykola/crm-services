@@ -7,7 +7,10 @@ export interface AppointmentRow {
   specialistProfileId: string | null;
   clientUserId: string;
   requestedStartAt: Date;
+  startAt: Date;
+  endAt: Date;
   status: string;
+  createdByUserId: string | null;
   notes: string | null;
   respondedAt: Date | null;
   completedAt: Date | null;
@@ -26,7 +29,10 @@ export const AppointmentEntity = new EntitySchema<AppointmentRow>({
     specialistProfileId: { type: 'uuid', nullable: true },
     clientUserId: { type: 'uuid' },
     requestedStartAt: { type: 'timestamptz' },
+    startAt: { type: 'timestamptz' },
+    endAt: { type: 'timestamptz' },
     status: { type: String, length: 20, default: 'pending' },
+    createdByUserId: { type: 'uuid', nullable: true },
     notes: { type: String, nullable: true },
     respondedAt: { type: 'timestamptz', nullable: true },
     completedAt: { type: 'timestamptz', nullable: true },
@@ -37,5 +43,7 @@ export const AppointmentEntity = new EntitySchema<AppointmentRow>({
     { name: 'IDX_appointments_companyId', columns: ['companyId'] },
     { name: 'IDX_appointments_serviceId', columns: ['serviceId'] },
     { name: 'IDX_appointments_clientUserId', columns: ['clientUserId'] },
+    { name: 'IDX_appointments_specialistProfileId', columns: ['specialistProfileId'] },
+    { name: 'IDX_appointments_startAt', columns: ['startAt'] },
   ],
 });
