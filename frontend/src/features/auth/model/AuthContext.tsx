@@ -23,7 +23,8 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
     (async () => {
       try {
-        await refreshRequest();
+        const { accessToken } = await refreshRequest();
+        setAccessToken(accessToken);
         const currentUser = await fetchCurrentUser();
         if (!cancelled) {
           setUser(currentUser);
