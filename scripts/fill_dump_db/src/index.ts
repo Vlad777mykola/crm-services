@@ -25,9 +25,29 @@ async function main(): Promise<void> {
   printCredentials();
 }
 
+function isDuplicateSeedDataError(err: unknown): boolean {
+  return (
+    typeof err === 'object' &&
+    err !== null &&
+    'code' in err &&
+    'constraint' in err &&
+    err.code === '23505' &&
+    err.constraint === 'UQ_auth_identities_provider_provider_user_id'
+  );
+}
+
 main()
   .catch((err: unknown) => {
     console.error('[fill_dump_db] failed:', err);
+    if (isDuplicateSeedDataError(err)) {
+      console.error(
+        [
+          '',
+          '[fill_dump_db] seed data already exists.',
+          'Use yarn db:seed:full:reset --target dev to truncate application data and reseed.',
+        ].join('\n'),
+      );
+    }
     process.exitCode = 1;
   })
   .finally(() => {

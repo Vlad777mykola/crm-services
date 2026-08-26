@@ -513,7 +513,7 @@ Quick DB sanity check (optional)
 In psql or any SQL client on crm:
 
 -- Should return 4 published services
-SELECT name, status FROM services_schema.services WHERE status = 'published';
+SELECT name, status FROM services*schema.services WHERE status = 'published';
 -- Should return 2 active company specialists
 SELECT cs.status, sp."displayName", c.name
 FROM company_specialists_schema.company_specialists cs
@@ -521,8 +521,8 @@ JOIN specialists_schema.specialist_profiles sp ON sp.id = cs."specialistProfileI
 JOIN companies_schema.companies c ON c.id = cs."companyId"
 WHERE cs.status = 'active';
 -- After re-seed with the fix — should match published services
-SELECT _ FROM appointments_schema.appointment_service_projection;
-SELECT _ FROM appointments_schema.appointment_service_specialist_projection;
+SELECT * FROM appointments*schema.appointment_service_projection;
+SELECT * FROM appointments_schema.appointment_service_specialist_projection;
 If the last two queries are empty after full:reset, you’re on old seed — run yarn db:seed:full:reset --target dev again.
 
 UI flow to test booking
@@ -792,7 +792,7 @@ You should see this line near the end of the seed output:
 
 If you only want to re-run seed (infra already up)
 yarn dev stop --force-ports
-yarn db:seed:full:reset --target dev
+
 yarn dev full
 (full:reset truncates and seeds; yarn dev full starts services without another reset.)
 

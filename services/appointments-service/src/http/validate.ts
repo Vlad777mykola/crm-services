@@ -15,7 +15,12 @@ export function validate(schema: ZodType, target: ValidationTarget = 'body') {
       return;
     }
 
-    (req as unknown as Record<ValidationTarget, unknown>)[target] = result.data;
+    Object.defineProperty(req, target, {
+      value: result.data,
+      configurable: true,
+      enumerable: true,
+      writable: true,
+    });
     next();
   };
 }

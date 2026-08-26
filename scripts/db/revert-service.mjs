@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { parseDbCliArgs } from './lib/cli-args.mjs';
 import { envForTarget } from './lib/fill-dump.mjs';
 import { printOperationBanner, resolveTarget } from './lib/target.mjs';
+import { yarnCommand } from './lib/yarn-command.mjs';
 import { MIGRATABLE_SERVICES } from './services.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -37,7 +38,8 @@ const target = resolveTarget(args.target);
 printOperationBanner({ action: `REVERT ${service.name}`, target });
 console.warn('[db:migrate:revert] Reverting migrations is service-scoped and should be reviewed before production use.');
 
-const result = spawnSync('yarn', ['workspace', service.workspace, 'run', 'db:migrate:revert'], {
+const yarn = yarnCommand(['workspace', service.workspace, 'run', 'db:migrate:revert']);
+const result = spawnSync(yarn.command, yarn.args, {
   cwd: ROOT,
   stdio: 'inherit',
   env: { ...process.env, ...envForTarget(target.name) },

@@ -76,7 +76,7 @@ export class UserRepository {
   }
 
   async findById(userId: string): Promise<UserProfileRow | null> {
-    const row = await this.profileQuery(this.dataSource).where('u.id = :userId', { userId }).getRawOne<UserProfileRaw>();
+    const row = await this.findProfileRow(this.dataSource, userId);
     return row ? toProfileRow(row) : null;
   }
 
@@ -88,7 +88,7 @@ export class UserRepository {
     if (Object.keys(patch).length > 0) {
       await manager.getRepository(UserProfileEntity).update({ userId }, { ...patch, updatedAt: new Date() });
     }
-    const row = await this.profileQuery(manager).where('u.id = :userId', { userId }).getRawOne<UserProfileRaw>();
+    const row = await this.findProfileRow(manager, userId);
     return row ? toProfileRow(row) : null;
   }
 
@@ -122,21 +122,25 @@ export class UserRepository {
     return this.updateProfile(manager, userId, patch);
   }
 
-  private profileQuery(client: Queryable) {
-    return client
-      .getRepository(UserEntity)
-      .createQueryBuilder('u')
-      .innerJoin('users_schema.user_profiles', 'p', 'p."userId" = u."id"')
-      .select([
-        'u."id" AS "id"',
-        'u."email" AS "email"',
-        'u."status" AS "status"',
-        'u."createdAt" AS "userCreatedAt"',
-        'p."name" AS "name"',
-        'p."phone" AS "phone"',
-        'p."city" AS "city"',
-        'p."bio" AS "bio"',
-        'p."updatedAt" AS "updatedAt"',
-      ]);
+  private async findProfileRow(client: Queryable, userId: string): Promise<UserProfileRaw | null> {
+    const rows = await client.query(
+      `
+        SELECT
+          u."id" AS "id",
+          u."email" AS "email",
+          u."status" AS "status",
+          u."createdAt" AS "userCreatedAt",
+          p."name" AS "name",
+          p."phone" AS "phone",
+          p."city" AS "city",
+          p."bio" AS "bio",
+          p."updatedAt" AS "updatedAt"
+        FROM users_schema.users u
+        INNER JOIN users_schema.user_profiles p ON p."userId" = u."id"
+        WHERE u."id" = $1
+      `,
+      [userId],
+    );
+    return rows[0] ?? null;
   }
 }

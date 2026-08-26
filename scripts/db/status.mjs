@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { parseDbCliArgs } from './lib/cli-args.mjs';
 import { envForTarget } from './lib/fill-dump.mjs';
 import { printOperationBanner, resolveTarget } from './lib/target.mjs';
+import { yarnCommand } from './lib/yarn-command.mjs';
 import { MIGRATABLE_SERVICES } from './services.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -16,7 +17,8 @@ printOperationBanner({ action: 'MIGRATION STATUS', target });
 let failed = false;
 for (const service of MIGRATABLE_SERVICES) {
   console.log(`\n[db:migration:status] ${service.name}`);
-  const result = spawnSync('yarn', ['workspace', service.workspace, 'run', 'db:migration:status'], {
+  const yarn = yarnCommand(['workspace', service.workspace, 'run', 'db:migration:status']);
+  const result = spawnSync(yarn.command, yarn.args, {
     cwd: ROOT,
     stdio: 'inherit',
     env: { ...process.env, ...envForTarget(target.name) },
