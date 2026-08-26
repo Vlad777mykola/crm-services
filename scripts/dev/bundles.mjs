@@ -21,6 +21,9 @@ export const SERVICES = {
   // Student/dev-only - see docs/students/rabitmq/lab-service/START-HERE.md.
   // Never deployed to production; not in compose.services.yml.
   'rabbitmq-lab': { dir: 'services/rabbitmq-lab-service', port: 4011, label: 'rabbitmq-lab-service' },
+  // Dev-only Swagger UI - see services/openapi-docs-service/README.md.
+  // Never deployed to production; not in compose.services.yml.
+  'openapi-docs': { dir: 'services/openapi-docs-service', port: 4012, label: 'openapi-docs-service' },
 };
 
 /** @type {Record<string, OutboxDef>} */

@@ -221,6 +221,14 @@ http:
       entryPoints: [web]
       priority: 10
 
+    # ---- OpenAPI docs (dev-only - see services/openapi-docs-service/README.md) ----
+    # Host loop only: never containerized, no entry in dynamic.container.yml.
+    openapi-docs-service:
+      rule: "PathPrefix(`/docs`)"
+      service: openapi-docs-service
+      entryPoints: [web]
+      priority: 10
+
   services:
     auth-service:
       loadBalancer:
@@ -281,3 +289,8 @@ http:
       loadBalancer:
         servers:
           - url: "http://host.docker.internal:4011"
+
+    openapi-docs-service:
+      loadBalancer:
+        servers:
+          - url: "http://host.docker.internal:4012"

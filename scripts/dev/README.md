@@ -69,8 +69,18 @@ Workspaces: `frontend`, `services/*`, `scripts/fill_dump_db`.
 | reviews | 4009 | review routes |
 | notifications | 4300 | `/notifications/*` |
 | dashboard | 4010 | `/app/summary` |
+| openapi-docs | 4012 | `/docs/*` (dev-only Swagger UI) |
 
 Outbox health ports `4501`–`4509`. See `docs/architecture/service-port-registry.md`.
+
+## API docs (dev only)
+
+```powershell
+yarn dev:infra
+yarn dev:docs
+```
+
+Open **http://localhost:8080/docs/** — "Try it out" hits the gateway at `:8080`.
 
 ## DB scripts
 

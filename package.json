@@ -71,6 +71,8 @@
     "dev:svc:notifications": "node scripts/dev/run.mjs svc notifications",
     "dev:svc:dashboard": "node scripts/dev/run.mjs svc dashboard",
     "dev:rabbitmq-lab": "node scripts/dev/run.mjs svc rabbitmq-lab",
+    "dev:docs": "node scripts/dev/run.mjs svc openapi-docs",
+    "contracts:bundle": "node scripts/contracts/bundle-openapi.mjs",
     "dev:outbox:auth": "node scripts/dev/run.mjs outbox auth",
     "dev:outbox:users": "node scripts/dev/run.mjs outbox users",
     "dev:outbox:companies": "node scripts/dev/run.mjs outbox companies",
@@ -86,6 +88,7 @@
     "prepare": "husky"
   },
   "devDependencies": {
+    "@redocly/cli": "^1.34.6",
     "@eslint/js": "^10.0.1",
     "concurrently": "^9.0.0",
     "cross-env": "^7.0.3",

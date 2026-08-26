@@ -4,6 +4,7 @@ node_modules/
 # Build output
 dist/
 build/
+contracts/openapi.json
 
 # Environment variables
 .env

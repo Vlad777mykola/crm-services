@@ -49,6 +49,7 @@ Assigned in extraction order, in the `4001`–`4010` range — clear of the `410
 | reviews-service | 4009 | 10 |
 | dashboard-service | 4010 | 15 |
 | rabbitmq-lab-service | 4011 | student/dev-only, see `docs/students/rabitmq/lab-service/START-HERE.md` |
+| openapi-docs-service | 4012 | dev-only Swagger UI, see `services/openapi-docs-service/README.md` |
 
 ## New — per-service outbox-publisher instances (Q8)
 

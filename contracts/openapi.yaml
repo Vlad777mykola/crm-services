@@ -3,7 +3,7 @@ info:
   title: CRM Services API
   version: 0.1.0
 servers:
-  - url: http://localhost:4000
+  - url: http://localhost:8080
 tags:
   - name: Health
   - name: Auth
