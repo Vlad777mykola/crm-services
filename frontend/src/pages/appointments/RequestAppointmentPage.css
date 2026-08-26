@@ -1,0 +1,10 @@
+.booking-section {
+  margin-bottom: 16px;
+  padding: 14px 0;
+  border-top: 1px solid #eef2f7;
+}
+
+.booking-section:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}

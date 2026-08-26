@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, Button, Card, Empty, Input, List, Modal, Rate, Space, Spin, Tag } from 'antd';
+import { Alert, Button, Card, Empty, Input, List, Modal, Rate, Select, Space, Spin, Tabs, Tag } from 'antd';
 import { Link } from 'react-router';
 
 import {
@@ -24,6 +24,10 @@ function formatDate(value: string): string {
   return new Date(value).toLocaleString();
 }
 
+function isFutureAppointment(appointment: Appointment): boolean {
+  return new Date(appointment.startAt).getTime() >= Date.now();
+}
+
 export function MyAppointmentsPage() {
   const queryClient = useQueryClient();
   const queryKey = ['appointments', 'me'];
@@ -31,10 +35,14 @@ export function MyAppointmentsPage() {
   const [historyAppointmentId, setHistoryAppointmentId] = useState<string | null>(null);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
+  const [view, setView] = useState('upcoming');
+  const [statusFilter, setStatusFilter] = useState<AppointmentStatus | undefined>();
+  const [companyFilter, setCompanyFilter] = useState<string | undefined>();
+  const [dateFilter, setDateFilter] = useState('');
 
   const { data: appointments, isLoading, isError, error } = useQuery({
     queryKey,
-    queryFn: fetchMyAppointments,
+    queryFn: () => fetchMyAppointments(),
   });
 
   const cancelMutation = useMutation({
@@ -60,8 +68,64 @@ export function MyAppointmentsPage() {
     setReviewingAppointment(appointment);
   };
 
+  const companyOptions = Array.from(
+    new Map((appointments ?? []).filter((appointment) => appointment.company).map((appointment) => [
+      appointment.company!.id,
+      appointment.company!.name,
+    ])).entries(),
+  ).map(([value, label]) => ({ value, label }));
+
+  const visibleAppointments = (appointments ?? []).filter((appointment) => {
+    if (view === 'upcoming' && (!isFutureAppointment(appointment) || appointment.status === 'cancelled')) return false;
+    if (view === 'past' && (isFutureAppointment(appointment) || appointment.status === 'cancelled')) return false;
+    if (view === 'cancelled' && appointment.status !== 'cancelled') return false;
+    if (statusFilter && appointment.status !== statusFilter) return false;
+    if (companyFilter && appointment.companyId !== companyFilter) return false;
+    if (dateFilter && appointment.startAt.slice(0, 10) !== dateFilter) return false;
+    return true;
+  });
+
   return (
-    <Card title="My appointment requests" extra={<Link to="/app">Back home</Link>} style={{ maxWidth: 720, margin: '2rem auto' }}>
+    <Card title="My appointments">
+      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+        <Tabs
+          activeKey={view}
+          onChange={setView}
+          items={[
+            { key: 'upcoming', label: 'Upcoming' },
+            { key: 'past', label: 'Past' },
+            { key: 'cancelled', label: 'Cancelled' },
+          ]}
+        />
+        <Space wrap>
+          <Select
+            allowClear
+            value={statusFilter}
+            placeholder="Status"
+            style={{ minWidth: 160 }}
+            onChange={setStatusFilter}
+            options={[
+              { value: 'pending', label: 'Pending' },
+              { value: 'approved', label: 'Confirmed' },
+              { value: 'completed', label: 'Completed' },
+              { value: 'cancelled', label: 'Cancelled' },
+              { value: 'rejected', label: 'Rejected' },
+            ]}
+          />
+          <Select
+            allowClear
+            value={companyFilter}
+            placeholder="Company"
+            style={{ minWidth: 200 }}
+            onChange={setCompanyFilter}
+            options={companyOptions}
+          />
+          <Input type="date" value={dateFilter} onChange={(event) => setDateFilter(event.target.value)} />
+          <Link to="/services">
+            <Button type="primary">Book appointment</Button>
+          </Link>
+        </Space>
+      </Space>
       {isLoading && <Spin style={{ display: 'block', margin: '2rem auto' }} />}
       {isError && (
         <Alert
@@ -77,9 +141,13 @@ export function MyAppointmentsPage() {
           </Link>
         </Empty>
       )}
-      {appointments && appointments.length > 0 && (
+      {appointments && appointments.length > 0 && visibleAppointments.length === 0 && (
+        <Empty description="No appointments match these filters" style={{ marginTop: 24 }} />
+      )}
+      {visibleAppointments.length > 0 && (
         <List
-          dataSource={appointments}
+          style={{ marginTop: 16 }}
+          dataSource={visibleAppointments}
           renderItem={(appointment) => (
             <List.Item
               actions={[

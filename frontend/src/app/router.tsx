@@ -1,6 +1,9 @@
 import { createBrowserRouter } from 'react-router';
 
-import { AppShell } from '@/app/AppShell';
+import { AppShell } from '@/app/layouts/AppShell';
+import { AuthLayout } from '@/app/layouts/AuthLayout';
+import { PublicLayout } from '@/app/layouts/PublicLayout';
+import { WorkspaceLayout } from '@/app/layouts/WorkspaceLayout';
 import { LoginPage } from '@/features/auth/ui/LoginPage';
 import { ProtectedRoute } from '@/features/auth/ui/ProtectedRoute';
 import { RegisterPage } from '@/features/auth/ui/RegisterPage';
@@ -24,8 +27,11 @@ import { ServiceSpecialistsPage } from '@/pages/company/ServiceSpecialistsPage';
 import { HealthPage } from '@/pages/health/HealthPage';
 import { ServicePublicPage } from '@/pages/services/ServicePublicPage';
 import { ServicesListPage } from '@/pages/services/ServicesListPage';
+import { SpecialistAppointmentsPage } from '@/pages/specialist/SpecialistAppointmentsPage';
+import { SpecialistAvailabilityPage } from '@/pages/specialist/SpecialistAvailabilityPage';
 import { SpecialistCompaniesPage } from '@/pages/specialist/SpecialistCompaniesPage';
 import { SpecialistCompanyRequestsPage } from '@/pages/specialist/SpecialistCompanyRequestsPage';
+import { SpecialistDashboardPage } from '@/pages/specialist/SpecialistDashboardPage';
 import { SpecialistProfilePage } from '@/pages/specialist/SpecialistProfilePage';
 import { SpecialistServicesPage } from '@/pages/specialist/SpecialistServicesPage';
 import { SpecialistPublicPage } from '@/pages/specialists/SpecialistPublicPage';
@@ -37,196 +43,74 @@ export const router = createBrowserRouter([
     element: <AppShell />,
     children: [
       {
-        path: '/',
-        element: <HealthPage />,
+        element: <PublicLayout />,
+        children: [
+          { path: '/', element: <HealthPage /> },
+          { path: 'companies', element: <CompaniesListPage /> },
+          { path: 'companies/:companyId', element: <CompanyPublicPage /> },
+          { path: 'services', element: <ServicesListPage /> },
+          { path: 'services/:serviceId', element: <ServicePublicPage /> },
+          { path: 'specialists', element: <SpecialistsListPage /> },
+          { path: 'specialists/:specialistId', element: <SpecialistPublicPage /> },
+          { path: 'student/rabbitmq', element: <RabbitMqLabPage /> },
+        ],
       },
       {
-        path: '/login',
-        element: <LoginPage />,
+        element: <AuthLayout />,
+        children: [
+          { path: 'login', element: <LoginPage /> },
+          { path: 'register', element: <RegisterPage /> },
+        ],
       },
       {
-        path: '/register',
-        element: <RegisterPage />,
-      },
-      {
-        path: '/app',
         element: (
           <ProtectedRoute>
-            <AppHomePage />
+            <WorkspaceLayout />
           </ProtectedRoute>
         ),
+        children: [
+          { path: 'app', element: <AppHomePage /> },
+          { path: 'app/profile', element: <ProfilePage /> },
+          { path: 'app/appointments', element: <MyAppointmentsPage /> },
+          { path: 'app/notifications', element: <NotificationsPage /> },
+          { path: 'company/create', element: <CreateCompanyPage /> },
+          { path: 'services/:serviceId/book', element: <RequestAppointmentPage /> },
+        ],
       },
       {
-        path: '/app/profile',
         element: (
           <ProtectedRoute>
-            <ProfilePage />
+            <WorkspaceLayout />
           </ProtectedRoute>
         ),
+        children: [
+          { path: 'specialist', element: <SpecialistDashboardPage /> },
+          { path: 'specialist/profile', element: <SpecialistProfilePage /> },
+          { path: 'specialist/appointments', element: <SpecialistAppointmentsPage /> },
+          { path: 'specialist/company-requests', element: <SpecialistCompanyRequestsPage /> },
+          { path: 'specialist/companies', element: <SpecialistCompaniesPage /> },
+          { path: 'specialist/services', element: <SpecialistServicesPage /> },
+          { path: 'specialist/availability', element: <SpecialistAvailabilityPage /> },
+        ],
       },
       {
-        path: '/app/appointments',
         element: (
           <ProtectedRoute>
-            <MyAppointmentsPage />
+            <WorkspaceLayout />
           </ProtectedRoute>
         ),
-      },
-      {
-        path: '/app/notifications',
-        element: (
-          <ProtectedRoute>
-            <NotificationsPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: '/companies',
-        element: <CompaniesListPage />,
-      },
-      {
-        path: '/companies/:companyId',
-        element: <CompanyPublicPage />,
-      },
-      {
-        path: '/company/create',
-        element: (
-          <ProtectedRoute>
-            <CreateCompanyPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: '/company/:companyId/dashboard',
-        element: (
-          <ProtectedRoute>
-            <CompanyDashboardPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: '/company/:companyId/profile',
-        element: (
-          <ProtectedRoute>
-            <CompanyProfilePage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: '/company/:companyId/members',
-        element: (
-          <ProtectedRoute>
-            <CompanyMembersPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: '/company/:companyId/specialists',
-        element: (
-          <ProtectedRoute>
-            <CompanySpecialistsPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: '/company/:companyId/specialist-requests',
-        element: (
-          <ProtectedRoute>
-            <CompanySpecialistRequestsPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: '/company/:companyId/services',
-        element: (
-          <ProtectedRoute>
-            <CompanyServicesPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: '/company/:companyId/services/:serviceId/specialists',
-        element: (
-          <ProtectedRoute>
-            <ServiceSpecialistsPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: '/company/:companyId/appointments',
-        element: (
-          <ProtectedRoute>
-            <CompanyAppointmentsPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: '/company/:companyId/availability',
-        element: (
-          <ProtectedRoute>
-            <CompanyAvailabilityPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: '/services',
-        element: <ServicesListPage />,
-      },
-      {
-        path: '/services/:serviceId',
-        element: <ServicePublicPage />,
-      },
-      {
-        path: '/services/:serviceId/book',
-        element: (
-          <ProtectedRoute>
-            <RequestAppointmentPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: '/specialists',
-        element: <SpecialistsListPage />,
-      },
-      {
-        path: '/specialists/:specialistId',
-        element: <SpecialistPublicPage />,
-      },
-      {
-        path: '/specialist/profile',
-        element: (
-          <ProtectedRoute>
-            <SpecialistProfilePage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: '/specialist/company-requests',
-        element: (
-          <ProtectedRoute>
-            <SpecialistCompanyRequestsPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: '/specialist/companies',
-        element: (
-          <ProtectedRoute>
-            <SpecialistCompaniesPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: '/specialist/services',
-        element: (
-          <ProtectedRoute>
-            <SpecialistServicesPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: '/student/rabbitmq',
-        element: <RabbitMqLabPage />,
+        children: [
+          { path: 'company/:companyId', element: <CompanyDashboardPage /> },
+          { path: 'company/:companyId/dashboard', element: <CompanyDashboardPage /> },
+          { path: 'company/:companyId/profile', element: <CompanyProfilePage /> },
+          { path: 'company/:companyId/members', element: <CompanyMembersPage /> },
+          { path: 'company/:companyId/specialists', element: <CompanySpecialistsPage /> },
+          { path: 'company/:companyId/specialist-requests', element: <CompanySpecialistRequestsPage /> },
+          { path: 'company/:companyId/services', element: <CompanyServicesPage /> },
+          { path: 'company/:companyId/services/:serviceId/specialists', element: <ServiceSpecialistsPage /> },
+          { path: 'company/:companyId/appointments', element: <CompanyAppointmentsPage /> },
+          { path: 'company/:companyId/availability', element: <CompanyAvailabilityPage /> },
+        ],
       },
     ],
   },

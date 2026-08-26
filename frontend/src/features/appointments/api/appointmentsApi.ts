@@ -110,6 +110,29 @@ export interface StatusHistoryEntry {
   createdAt: string;
 }
 
+export interface ListAppointmentsQuery {
+  companyId?: string;
+  from?: string;
+  to?: string;
+  status?: AppointmentStatus;
+  serviceId?: string;
+  specialistProfileId?: string;
+  limit?: number;
+}
+
+function appointmentsQueryString(query: ListAppointmentsQuery = {}): string {
+  const params = new URLSearchParams();
+  if (query.companyId) params.set('companyId', query.companyId);
+  if (query.from) params.set('from', query.from);
+  if (query.to) params.set('to', query.to);
+  if (query.status) params.set('status', query.status);
+  if (query.serviceId) params.set('serviceId', query.serviceId);
+  if (query.specialistProfileId) params.set('specialistProfileId', query.specialistProfileId);
+  if (query.limit) params.set('limit', String(query.limit));
+  const queryString = params.toString();
+  return queryString ? `?${queryString}` : '';
+}
+
 async function parseJsonOrThrow<T>(response: Response): Promise<T> {
   const body = (await response.json().catch(() => undefined)) as { error?: { message?: string } } | T | undefined;
 
@@ -229,8 +252,11 @@ export async function deleteSpecialistTimeBlock(
   if (!response.ok) await parseJsonOrThrow(response);
 }
 
-export async function fetchCompanyAppointments(companyId: string): Promise<Appointment[]> {
-  const response = await authorizedFetch(`/companies/${companyId}/appointments`);
+export async function fetchCompanyAppointments(
+  companyId: string,
+  query: Omit<ListAppointmentsQuery, 'companyId'> = {},
+): Promise<Appointment[]> {
+  const response = await authorizedFetch(`/companies/${companyId}/appointments${appointmentsQueryString(query)}`);
   const body = await parseJsonOrThrow<{ data: Appointment[] }>(response);
   return body.data;
 }
@@ -256,8 +282,19 @@ export async function completeAppointment(companyId: string, appointmentId: stri
   return body.data;
 }
 
-export async function fetchMyAppointments(): Promise<Appointment[]> {
-  const response = await authorizedFetch('/appointments/me');
+export async function fetchMyAppointments(query: ListAppointmentsQuery = {}): Promise<Appointment[]> {
+  const response = await authorizedFetch(`/appointments/me${appointmentsQueryString(query)}`);
+  const body = await parseJsonOrThrow<{ data: Appointment[] }>(response);
+  return body.data;
+}
+
+export async function fetchSpecialistAppointments(
+  specialistProfileId: string,
+  query: ListAppointmentsQuery,
+): Promise<Appointment[]> {
+  const response = await authorizedFetch(
+    `/appointments/specialist/${specialistProfileId}${appointmentsQueryString(query)}`,
+  );
   const body = await parseJsonOrThrow<{ data: Appointment[] }>(response);
   return body.data;
 }

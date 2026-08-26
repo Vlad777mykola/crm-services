@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
-import { Alert, Card, Descriptions, Empty, List, Space, Spin, Tag, Typography } from 'antd';
+import { Alert, Button, Card, Descriptions, Empty, List, Space, Spin, Tag, Typography } from 'antd';
 import { Link, useParams } from 'react-router';
 
 import { fetchCompanyById } from '@/features/companies/api/companiesApi';
+import { fetchCompanySpecialists } from '@/features/company-specialists/api/companySpecialistsApi';
 import { fetchCompanyReviews } from '@/features/reviews/api/reviewsApi';
 import { ReviewsList } from '@/features/reviews/ui/ReviewsList';
 import { fetchCompanyServices } from '@/features/services/api/servicesApi';
@@ -23,6 +24,12 @@ export function CompanyPublicPage() {
   const { data: services } = useQuery({
     queryKey: ['company', companyId, 'services', 'public'],
     queryFn: () => fetchCompanyServices(companyId!),
+    enabled: Boolean(companyId),
+  });
+
+  const { data: specialists } = useQuery({
+    queryKey: ['company', companyId, 'specialists', 'public'],
+    queryFn: () => fetchCompanySpecialists(companyId!),
     enabled: Boolean(companyId),
   });
 
@@ -48,7 +55,7 @@ export function CompanyPublicPage() {
   }
 
   return (
-    <Space direction="vertical" style={{ display: 'flex', maxWidth: 560, margin: '2rem auto' }} size="large">
+    <Space direction="vertical" style={{ display: 'flex' }} size="large">
       <Card
         title={company.name}
         extra={company.isRemoteSupported ? <Tag color="blue">Remote supported</Tag> : null}
@@ -70,10 +77,45 @@ export function CompanyPublicPage() {
           <List
             dataSource={services}
             renderItem={(service) => (
-              <List.Item>
+              <List.Item
+                actions={[
+                  <Link key="book" to={`/services/${service.id}/book`}>
+                    <Button type="primary">Book service</Button>
+                  </Link>,
+                ]}
+              >
                 <List.Item.Meta
                   title={<Link to={`/services/${service.id}`}>{service.name}</Link>}
                   description={`${service.durationMinutes} min · ${formatPrice(service.price)}`}
+                />
+              </List.Item>
+            )}
+          />
+        )}
+      </Card>
+
+      <Card title="Specialists">
+        {(!specialists || specialists.length === 0) && <Empty description="No active specialists yet" />}
+        {specialists && specialists.length > 0 && (
+          <List
+            dataSource={specialists}
+            renderItem={(entry) => (
+              <List.Item>
+                <List.Item.Meta
+                  title={
+                    entry.specialist ? (
+                      <Link to={`/specialists/${entry.specialist.id}`}>{entry.specialist.displayName}</Link>
+                    ) : (
+                      'Specialist'
+                    )
+                  }
+                  description={
+                    <Space direction="vertical" size={4}>
+                      <Typography.Text type="secondary">
+                        Active since {new Date(entry.startedAt).toLocaleDateString()}
+                      </Typography.Text>
+                    </Space>
+                  }
                 />
               </List.Item>
             )}

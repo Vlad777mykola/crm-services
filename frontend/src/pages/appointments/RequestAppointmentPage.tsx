@@ -1,14 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Alert, Button, Card, Empty, Form, Input, Result, Select, Spin } from 'antd';
+import { Alert, Button, Card, Descriptions, Empty, Form, Input, Result, Select, Space, Spin, Tag, Typography } from 'antd';
 import { Controller, useForm, useWatch } from 'react-hook-form';
-import { Link, useNavigate, useParams } from 'react-router';
+import { Link, useParams, useSearchParams } from 'react-router';
 
 import { createAppointment, fetchAvailableSlots } from '@/features/appointments/api/appointmentsApi';
 import { appointmentRequestFormSchema, type AppointmentRequestFormValues } from '@/features/appointments/model/schemas';
 import { fetchServiceSpecialists } from '@/features/service-specialists/api/serviceSpecialistsApi';
 import { fetchServiceById } from '@/features/services/api/servicesApi';
+
+import './RequestAppointmentPage.css';
 
 const EMPTY_VALUES: AppointmentRequestFormValues = {
   specialistProfileId: '',
@@ -30,8 +32,9 @@ function formatSlot(value: string): string {
 
 export function RequestAppointmentPage() {
   const { serviceId } = useParams<{ serviceId: string }>();
-  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [selectedDate, setSelectedDate] = useState('');
+  const preferredSpecialistId = searchParams.get('specialistId');
 
   const { data: service, isLoading: isLoadingService } = useQuery({
     queryKey: ['service', serviceId],
@@ -55,6 +58,7 @@ export function RequestAppointmentPage() {
     defaultValues: EMPTY_VALUES,
   });
   const specialistProfileId = useWatch({ control, name: 'specialistProfileId' });
+  const requestedStartAt = useWatch({ control, name: 'requestedStartAt' });
   const range = dayRange(selectedDate);
 
   const { data: slots, isFetching: isFetchingSlots } = useQuery({
@@ -80,6 +84,21 @@ export function RequestAppointmentPage() {
         notes: values.notes || null,
       }),
   });
+
+  const specialistOptions = useMemo(
+    () =>
+      (specialists ?? [])
+        .filter((entry) => entry.specialist)
+        .map((entry) => ({ value: entry.specialistProfileId, label: entry.specialist!.displayName })),
+    [specialists],
+  );
+
+  useEffect(() => {
+    if (!preferredSpecialistId || specialistProfileId) return;
+    if (specialistOptions.some((option) => option.value === preferredSpecialistId)) {
+      setValue('specialistProfileId', preferredSpecialistId);
+    }
+  }, [preferredSpecialistId, setValue, specialistOptions, specialistProfileId]);
 
   if (isLoadingService) {
     return <Spin style={{ display: 'block', margin: '2rem auto' }} />;
@@ -114,19 +133,13 @@ export function RequestAppointmentPage() {
     );
   }
 
-  const specialistOptions = (specialists ?? [])
-    .filter((entry) => entry.specialist)
-    .map((entry) => ({ value: entry.specialistProfileId, label: entry.specialist!.displayName }));
-  const slotOptions = (slots ?? []).map((slot) => ({
-    value: slot.startAt,
-    label: `${formatSlot(slot.startAt)} - ${formatSlot(slot.endAt)}`,
-  }));
+  const selectedSpecialist = specialistOptions.find((option) => option.value === specialistProfileId);
+  const selectedSlot = (slots ?? []).find((slot) => slot.startAt === requestedStartAt);
 
   return (
     <Card
-      title={`Request appointment: ${service.name}`}
+      title="Request appointment"
       extra={<Link to={`/services/${service.id}`}>Back to service</Link>}
-      style={{ maxWidth: 560, margin: '2rem auto' }}
     >
       {requestMutation.isError && (
         <Alert
@@ -137,6 +150,16 @@ export function RequestAppointmentPage() {
         />
       )}
       <Form layout="vertical" onFinish={handleSubmit((values) => requestMutation.mutate(values))}>
+        <section className="booking-section">
+          <Typography.Title level={5}>Service</Typography.Title>
+          <Descriptions column={1} size="small">
+            <Descriptions.Item label="Name">{service.name}</Descriptions.Item>
+            <Descriptions.Item label="Company">{service.company?.name ?? 'Company'}</Descriptions.Item>
+            <Descriptions.Item label="Duration">{service.durationMinutes} min</Descriptions.Item>
+            <Descriptions.Item label="Price">{service.price ? `$${service.price}` : 'Price on request'}</Descriptions.Item>
+          </Descriptions>
+        </section>
+
         <Controller
           name="specialistProfileId"
           control={control}
@@ -158,6 +181,7 @@ export function RequestAppointmentPage() {
             </Form.Item>
           )}
         />
+
         <Form.Item label="Date">
           <Input
             type="date"
@@ -168,24 +192,44 @@ export function RequestAppointmentPage() {
             }}
           />
         </Form.Item>
+
         <Controller
           name="requestedStartAt"
           control={control}
           render={({ field }) => (
             <Form.Item
-              label="Available slot"
+              label="Available time"
               validateStatus={errors.requestedStartAt ? 'error' : ''}
               help={errors.requestedStartAt?.message}
             >
-              <Select
-                {...field}
-                disabled={!specialistProfileId || !selectedDate}
-                loading={isFetchingSlots}
-                options={slotOptions}
-                onChange={(value) => field.onChange(value)}
-                placeholder="Choose a slot"
-                notFoundContent={isFetchingSlots ? <Spin size="small" /> : <Empty description="No slots" />}
-              />
+              {!specialistProfileId || !selectedDate ? (
+                <Empty description="Choose a specialist and date first" />
+              ) : isFetchingSlots ? (
+                <Spin size="small" />
+              ) : !slots || slots.length === 0 ? (
+                <Empty description="No slots" />
+              ) : (
+                <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                  <Typography.Text type="secondary">
+                    {new Date(`${selectedDate}T00:00:00`).toLocaleDateString([], {
+                      weekday: 'long',
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </Typography.Text>
+                  <Space wrap>
+                    {slots.map((slot) => (
+                      <Button
+                        key={slot.startAt}
+                        type={field.value === slot.startAt ? 'primary' : 'default'}
+                        onClick={() => field.onChange(slot.startAt)}
+                      >
+                        {formatSlot(slot.startAt)}
+                      </Button>
+                    ))}
+                  </Space>
+                </Space>
+              )}
             </Form.Item>
           )}
         />
@@ -198,12 +242,28 @@ export function RequestAppointmentPage() {
             </Form.Item>
           )}
         />
-        <Button type="primary" htmlType="submit" loading={requestMutation.isPending}>
-          Send request
-        </Button>
-        <Button style={{ marginLeft: 8 }} onClick={() => navigate(-1)}>
-          Cancel
-        </Button>
+        <section className="booking-section">
+          <Typography.Title level={5}>Summary</Typography.Title>
+          <Space direction="vertical" size="small">
+            <span>{service.company?.name ?? 'Company'}</span>
+            <span>{service.name}</span>
+            <span>{selectedSpecialist?.label ?? 'Choose specialist'}</span>
+            <span>
+              {selectedSlot
+                ? `${new Date(selectedSlot.startAt).toLocaleString()} - ${formatSlot(selectedSlot.endAt)}`
+                : 'Choose date and time'}
+            </span>
+            <Tag>{service.durationMinutes} min</Tag>
+          </Space>
+        </section>
+        <Space wrap>
+          <Button type="primary" htmlType="submit" loading={requestMutation.isPending}>
+            Confirm appointment
+          </Button>
+          <Link to={`/services/${service.id}`}>
+            <Button>Cancel</Button>
+          </Link>
+        </Space>
       </Form>
     </Card>
   );

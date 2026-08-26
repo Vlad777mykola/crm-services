@@ -75,7 +75,7 @@ export function SpecialistPublicPage() {
                     <Space size={[4, 4]} wrap>
                       {company.services.length === 0 && <Typography.Text type="secondary">No published services yet</Typography.Text>}
                       {company.services.map((service) => (
-                        <Link key={service.id} to={`/services/${service.id}`}>
+                        <Link key={service.id} to={`/services/${service.id}/book?specialistId=${specialist.id}`}>
                           <Tag>{service.name}</Tag>
                         </Link>
                       ))}

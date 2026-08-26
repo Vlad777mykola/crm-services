@@ -1,13 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { Alert, Badge, Button, Card, Col, Descriptions, Empty, List, Row, Space, Spin, Statistic, Tag, Typography } from 'antd';
-import { Link, useNavigate } from 'react-router';
+import { Link } from 'react-router';
 
 import { useAuth } from '@/features/auth/model/useAuth';
 import { fetchAppDashboardSummary } from '@/features/dashboard/api/dashboardApi';
+import { PageHeader } from '@/widgets/navigation/ui/PageHeader';
 
 export function AppHomePage() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+  const { user } = useAuth();
 
   const { data: summary, isLoading, isError, error } = useQuery({
     queryKey: ['dashboard', 'app'],
@@ -15,13 +15,9 @@ export function AppHomePage() {
     refetchInterval: 30_000,
   });
 
-  const onLogout = async () => {
-    await logout();
-    navigate('/login');
-  };
-
   return (
-    <Space direction="vertical" style={{ display: 'flex', maxWidth: 900, margin: '2rem auto' }} size="large">
+    <Space direction="vertical" style={{ display: 'flex' }} size="large">
+      <PageHeader title="Client dashboard" breadcrumbs={[{ label: 'Client', path: '/app' }]} />
       <Card title="My account">
         <Typography.Title level={4} style={{ marginTop: 0 }}>
           Welcome, {user?.name}
@@ -45,9 +41,6 @@ export function AppHomePage() {
               <Button>Notifications</Button>
             </Badge>
           </Link>
-          <Button danger onClick={onLogout}>
-            Log out
-          </Button>
         </Space>
       </Card>
 

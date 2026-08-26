@@ -1,0 +1,166 @@
+.app-shell {
+  min-height: 100vh;
+  background: #f7f9fc;
+}
+
+.layout-header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  height: 64px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+}
+
+.layout-header__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.layout-header__left,
+.layout-header__right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.layout-header__brand {
+  color: #101828;
+  font-size: 16px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.layout-header__menu-button {
+  display: none;
+}
+
+.public-layout {
+  display: flex;
+  min-height: calc(100vh - 64px);
+}
+
+.public-layout__content,
+.auth-layout__content {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 24px 20px 40px;
+}
+
+.auth-layout__content {
+  max-width: 720px;
+}
+
+.workspace-layout {
+  display: flex;
+  min-height: calc(100vh - 64px);
+}
+
+.workspace-layout__content {
+  flex: 1;
+  min-width: 0;
+  padding: 24px;
+}
+
+.workspace-layout__inner {
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.workspace-guard {
+  display: flex;
+  min-height: calc(100vh - 64px);
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.ant-card {
+  border-radius: 8px;
+}
+
+.ant-space {
+  max-width: 100%;
+}
+
+.ant-input,
+.ant-select {
+  max-width: 100%;
+}
+
+@media (max-width: 900px) {
+  .layout-header {
+    height: 56px;
+  }
+
+  .layout-header__inner {
+    gap: 8px;
+    padding: 0 12px;
+  }
+
+  .layout-header__brand {
+    font-size: 15px;
+  }
+
+  .layout-header__menu-button {
+    display: inline-flex;
+  }
+
+  .public-layout,
+  .workspace-layout {
+    min-height: calc(100vh - 56px);
+  }
+
+  .workspace-layout__content,
+  .public-layout__content,
+  .auth-layout__content {
+    padding: 16px 12px 28px;
+  }
+}
+
+@media (max-width: 560px) {
+  .layout-header__right {
+    gap: 6px;
+  }
+
+  .ant-card-body,
+  .ant-card-head {
+    padding-inline: 14px;
+  }
+
+  .ant-list-item {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .ant-list-item-meta {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .ant-list-item-meta-content {
+    min-width: 0;
+  }
+
+  .ant-list-item .ant-list-item-action {
+    margin-inline-start: 0;
+    padding-inline-start: 0;
+  }
+
+  .ant-form-item-control-input-content > .ant-input,
+  .ant-form-item-control-input-content > .ant-select {
+    width: 100%;
+  }
+}
