@@ -29,6 +29,12 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
+}
+
+.layout-header__right {
+  flex-shrink: 1;
+  justify-content: flex-end;
 }
 
 .layout-header__brand {
@@ -126,6 +132,33 @@
   .public-layout__content,
   .auth-layout__content {
     padding: 16px 12px 28px;
+  }
+}
+
+@media (max-width: 650px) {
+  .layout-header__inner {
+    gap: 6px;
+    padding: 0 8px;
+  }
+
+  .layout-header__left {
+    flex-shrink: 0;
+  }
+
+  .layout-header__brand {
+    font-size: 14px;
+    max-width: 26vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .layout-header__right {
+    flex: 1;
+    gap: 4px;
+  }
+
+  .layout-header__button-label {
+    display: none;
   }
 }
 

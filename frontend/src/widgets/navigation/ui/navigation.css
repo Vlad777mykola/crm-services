@@ -34,6 +34,16 @@
   min-width: 220px;
 }
 
+.workspace-switcher.ant-select {
+  max-width: 100%;
+}
+
+.workspace-switcher .ant-select-content {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .workspace-switcher__dropdown .workspace-switcher__section-start {
   margin-top: 4px;
   border-top: 1px solid #eaecf0;
@@ -86,8 +96,10 @@
   }
 
   .workspace-switcher {
+    flex: 1 1 0;
     min-width: 0;
-    width: min(52vw, 230px);
+    width: 100%;
+    max-width: min(52vw, 230px);
   }
 
   .page-header {
@@ -100,8 +112,19 @@
   }
 }
 
+@media (max-width: 650px) {
+  .layout-header__right .ant-btn {
+    flex-shrink: 0;
+    padding-inline: 8px;
+  }
+
+  .workspace-switcher {
+    max-width: 100%;
+  }
+}
+
 @media (max-width: 560px) {
   .workspace-switcher {
-    width: 44vw;
+    flex: 1 1 0;
   }
 }

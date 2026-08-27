@@ -1,3 +1,4 @@
+import { BellOutlined, UserOutlined } from '@ant-design/icons';
 import { Badge, Button, Dropdown } from 'antd';
 import type { MenuProps } from 'antd';
 import { Link, useNavigate } from 'react-router';
@@ -69,11 +70,15 @@ export function AppHeader({
             <>
               <Badge count={unreadNotifications} size="small">
                 <Link to="/app/notifications">
-                  <Button type="text">Notifications</Button>
+                  <Button type="text" icon={<BellOutlined />} aria-label="Notifications">
+                    <span className="layout-header__button-label">Notifications</span>
+                  </Button>
                 </Link>
               </Badge>
               <Dropdown menu={userMenu} trigger={['click']}>
-                <Button aria-label={`Profile menu for ${user?.name ?? 'current user'}`}>Profile</Button>
+                <Button icon={<UserOutlined />} aria-label={`Profile menu for ${user?.name ?? 'current user'}`}>
+                  <span className="layout-header__button-label">Profile</span>
+                </Button>
               </Dropdown>
             </>
           ) : (
