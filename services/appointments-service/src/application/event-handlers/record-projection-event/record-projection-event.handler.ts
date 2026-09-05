@@ -7,7 +7,10 @@ import type {
   CompanyEventData,
   CompanyMemberAddedData,
   CompanyMemberRemovedData,
+  CompanyMemberRoleChangedData,
+  CompanySpecialistLinkEventData,
   ServiceEventData,
+  SpecialistProfileEventData,
   SpecialistServiceEventData,
   UserProfileEventData,
 } from './projection-events.js';
@@ -47,6 +50,11 @@ export class RecordProjectionEventHandler {
         await this.projections.removeMembership(manager, event.companyId, event.userId);
         return true;
       }
+      case 'company-member.role_changed': {
+        const event = data as unknown as CompanyMemberRoleChangedData;
+        await this.projections.upsertMembership(manager, event.companyId, event.userId, event.toRole);
+        return true;
+      }
       case 'service.created':
       case 'service.updated': {
         const event = data as unknown as ServiceEventData;
@@ -78,6 +86,22 @@ export class RecordProjectionEventHandler {
           name: event.name,
           phone: event.phone,
         });
+        return true;
+      }
+      case 'specialist.created':
+      case 'specialist.updated': {
+        const event = data as unknown as SpecialistProfileEventData;
+        await this.projections.upsertSpecialistOwner(manager, event.specialistProfileId, event.userId, event.displayName);
+        return true;
+      }
+      case 'company-specialist.accepted': {
+        const event = data as unknown as CompanySpecialistLinkEventData;
+        await this.projections.upsertCompanySpecialistLink(manager, event.companyId, event.specialistProfileId, true);
+        return true;
+      }
+      case 'company-specialist.removed': {
+        const event = data as unknown as CompanySpecialistLinkEventData;
+        await this.projections.upsertCompanySpecialistLink(manager, event.companyId, event.specialistProfileId, false);
         return true;
       }
       default:

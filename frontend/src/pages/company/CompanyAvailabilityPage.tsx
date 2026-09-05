@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, Button, Card, Checkbox, Empty, Form, Input, List, Select, Space, Spin } from 'antd';
 import { Link, useParams } from 'react-router';
@@ -91,6 +91,33 @@ function RuleEditor({
   );
 }
 
+function rulesDraftKey(rules: AvailabilityRule[]): string {
+  return rules.map((rule) => `${rule.weekday}:${rule.active}:${rule.startTime}:${rule.endTime}`).join('|') || 'empty';
+}
+
+function EditableRulesPanel({
+  rules,
+  saveLabel,
+  isSaving,
+  onSave,
+}: {
+  rules: AvailabilityRule[];
+  saveLabel: string;
+  isSaving: boolean;
+  onSave: (activeRules: RuleDraft[]) => void;
+}) {
+  const [draft, setDraft] = useState(() => createDraft(rules));
+
+  return (
+    <>
+      <RuleEditor rules={draft} onChange={setDraft} />
+      <Button type="primary" loading={isSaving} onClick={() => onSave(draft.filter((rule) => rule.active))} style={{ marginTop: 16 }}>
+        {saveLabel}
+      </Button>
+    </>
+  );
+}
+
 function BlockList({
   blocks,
   onDelete,
@@ -123,8 +150,6 @@ function BlockList({
 export function CompanyAvailabilityPage() {
   const { companyId } = useParams<{ companyId: string }>();
   const queryClient = useQueryClient();
-  const [companyRules, setCompanyRulesDraft] = useState<RuleDraft[]>(createDraft());
-  const [specialistRules, setSpecialistRulesDraft] = useState<RuleDraft[]>(createDraft());
   const [specialistProfileId, setSpecialistProfileId] = useState<string>();
   const [companyBlock, setCompanyBlock] = useState({ startsAt: '', endsAt: '', reason: '' });
   const [specialistBlock, setSpecialistBlock] = useState({ startsAt: '', endsAt: '', reason: '' });
@@ -150,24 +175,20 @@ export function CompanyAvailabilityPage() {
     enabled: Boolean(companyId && specialistProfileId),
   });
 
-  useEffect(() => {
-    if (companyAvailability) setCompanyRulesDraft(createDraft(companyAvailability.rules));
-  }, [companyAvailability]);
-
-  useEffect(() => {
-    setSpecialistRulesDraft(createDraft(specialistAvailability?.rules ?? []));
-  }, [specialistAvailability]);
 
   const specialistOptions = useMemo(
     () =>
       (specialists ?? [])
-        .filter((entry) => entry.status === 'active' && entry.specialist)
-        .map((entry) => ({ value: entry.specialistProfileId, label: entry.specialist!.displayName })),
+        .filter((entry) => entry.status === 'active')
+        .map((entry) => ({
+          value: entry.specialistProfileId,
+          label: entry.specialist?.displayName ?? 'Specialist',
+        })),
     [specialists],
   );
 
   const saveCompanyRules = useMutation({
-    mutationFn: () => setCompanyAvailability(companyId!, companyRules.filter((rule) => rule.active)),
+    mutationFn: (rules: RuleDraft[]) => setCompanyAvailability(companyId!, rules),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: companyAvailabilityKey }),
   });
 
@@ -190,8 +211,7 @@ export function CompanyAvailabilityPage() {
   });
 
   const saveSpecialistRules = useMutation({
-    mutationFn: () =>
-      setSpecialistAvailability(companyId!, specialistProfileId!, specialistRules.filter((rule) => rule.active)),
+    mutationFn: (rules: RuleDraft[]) => setSpecialistAvailability(companyId!, specialistProfileId!, rules),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: specialistAvailabilityKey }),
   });
 
@@ -229,10 +249,13 @@ export function CompanyAvailabilityPage() {
   return (
     <Space direction="vertical" size="large" style={{ width: '100%', maxWidth: 880, margin: '2rem auto' }}>
       <Card title="Company availability" extra={<Link to={`/company/${companyId}/dashboard`}>Back to dashboard</Link>}>
-        <RuleEditor rules={companyRules} onChange={setCompanyRulesDraft} />
-        <Button type="primary" loading={saveCompanyRules.isPending} onClick={() => saveCompanyRules.mutate()} style={{ marginTop: 16 }}>
-          Save company hours
-        </Button>
+        <EditableRulesPanel
+          key={rulesDraftKey(companyAvailability?.rules ?? [])}
+          rules={companyAvailability?.rules ?? []}
+          saveLabel="Save company hours"
+          isSaving={saveCompanyRules.isPending}
+          onSave={(rules) => saveCompanyRules.mutate(rules)}
+        />
       </Card>
 
       <Card title="Company time blocks">
@@ -280,17 +303,13 @@ export function CompanyAvailabilityPage() {
         />
         {isFetchingSpecialistAvailability && <Spin />}
         {specialistProfileId && (
-          <>
-            <RuleEditor rules={specialistRules} onChange={setSpecialistRulesDraft} />
-            <Button
-              type="primary"
-              loading={saveSpecialistRules.isPending}
-              onClick={() => saveSpecialistRules.mutate()}
-              style={{ marginTop: 16 }}
-            >
-              Save specialist hours
-            </Button>
-          </>
+          <EditableRulesPanel
+            key={`${specialistProfileId}:${rulesDraftKey(specialistAvailability?.rules ?? [])}`}
+            rules={specialistAvailability?.rules ?? []}
+            saveLabel="Save specialist hours"
+            isSaving={saveSpecialistRules.isPending}
+            onSave={(rules) => saveSpecialistRules.mutate(rules)}
+          />
         )}
       </Card>
 

@@ -9,3 +9,17 @@ export function getAccessToken(): string | null {
 export function setAccessToken(token: string | null): void {
   currentAccessToken = token;
 }
+
+// authorizedFetch lives outside React and can't call useAuth() directly. When its
+// background refresh-on-401 fails, it calls this so AuthContext can flip to
+// 'unauthenticated' instead of leaving the UI stuck showing a stale logged-in state
+// while every API call keeps failing with 401.
+let sessionExpiredHandler: (() => void) | null = null;
+
+export function setSessionExpiredHandler(handler: (() => void) | null): void {
+  sessionExpiredHandler = handler;
+}
+
+export function notifySessionExpired(): void {
+  sessionExpiredHandler?.();
+}

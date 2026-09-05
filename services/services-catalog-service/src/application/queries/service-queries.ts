@@ -1,7 +1,12 @@
 import type { DataSource } from 'typeorm';
 
 import { buildPaginationMeta, resolvePagination, type PaginationMeta } from '../../common/pagination.js';
-import { ServiceRepository, type ServiceRow, type StatusHistoryRow } from '../../db/service-repository.js';
+import {
+  ServiceRepository,
+  type ServiceRow,
+  type ServiceWithSpecialistsRow,
+  type StatusHistoryRow,
+} from '../../db/service-repository.js';
 import { AppError } from '../../errors/AppError.js';
 import type { PublicServicesQueryInput } from '../../modules/services/services.schemas.js';
 import { isOwnerOrManager, requireOwnerOrManager } from '../services/service-catalog-authorization.js';
@@ -12,9 +17,14 @@ export class ServiceQueries {
     private readonly repo: ServiceRepository,
   ) {}
 
-  async listByCompany(companyId: string, requesterUserId: string | undefined): Promise<ServiceRow[]> {
+  async listByCompany(
+    companyId: string,
+    requesterUserId: string | undefined,
+  ): Promise<ServiceWithSpecialistsRow[]> {
     const canSeeAllStatuses = await isOwnerOrManager(this.dataSource, companyId, requesterUserId);
-    return this.repo.listByCompany(companyId, !canSeeAllStatuses);
+    const services = await this.repo.listByCompany(companyId, !canSeeAllStatuses);
+    const rosters = await this.repo.listSpecialistsByServiceIds(services.map((service) => service.id));
+    return services.map((service) => ({ ...service, specialists: rosters.get(service.id) ?? [] }));
   }
 
   async listPublic(query: PublicServicesQueryInput): Promise<{ items: ServiceRow[]; meta: PaginationMeta }> {

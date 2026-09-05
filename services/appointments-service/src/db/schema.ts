@@ -66,6 +66,11 @@ export async function ensureAppointmentsSchema(dataSource: DataSource): Promise<
   await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_appointments_clientUserId" ON appointments_schema.appointments ("clientUserId")`);
   await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_appointments_specialistProfileId" ON appointments_schema.appointments ("specialistProfileId")`);
   await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_appointments_startAt" ON appointments_schema.appointments ("startAt")`);
+  // Composite indexes for the persona list views (company/client/specialist),
+  // which always filter by status alongside the owning id.
+  await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_appointments_companyId_status" ON appointments_schema.appointments ("companyId", "status")`);
+  await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_appointments_clientUserId_status" ON appointments_schema.appointments ("clientUserId", "status")`);
+  await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_appointments_specialistProfileId_status" ON appointments_schema.appointments ("specialistProfileId", "status")`);
   await dataSource.query(`
     DO $$
     BEGIN
@@ -237,6 +242,35 @@ export async function ensureAppointmentsSchema(dataSource: DataSource): Promise<
       "updatedAt" timestamptz NOT NULL DEFAULT now()
     )
   `);
+
+  // Fed by specialist.created/.updated (specialists-service) - lets this
+  // service answer "does userId own specialistProfileId" locally so
+  // specialists can view their own appointments/availability without a
+  // company manager role.
+  await dataSource.query(`
+    CREATE TABLE IF NOT EXISTS appointments_schema.specialist_owner_projection (
+      "specialistProfileId" uuid PRIMARY KEY,
+      "userId" uuid NOT NULL,
+      "displayName" varchar(200),
+      "updatedAt" timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+  await dataSource.query(`ALTER TABLE appointments_schema.specialist_owner_projection ADD COLUMN IF NOT EXISTS "displayName" varchar(200)`);
+  await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_specialist_owner_projection_userId" ON appointments_schema.specialist_owner_projection ("userId")`);
+
+  // Fed by company-specialist.accepted/.removed (company-specialists-service) -
+  // lets this service reject availability management for a companyId/specialistProfileId
+  // pair that was never linked (or has since been removed).
+  await dataSource.query(`
+    CREATE TABLE IF NOT EXISTS appointments_schema.company_specialist_link_projection (
+      "companyId" uuid NOT NULL,
+      "specialistProfileId" uuid NOT NULL,
+      "active" boolean NOT NULL,
+      "updatedAt" timestamptz NOT NULL DEFAULT now(),
+      PRIMARY KEY ("companyId", "specialistProfileId")
+    )
+  `);
+  await dataSource.query(`CREATE INDEX IF NOT EXISTS "IDX_company_specialist_link_projection_specialistProfileId" ON appointments_schema.company_specialist_link_projection ("specialistProfileId")`);
 
   await dataSource.query(`
     CREATE TABLE IF NOT EXISTS appointments_schema.processed_events (

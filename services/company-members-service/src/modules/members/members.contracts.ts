@@ -14,3 +14,7 @@ export interface InviteMemberRequest {
 export interface UpdateMemberRequest {
   status: 'active' | 'removed';
 }
+
+export interface ChangeMemberRoleRequest {
+  role: 'owner' | 'manager';
+}

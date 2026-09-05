@@ -9,6 +9,13 @@ export interface CompanyMemberRemovedData {
   userId: string;
 }
 
+export interface CompanyMemberRoleChangedData {
+  companyId: string;
+  userId: string;
+  fromRole: string;
+  toRole: string;
+}
+
 export interface CompanyEventData {
   companyId: string;
   name: string;
@@ -40,4 +47,16 @@ export interface UserProfileEventData {
   email: string | null;
   name: string | null;
   phone: string | null;
+}
+
+export interface SpecialistProfileEventData {
+  specialistProfileId: string;
+  userId: string;
+  /** Only present on `specialist.created`. */
+  displayName?: string;
+}
+
+export interface CompanySpecialistLinkEventData {
+  companyId: string;
+  specialistProfileId: string;
 }

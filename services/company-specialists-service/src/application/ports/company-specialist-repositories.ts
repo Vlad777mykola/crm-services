@@ -3,6 +3,8 @@ import type { EntityManager } from 'typeorm';
 import type {
   CompanySpecialistRequestRow,
   CompanySpecialistRow,
+  CompanySpecialistRequestWithSpecialistRow,
+  CompanySpecialistWithSpecialistRow,
 } from '../../db/company-specialist-repository.js';
 
 export interface InsertCompanySpecialistRequestInput {
@@ -20,8 +22,10 @@ export interface CompanySpecialistReadRepository {
     specialistProfileId: string,
   ): Promise<CompanySpecialistRequestRow | null>;
   listActiveRelationsByCompany(companyId: string): Promise<CompanySpecialistRow[]>;
+  listActiveRelationsByCompanyWithSpecialist(companyId: string): Promise<CompanySpecialistWithSpecialistRow[]>;
   listActiveRelationsBySpecialist(specialistProfileId: string): Promise<CompanySpecialistRow[]>;
   listByCompany(companyId: string): Promise<CompanySpecialistRequestRow[]>;
+  listByCompanyWithSpecialist(companyId: string): Promise<CompanySpecialistRequestWithSpecialistRow[]>;
   listBySpecialist(specialistProfileId: string): Promise<CompanySpecialistRequestRow[]>;
 }
 
@@ -37,4 +41,5 @@ export interface CompanySpecialistWriteRepository {
     companyId: string,
     specialistProfileId: string,
   ): Promise<CompanySpecialistRow>;
+  endRelation(manager: EntityManager, id: string): Promise<CompanySpecialistRow>;
 }

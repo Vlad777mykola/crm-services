@@ -4,15 +4,25 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, Button, Card, Form, Input, Spin } from 'antd';
 import { Controller, useForm } from 'react-hook-form';
 
-import { useAuth } from '@/features/auth/model/useAuth';
 import { fetchMyProfile, updateMyProfile } from '@/features/profile/api/profileApi';
 import { profileFormSchema, type ProfileFormValues } from '@/features/profile/model/schemas';
 
 const PROFILE_QUERY_KEY = ['profile', 'me'];
 
-export function ProfileForm() {
+interface ProfileAuthDefaults {
+  name: string;
+  email: string;
+  phone: string | null;
+  city: string | null;
+  bio: string | null;
+}
+
+interface ProfileFormProps {
+  authDefaults?: ProfileAuthDefaults;
+}
+
+export function ProfileForm({ authDefaults }: ProfileFormProps) {
   const queryClient = useQueryClient();
-  const { user } = useAuth();
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const {
@@ -48,13 +58,13 @@ export function ProfileForm() {
 
     if (profile === null) {
       reset({
-        name: user?.name ?? user?.email?.split('@')[0] ?? '',
-        phone: user?.phone ?? '',
-        city: user?.city ?? '',
-        bio: user?.bio ?? '',
+        name: authDefaults?.name ?? authDefaults?.email?.split('@')[0] ?? '',
+        phone: authDefaults?.phone ?? '',
+        city: authDefaults?.city ?? '',
+        bio: authDefaults?.bio ?? '',
       });
     }
-  }, [profile, reset, user]);
+  }, [profile, reset, authDefaults]);
 
   const mutation = useMutation({
     mutationFn: (values: ProfileFormValues) =>

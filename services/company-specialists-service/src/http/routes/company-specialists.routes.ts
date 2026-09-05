@@ -4,9 +4,11 @@ import { requireAuth } from '../require-auth.js';
 import type { CompanySpecialistsService } from '../../modules/company-specialists/company-specialists.service.js';
 import {
   companyIdParamsSchema,
+  companySpecialistIdParamsSchema,
   requestIdParamsSchema,
   sendSpecialistRequestSchema,
   type CompanyIdParamsInput,
+  type CompanySpecialistIdParamsInput,
   type RequestIdParamsInput,
   type SendSpecialistRequestInput,
 } from '../../modules/company-specialists/company-specialists.schemas.js';
@@ -59,6 +61,26 @@ export function createCompanySpecialistsRouter(service: CompanySpecialistsServic
       next(err);
     }
   });
+
+  router.delete(
+    '/companies/:companyId/specialists/:specialistProfileId',
+    requireAuth,
+    validate(companySpecialistIdParamsSchema, 'params'),
+    async (req, res, next) => {
+      try {
+        const { companyId, specialistProfileId } = req.params as unknown as CompanySpecialistIdParamsInput;
+        const relation = await service.removeCompanySpecialist(
+          companyId,
+          specialistProfileId,
+          req.auth!.userId,
+          req.context.requestId,
+        );
+        res.status(200).json({ message: 'Specialist removed from company', data: relation });
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
 
   // Registered before specialists-service's `/specialists/:specialistId` catch-all -
   // Traefik routes these by priority regardless, but this ordering also protects

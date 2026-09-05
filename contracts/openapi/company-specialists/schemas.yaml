@@ -146,6 +146,17 @@ CompanySpecialist:
     - createdAt
     - updatedAt
 
+CompanySpecialistResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      $ref: '#/CompanySpecialist'
+  required:
+    - message
+    - data
+
 CompanySpecialistListResponse:
   type: object
   properties:

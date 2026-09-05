@@ -1,6 +1,6 @@
 import type { DataSource, EntityManager } from 'typeorm';
 
-import { MemberEntity, type MemberRow, type MemberStatus } from './entities/member.entity.js';
+import { MemberEntity, type MemberRole, type MemberRow, type MemberStatus } from './entities/member.entity.js';
 
 export type { MemberRole, MemberRow, MemberStatus } from './entities/member.entity.js';
 
@@ -56,6 +56,12 @@ export class MemberRepository {
     const repository = manager.getRepository(MemberEntity);
     const existing = await repository.findOneOrFail({ where: { id: memberId } });
     return repository.save(repository.merge(existing, { status, updatedAt: new Date() }));
+  }
+
+  async setRole(manager: EntityManager, memberId: string, role: MemberRole): Promise<MemberRow> {
+    const repository = manager.getRepository(MemberEntity);
+    const existing = await repository.findOneOrFail({ where: { id: memberId } });
+    return repository.save(repository.merge(existing, { role, updatedAt: new Date() }));
   }
 }
 

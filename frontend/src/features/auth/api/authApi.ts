@@ -1,3 +1,4 @@
+import { parseJsonOrThrow } from '@/shared/api/apiError';
 import { authorizedFetch } from '@/shared/api/authorizedFetch';
 import { getApiUrl } from '@/shared/lib/env';
 
@@ -18,18 +19,6 @@ export interface AuthUser {
 export interface AuthSession {
   user: AuthUser;
   accessToken: string;
-}
-
-async function parseJsonOrThrow<T>(response: Response): Promise<T> {
-  const body = (await response.json().catch(() => undefined)) as { error?: { message?: string } } | T | undefined;
-
-  if (!response.ok) {
-    const message =
-      body && typeof body === 'object' && 'error' in body ? body.error?.message : undefined;
-    throw new Error(message ?? `Request failed with status ${response.status}`);
-  }
-
-  return body as T;
 }
 
 export async function registerRequest(input: {

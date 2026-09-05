@@ -2,6 +2,7 @@ import type { DataSource } from 'typeorm';
 
 import { AcceptSpecialistCompanyRequestHandler } from '../../application/commands/accept-specialist-company-request/accept-specialist-company-request.handler.js';
 import { RejectSpecialistCompanyRequestHandler } from '../../application/commands/reject-specialist-company-request/reject-specialist-company-request.handler.js';
+import { RemoveCompanySpecialistHandler } from '../../application/commands/remove-company-specialist/remove-company-specialist.handler.js';
 import { SendSpecialistRequestHandler } from '../../application/commands/send-specialist-request/send-specialist-request.handler.js';
 import { ListCompanySpecialistRequestsHandler } from '../../application/queries/list-company-specialist-requests/list-company-specialist-requests.handler.js';
 import { ListCompanySpecialistsHandler } from '../../application/queries/list-company-specialists/list-company-specialists.handler.js';
@@ -13,7 +14,9 @@ import { TypeOrmSpecialistProfileLookup } from '../../application/services/typeo
 import {
   CompanySpecialistRepository,
   type CompanySpecialistRequestRow,
+  type CompanySpecialistRequestWithSpecialistRow,
   type CompanySpecialistRow,
+  type CompanySpecialistWithSpecialistRow,
 } from '../../db/company-specialist-repository.js';
 import type { SendSpecialistRequestInput } from './company-specialists.schemas.js';
 
@@ -24,6 +27,7 @@ export class CompanySpecialistsService {
   private readonly listMyCompaniesQuery: ListMySpecialistCompaniesHandler;
   private readonly listMyRequestsQuery: ListMySpecialistCompanyRequestsHandler;
   private readonly rejectRequestCommand: RejectSpecialistCompanyRequestHandler;
+  private readonly removeRelationCommand: RemoveCompanySpecialistHandler;
   private readonly sendRequestCommand: SendSpecialistRequestHandler;
 
   constructor(dataSource: DataSource) {
@@ -44,6 +48,7 @@ export class CompanySpecialistsService {
     this.listMyCompaniesQuery = new ListMySpecialistCompaniesHandler(specialistProfiles, repo);
     this.listMyRequestsQuery = new ListMySpecialistCompanyRequestsHandler(specialistProfiles, repo);
     this.rejectRequestCommand = new RejectSpecialistCompanyRequestHandler(dataSource, specialistProfiles, repo, repo);
+    this.removeRelationCommand = new RemoveCompanySpecialistHandler(dataSource, companyRoles, repo, repo, outbox);
     this.sendRequestCommand = new SendSpecialistRequestHandler(companyRoles, specialistProfiles, repo, repo);
   }
 
@@ -55,11 +60,11 @@ export class CompanySpecialistsService {
     return this.sendRequestCommand.execute({ companyId, requesterUserId, input });
   }
 
-  async listCompanySpecialistRequests(companyId: string, requesterUserId: string): Promise<CompanySpecialistRequestRow[]> {
+  async listCompanySpecialistRequests(companyId: string, requesterUserId: string): Promise<CompanySpecialistRequestWithSpecialistRow[]> {
     return this.listCompanyRequestsQuery.execute({ companyId, requesterUserId });
   }
 
-  async listCompanySpecialists(companyId: string): Promise<CompanySpecialistRow[]> {
+  async listCompanySpecialists(companyId: string): Promise<CompanySpecialistWithSpecialistRow[]> {
     return this.listCompanySpecialistsQuery.execute({ companyId });
   }
 
@@ -81,5 +86,14 @@ export class CompanySpecialistsService {
 
   async rejectSpecialistCompanyRequest(requestId: string, userId: string): Promise<CompanySpecialistRequestRow> {
     return this.rejectRequestCommand.execute({ requestId, userId });
+  }
+
+  async removeCompanySpecialist(
+    companyId: string,
+    specialistProfileId: string,
+    requesterUserId: string,
+    correlationId?: string,
+  ): Promise<CompanySpecialistRow> {
+    return this.removeRelationCommand.execute({ companyId, specialistProfileId, requesterUserId, correlationId });
   }
 }

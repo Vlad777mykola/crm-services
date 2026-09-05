@@ -3,10 +3,12 @@ import { Router } from 'express';
 import { requireAuth } from '../require-auth.js';
 import type { MembersService } from '../../modules/members/members.service.js';
 import {
+  changeMemberRoleRequestSchema,
   companyIdParamsSchema,
   inviteMemberRequestSchema,
   memberIdParamsSchema,
   updateMemberRequestSchema,
+  type ChangeMemberRoleRequestInput,
   type CompanyIdParamsInput,
   type InviteMemberRequestInput,
   type MemberIdParamsInput,
@@ -67,6 +69,29 @@ export function createMembersRouter(membersService: MembersService): Router {
           req.context.requestId,
         );
         res.status(200).json({ message: 'Member updated', data: member });
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
+
+  router.patch(
+    '/companies/:companyId/members/:memberId/role',
+    requireAuth,
+    validate(memberIdParamsSchema, 'params'),
+    validate(changeMemberRoleRequestSchema, 'body'),
+    async (req, res, next) => {
+      try {
+        const { companyId, memberId } = req.params as unknown as MemberIdParamsInput;
+        const { role } = req.body as ChangeMemberRoleRequestInput;
+        const member = await membersService.changeRole(
+          companyId,
+          req.auth!.userId,
+          memberId,
+          role,
+          req.context.requestId,
+        );
+        res.status(200).json({ message: 'Member role updated', data: member });
       } catch (err) {
         next(err);
       }

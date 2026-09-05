@@ -183,3 +183,62 @@ ByMemberId:
           application/json:
             schema:
               $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+
+ByMemberIdRole:
+  patch:
+    operationId: changeCompanyMemberRole
+    tags:
+      - Company Members
+    summary: Change a member's role between owner/manager (owner only; cannot target the owner; cannot promote to owner)
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: memberId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: './schemas.yaml#/ChangeMemberRoleRequest'
+    responses:
+      '200':
+        description: Member role updated
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/CompanyMemberResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '403':
+        description: Not the company owner, or attempting to modify the owner
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '404':
+        description: Member not found
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '409':
+        description: Promoting a member to owner is not supported by this endpoint
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'

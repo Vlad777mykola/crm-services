@@ -32,17 +32,20 @@ Every message uses the `envelope.v1.json` wrapper (`id`, `type`, `source`, `vers
 | `company-member.added` | `domain.events` | `company-member.added` | company-members-service (via its own outbox) | auth-service (membership projection) | `company-member.added.v1.json` |
 | `company-member.removed` | `domain.events` | `company-member.removed` | company-members-service (via its own outbox) | auth-service (membership projection) | `company-member.removed.v1.json` |
 | `specialist.created` | `domain.events` | `specialist.created` | specialists-service (via its own outbox) | appointments-service (projection, Phase 9 — no consumer yet) | `specialist.created.v1.json` |
-| `specialist.updated` | `domain.events` | `specialist.updated` | specialists-service (via its own outbox) | appointments-service (projection, Phase 9 — no consumer yet) | `specialist.updated.v1.json` |
+| `specialist.updated` | `domain.events` | `specialist.updated` | specialists-service (via its own outbox) | appointments-service (`specialist_owner_projection`) | `specialist.updated.v1.json` |
 | `company-specialist.accepted` | `domain.events` | `company-specialist.accepted` | company-specialists-service (via its own outbox) | appointments-service (projection), specialists-service (`public_specialist_company_projection`) | `company-specialist.accepted.v1.json` |
-| `company-specialist.removed` | `domain.events` | `company-specialist.removed` | Not currently published | specialists-service (`public_specialist_company_projection`, once publisher exists) | `company-specialist.removed.v1.json` |
+| `company-specialist.removed` | `domain.events` | `company-specialist.removed` | company-specialists-service (via its own outbox), `DELETE /companies/:companyId/specialists/:specialistProfileId` | specialists-service (`public_specialist_company_projection`) | `company-specialist.removed.v1.json` |
 | `service.created` | `domain.events` | `service.created` | services-catalog-service (via its own outbox) | appointments-service (projection), specialists-service (`public_service_projection`) | `service.created.v1.json` |
 | `service.updated` | `domain.events` | `service.updated` | services-catalog-service (via its own outbox) | appointments-service (projection), specialists-service (`public_service_projection`) | `service.updated.v1.json` |
 | `specialist-service.assigned` | `domain.events` | `specialist-service.assigned` | services-catalog-service (via its own outbox) | appointments-service (projection), specialists-service (`public_specialist_service_projection`) | `specialist-service.assigned.v1.json` |
 | `specialist-service.removed` | `domain.events` | `specialist-service.removed` | services-catalog-service (via its own outbox) | appointments-service (projection), specialists-service (`public_specialist_service_projection`) | `specialist-service.removed.v1.json` |
 
-`company-member.role_changed.v1.json` exists (contract-first, per Task 5.3) but is
-**not published** — no code path in company-members-service changes a member's role
-after creation (legacy parity: PATCH only ever changes status).
+`company-member.role_changed` is published by company-members-service via
+`PATCH /companies/:companyId/members/:memberId/role`, consumed by
+auth-service (`auth_membership_projection`), companies-service,
+company-specialists-service, services-catalog-service, and appointments-service
+(`appointment_membership_projection`) — all update their local owner/manager
+membership projection.
 
 Routing is now service-owned for extracted publishers. `appointments-service`
 publishes appointment lifecycle events from its own outbox; legacy backend

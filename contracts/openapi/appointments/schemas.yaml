@@ -28,6 +28,46 @@ RespondToAppointmentRequest:
   required:
     - status
 
+RescheduleAppointmentRequest:
+  type: object
+  properties:
+    specialistProfileId:
+      type: string
+      format: uuid
+      description: Optional - kept for backward compatibility. Prefer the dedicated reassign-specialist endpoint for specialist-only changes.
+    startAt:
+      type: string
+      format: date-time
+  required:
+    - startAt
+
+ReassignAppointmentSpecialistRequest:
+  type: object
+  properties:
+    specialistProfileId:
+      type: string
+      format: uuid
+  required:
+    - specialistProfileId
+
+ChangeAppointmentServiceRequest:
+  type: object
+  properties:
+    serviceId:
+      type: string
+      format: uuid
+  required:
+    - serviceId
+
+UpdateAppointmentNotesRequest:
+  type: object
+  properties:
+    notes:
+      type: string
+      nullable: true
+  required:
+    - notes
+
 AppointmentClientSummary:
   type: object
   properties:
@@ -129,6 +169,186 @@ AppointmentListResponse:
       type: array
       items:
         $ref: '#/Appointment'
+  required:
+    - message
+    - data
+
+AvailabilityRuleRequest:
+  type: object
+  properties:
+    weekday:
+      type: integer
+      minimum: 0
+      maximum: 6
+      description: 0 = Sunday .. 6 = Saturday.
+    startTime:
+      type: string
+      example: '09:00'
+    endTime:
+      type: string
+      example: '17:00'
+    timezone:
+      type: string
+      example: UTC
+    active:
+      type: boolean
+  required:
+    - weekday
+    - startTime
+    - endTime
+
+SetAvailabilityRulesRequest:
+  type: object
+  properties:
+    rules:
+      type: array
+      items:
+        $ref: '#/AvailabilityRuleRequest'
+  required:
+    - rules
+
+AvailabilityRule:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    companyId:
+      type: string
+      format: uuid
+    specialistProfileId:
+      type: string
+      format: uuid
+      nullable: true
+      description: Present only on specialist availability rules.
+    weekday:
+      type: integer
+    startTime:
+      type: string
+    endTime:
+      type: string
+    timezone:
+      type: string
+    active:
+      type: boolean
+    createdAt:
+      type: string
+      format: date-time
+    updatedAt:
+      type: string
+      format: date-time
+  required:
+    - id
+    - companyId
+    - weekday
+    - startTime
+    - endTime
+    - timezone
+    - active
+    - createdAt
+    - updatedAt
+
+AvailabilityRuleListResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      type: array
+      items:
+        $ref: '#/AvailabilityRule'
+  required:
+    - message
+    - data
+
+TimeBlock:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+    companyId:
+      type: string
+      format: uuid
+    specialistProfileId:
+      type: string
+      format: uuid
+      nullable: true
+      description: Present only on specialist time blocks.
+    startsAt:
+      type: string
+      format: date-time
+    endsAt:
+      type: string
+      format: date-time
+    reason:
+      type: string
+      nullable: true
+    createdByUserId:
+      type: string
+      format: uuid
+      nullable: true
+    createdAt:
+      type: string
+      format: date-time
+  required:
+    - id
+    - companyId
+    - startsAt
+    - endsAt
+    - reason
+    - createdByUserId
+    - createdAt
+
+CreateTimeBlockRequest:
+  type: object
+  properties:
+    startsAt:
+      type: string
+      format: date-time
+    endsAt:
+      type: string
+      format: date-time
+    reason:
+      type: string
+      nullable: true
+  required:
+    - startsAt
+    - endsAt
+
+TimeBlockResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      $ref: '#/TimeBlock'
+  required:
+    - message
+    - data
+
+AvailabilityWithBlocks:
+  type: object
+  properties:
+    rules:
+      type: array
+      items:
+        $ref: '#/AvailabilityRule'
+    blocks:
+      type: array
+      items:
+        $ref: '#/TimeBlock'
+  required:
+    - rules
+    - blocks
+
+AvailabilityWithBlocksResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      $ref: '#/AvailabilityWithBlocks'
   required:
     - message
     - data

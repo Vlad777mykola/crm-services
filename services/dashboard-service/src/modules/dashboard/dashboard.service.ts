@@ -1,6 +1,13 @@
 import type { DataSource } from 'typeorm';
 
+import type { PermissionAction } from '@crm/authz-kit';
+
 import { AppError } from '../../errors/AppError.js';
+import {
+  computeClientPermissions,
+  computeCompanyPermissions,
+  computeSpecialistPermissions,
+} from './dashboard-permissions.js';
 
 export type CompanyMemberRole = 'owner' | 'manager';
 export type CompanyStatus = 'draft' | 'published' | 'suspended';
@@ -19,6 +26,7 @@ export interface AppDashboardSummary {
     name: string;
     status: CompanyStatus;
     role: CompanyMemberRole;
+    permissions: PermissionAction[];
   }>;
   specialist: {
     id: string;
@@ -26,7 +34,10 @@ export interface AppDashboardSummary {
     pendingCompanyRequests: number;
     activeCompanies: number;
     assignedServices: number;
+    permissions: PermissionAction[];
   } | null;
+  /** Baseline permissions that apply regardless of role (e.g. managing your own appointments). */
+  permissions: PermissionAction[];
 }
 
 export interface CompanyDashboardSummary {
@@ -48,6 +59,7 @@ export interface CompanyDashboardSummary {
     updatedAt: string;
   };
   role: CompanyMemberRole;
+  permissions: PermissionAction[];
   pendingAppointments: number;
   activeSpecialists: number;
   pendingSpecialistRequests: number;
@@ -95,6 +107,7 @@ export class DashboardService {
       appointments: { pending, approved, completed },
       companies: memberships,
       specialist: specialistSummary,
+      permissions: computeClientPermissions(),
     };
   }
 
@@ -130,6 +143,7 @@ export class DashboardService {
     return {
       company,
       role: membership.role,
+      permissions: computeCompanyPermissions(membership.role),
       pendingAppointments,
       activeSpecialists,
       pendingSpecialistRequests,
@@ -165,7 +179,7 @@ export class DashboardService {
        ORDER BY m."createdAt" DESC`,
       [userId],
     );
-    return rows;
+    return rows.map((row) => ({ ...row, permissions: computeCompanyPermissions(row.role) }));
   }
 
   private async findSpecialistByUserId(userId: string): Promise<{ id: string; status: SpecialistProfileStatus } | undefined> {
@@ -212,6 +226,7 @@ export class DashboardService {
       pendingCompanyRequests: Number(pendingCompanyRequests[0]?.count ?? 0),
       activeCompanies: Number(activeCompanies[0]?.count ?? 0),
       assignedServices: Number(assignedServices[0]?.count ?? 0),
+      permissions: computeSpecialistPermissions(),
     };
   }
 

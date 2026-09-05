@@ -2,7 +2,11 @@ import type { EntityManager } from 'typeorm';
 
 import type { MembershipProjectionRepository } from '../../../db/membership-projection-repository.js';
 import { logger } from '../../../logger.js';
-import type { CompanyMemberAddedData, CompanyMemberRemovedData } from './membership-events.js';
+import type {
+  CompanyMemberAddedData,
+  CompanyMemberRemovedData,
+  CompanyMemberRoleChangedData,
+} from './membership-events.js';
 
 export class RecordMembershipProjectionHandler {
   constructor(private readonly projection: MembershipProjectionRepository) {}
@@ -19,6 +23,13 @@ export class RecordMembershipProjectionHandler {
       const event = data as unknown as CompanyMemberRemovedData;
       await this.projection.remove(manager, event.companyId, event.userId);
       logger.info({ companyId: event.companyId, userId: event.userId }, '[auth-service] membership projection row removed');
+      return true;
+    }
+
+    if (type === 'company-member.role_changed') {
+      const event = data as unknown as CompanyMemberRoleChangedData;
+      await this.projection.upsert(manager, event.companyId, event.userId, event.toRole);
+      logger.info({ companyId: event.companyId, userId: event.userId }, '[auth-service] membership projection role updated');
       return true;
     }
 

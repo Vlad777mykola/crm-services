@@ -77,7 +77,7 @@ UserById:
     operationId: getUserById
     tags:
       - Users
-    summary: Get a user by id
+    summary: Get a user's public profile by id (unauthenticated, PII-free)
     parameters:
       - name: id
         in: path
@@ -91,7 +91,7 @@ UserById:
         content:
           application/json:
             schema:
-              $ref: './schemas.yaml#/UserResponse'
+              $ref: './schemas.yaml#/PublicUserResponse'
       '404':
         description: User not found
         content:

@@ -71,6 +71,13 @@ Service:
       enum: [draft, published, suspended]
     company:
       $ref: '../company-specialists/schemas.yaml#/CompanySummary'
+    specialists:
+      type: array
+      description: >-
+        Specialists currently assigned to this service. Present on
+        GET /companies/{companyId}/services; omitted elsewhere.
+      items:
+        $ref: '../company-specialists/schemas.yaml#/SpecialistSummary'
     createdAt:
       type: string
       format: date-time

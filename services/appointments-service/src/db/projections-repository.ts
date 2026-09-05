@@ -14,6 +14,8 @@ import {
   ClientProfileProjectionEntity,
   type ClientProfileProjectionRow,
 } from './entities/client-profile-projection.entity.js';
+import { CompanySpecialistLinkProjectionEntity } from './entities/company-specialist-link-projection.entity.js';
+import { SpecialistOwnerProjectionEntity } from './entities/specialist-owner-projection.entity.js';
 
 export type { CompanyProjectionRow } from './entities/appointment-company-projection.entity.js';
 export type { ServiceProjectionRow } from './entities/appointment-service-projection.entity.js';
@@ -100,5 +102,57 @@ export class ProjectionsRepository {
 
   async findClientProfile(userId: string): Promise<ClientProfileProjectionRow | null> {
     return this.dataSource.getRepository(ClientProfileProjectionEntity).findOne({ where: { userId } });
+  }
+
+  async upsertSpecialistOwner(
+    manager: EntityManager,
+    specialistProfileId: string,
+    userId: string,
+    displayName?: string,
+  ): Promise<void> {
+    const repository = manager.getRepository(SpecialistOwnerProjectionEntity);
+    const existing = await repository.findOne({ where: { specialistProfileId } });
+    await repository.save(
+      repository.create({
+        specialistProfileId,
+        userId,
+        displayName: displayName ?? existing?.displayName ?? null,
+      }),
+    );
+  }
+
+  async findSpecialistOwnerUserId(specialistProfileId: string): Promise<string | undefined> {
+    const row = await this.dataSource
+      .getRepository(SpecialistOwnerProjectionEntity)
+      .findOne({ where: { specialistProfileId } });
+    return row?.userId;
+  }
+
+  async findSpecialistSummary(
+    specialistProfileId: string,
+  ): Promise<{ userId: string; displayName: string | null } | null> {
+    const row = await this.dataSource
+      .getRepository(SpecialistOwnerProjectionEntity)
+      .findOne({ where: { specialistProfileId } });
+    return row ? { userId: row.userId, displayName: row.displayName } : null;
+  }
+
+  async upsertCompanySpecialistLink(
+    manager: EntityManager,
+    companyId: string,
+    specialistProfileId: string,
+    active: boolean,
+  ): Promise<void> {
+    await manager.getRepository(CompanySpecialistLinkProjectionEntity).upsert(
+      { companyId, specialistProfileId, active, updatedAt: new Date() },
+      { conflictPaths: ['companyId', 'specialistProfileId'] },
+    );
+  }
+
+  async isSpecialistActiveAtCompany(companyId: string, specialistProfileId: string): Promise<boolean> {
+    const row = await this.dataSource
+      .getRepository(CompanySpecialistLinkProjectionEntity)
+      .findOne({ where: { companyId, specialistProfileId } });
+    return row?.active === true;
   }
 }

@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://crm-services/contracts/events/appointment.service_changed.v1.json",
+  "title": "appointment.service_changed",
+  "description": "Published when a company changes which service a pending or approved appointment is for (specialist must be assigned to the new service; duration/endAt is recomputed). Exchange: domain.events. Routing key: appointment.service_changed.",
+  "type": "object",
+  "required": [
+    "appointmentId",
+    "companyId",
+    "clientUserId",
+    "specialistProfileId",
+    "fromServiceId",
+    "toServiceId",
+    "companyName",
+    "toServiceName",
+    "startAt",
+    "endAt"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "appointmentId": { "type": "string", "format": "uuid" },
+    "companyId": { "type": "string", "format": "uuid" },
+    "clientUserId": { "type": "string", "format": "uuid" },
+    "specialistProfileId": { "type": "string", "format": "uuid" },
+    "fromServiceId": { "type": "string", "format": "uuid" },
+    "toServiceId": { "type": "string", "format": "uuid" },
+    "companyName": { "type": "string" },
+    "toServiceName": { "type": "string" },
+    "startAt": { "type": "string", "format": "date-time" },
+    "endAt": { "type": "string", "format": "date-time" }
+  }
+}

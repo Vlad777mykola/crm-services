@@ -18,6 +18,7 @@ active relations) — extracted from
 | GET | `/specialists/me/companies` | required |
 | POST | `/specialists/me/company-requests/:requestId/accept` | required |
 | POST | `/specialists/me/company-requests/:requestId/reject` | required |
+| DELETE | `/companies/:companyId/specialists/:specialistProfileId` | owner/manager - ends the active relation (sets `status: 'removed'`, `endedAt`) |
 
 `GET /companies/:companyId/specialists` (active relations) is distinct from
 `GET /companies/:companyId/specialist-requests` (pending requests) — same
@@ -34,12 +35,10 @@ naming collision noted in `docs/architecture/route-inventory.md`.
 | Event | When |
 |---|---|
 | `company-specialist.accepted` | A specialist accepts a pending request (creates/reactivates the active relation). |
+| `company-specialist.removed` | An owner/manager ends an active relation via `DELETE .../companies/:companyId/specialists/:specialistProfileId`. |
 
-`company-specialist.removed` has a contract
-(`contracts/events/company-specialist.removed.v1.json`) but is **not
-published** — legacy has no code path that removes a relation (no removal
-endpoint exists today). `company-specialist.requested`/`.rejected` were not
-added — no confirmed consumer (see `docs/architecture/event-catalog.md`).
+`company-specialist.requested`/`.rejected` were not added — no confirmed
+consumer (see `docs/architecture/event-catalog.md`).
 
 ## Consumed events
 

@@ -8,13 +8,24 @@ import {
   registerRequest,
   type AuthUser,
 } from '@/features/auth/api/authApi';
-import { setAccessToken } from '@/shared/api/tokenStore';
+import { setAccessToken, setSessionExpiredHandler } from '@/shared/api/tokenStore';
 
 import { AuthContext, type AuthStatus } from './authContextInstance';
 
 export function AuthProvider({ children }: PropsWithChildren) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [status, setStatus] = useState<AuthStatus>('loading');
+
+  // authorizedFetch runs outside React; when its background token refresh fails
+  // (expired/revoked session), it calls this so the UI stops looking "logged in"
+  // while every API call is actually failing with 401.
+  useEffect(() => {
+    setSessionExpiredHandler(() => {
+      setUser(null);
+      setStatus('unauthenticated');
+    });
+    return () => setSessionExpiredHandler(null);
+  }, []);
 
   // On first load there's no in-memory access token yet - attempt a silent refresh
   // using the httpOnly cookie so a returning user doesn't have to log in again.

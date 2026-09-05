@@ -16,6 +16,16 @@ UpdateMemberRequest:
   required:
     - status
 
+ChangeMemberRoleRequest:
+  type: object
+  properties:
+    role:
+      type: string
+      enum: [owner, manager]
+      description: Only "manager" is accepted - promoting to owner is an ownership transfer, not a role edit.
+  required:
+    - role
+
 CompanyMemberUser:
   type: object
   properties:

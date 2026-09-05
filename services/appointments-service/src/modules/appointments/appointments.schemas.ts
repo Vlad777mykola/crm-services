@@ -5,16 +5,19 @@ import type {
   AppointmentOnlyIdParams,
   AvailabilityRuleRequest,
   AvailableSlotsQuery,
+  ChangeAppointmentServiceRequest,
   CompanyIdParams,
   CreateTimeBlockRequest,
   CreateAppointmentRequest,
   ListAppointmentsQuery,
+  ReassignAppointmentSpecialistRequest,
   RespondToAppointmentRequest,
   RescheduleAppointmentRequest,
   SetAvailabilityRulesRequest,
   SpecialistAvailabilityParams,
   SpecialistTimeBlockParams,
   TimeBlockParams,
+  UpdateAppointmentNotesRequest,
 } from './appointments.contracts.js';
 
 export const createAppointmentRequestSchema: z.ZodType<CreateAppointmentRequest> = z.object({
@@ -60,6 +63,24 @@ export const rescheduleAppointmentRequestSchema: z.ZodType<RescheduleAppointment
 });
 
 export type RescheduleAppointmentInput = z.infer<typeof rescheduleAppointmentRequestSchema>;
+
+export const reassignAppointmentSpecialistRequestSchema: z.ZodType<ReassignAppointmentSpecialistRequest> = z.object({
+  specialistProfileId: z.string().uuid(),
+});
+
+export type ReassignAppointmentSpecialistInput = z.infer<typeof reassignAppointmentSpecialistRequestSchema>;
+
+export const changeAppointmentServiceRequestSchema: z.ZodType<ChangeAppointmentServiceRequest> = z.object({
+  serviceId: z.string().uuid(),
+});
+
+export type ChangeAppointmentServiceInput = z.infer<typeof changeAppointmentServiceRequestSchema>;
+
+export const updateAppointmentNotesRequestSchema: z.ZodType<UpdateAppointmentNotesRequest> = z.object({
+  notes: z.string().nullable(),
+});
+
+export type UpdateAppointmentNotesInput = z.infer<typeof updateAppointmentNotesRequestSchema>;
 
 export const listAppointmentsQuerySchema: z.ZodType<ListAppointmentsQuery> = z.object({
   companyId: z.string().uuid().optional(),

@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import type {
   CompanyIdParams,
+  CompanySpecialistIdParams,
   RequestIdParams,
   SendSpecialistRequestRequest,
 } from './company-specialists.contracts.js';
@@ -24,3 +25,10 @@ export const sendSpecialistRequestSchema: z.ZodType<SendSpecialistRequestRequest
 });
 
 export type SendSpecialistRequestInput = z.infer<typeof sendSpecialistRequestSchema>;
+
+export const companySpecialistIdParamsSchema: z.ZodType<CompanySpecialistIdParams> = z.object({
+  companyId: z.string().uuid(),
+  specialistProfileId: z.string().uuid(),
+});
+
+export type CompanySpecialistIdParamsInput = z.infer<typeof companySpecialistIdParamsSchema>;

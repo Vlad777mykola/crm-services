@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://crm-services/contracts/events/appointment.specialist_reassigned.v1.json",
+  "title": "appointment.specialist_reassigned",
+  "description": "Published when a company reassigns a pending or approved appointment to a different specialist (no time change). Exchange: domain.events. Routing key: appointment.specialist_reassigned.",
+  "type": "object",
+  "required": [
+    "appointmentId",
+    "companyId",
+    "serviceId",
+    "clientUserId",
+    "fromSpecialistProfileId",
+    "toSpecialistProfileId",
+    "companyName",
+    "serviceName"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "appointmentId": { "type": "string", "format": "uuid" },
+    "companyId": { "type": "string", "format": "uuid" },
+    "serviceId": { "type": "string", "format": "uuid" },
+    "clientUserId": { "type": "string", "format": "uuid" },
+    "fromSpecialistProfileId": { "type": "string", "format": "uuid" },
+    "toSpecialistProfileId": { "type": "string", "format": "uuid" },
+    "companyName": { "type": "string" },
+    "serviceName": { "type": "string" }
+  }
+}

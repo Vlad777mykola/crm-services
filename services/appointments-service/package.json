@@ -18,6 +18,7 @@
     "db:migration:generate": "typeorm-ts-node-esm migration:generate -d src/db/data-source.ts"
   },
   "dependencies": {
+    "@crm/authz-kit": "0.0.0",
     "@crm/auth-kit": "0.0.0",
     "@crm/http-kit": "0.0.0",
     "@crm/messaging-kit": "0.0.0",

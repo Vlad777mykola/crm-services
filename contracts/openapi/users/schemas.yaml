@@ -77,3 +77,35 @@ UserResponse:
   required:
     - message
     - data
+
+PublicUser:
+  type: object
+  description: PII-free subset returned by the unauthenticated GET /users/{id} lookup.
+  properties:
+    id:
+      type: string
+      format: uuid
+    name:
+      type: string
+    city:
+      type: string
+      nullable: true
+    status:
+      type: string
+      enum: [active, disabled]
+  required:
+    - id
+    - name
+    - city
+    - status
+
+PublicUserResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      $ref: '#/PublicUser'
+  required:
+    - message
+    - data

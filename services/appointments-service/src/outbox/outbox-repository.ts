@@ -13,7 +13,9 @@ export type AppointmentDomainEventName =
   | 'appointment.completed'
   | 'appointment.review_eligible'
   | 'appointment.rescheduled'
-  | 'appointment.cancelled';
+  | 'appointment.cancelled'
+  | 'appointment.specialist_reassigned'
+  | 'appointment.service_changed';
 
 export const appointmentEventRouting: Record<AppointmentDomainEventName, { exchange: string; routingKey: string }> = {
   'appointment.requested': { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'appointment.requested' },
@@ -23,6 +25,8 @@ export const appointmentEventRouting: Record<AppointmentDomainEventName, { excha
   'appointment.review_eligible': { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'appointment.review_eligible' },
   'appointment.rescheduled': { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'appointment.rescheduled' },
   'appointment.cancelled': { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'appointment.cancelled' },
+  'appointment.specialist_reassigned': { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'appointment.specialist_reassigned' },
+  'appointment.service_changed': { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'appointment.service_changed' },
 };
 
 export interface RecordOutboxEventInput {

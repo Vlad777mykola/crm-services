@@ -4,16 +4,14 @@ import { OutboxEventEntity } from '../db/entities/outbox-event.entity.js';
 
 export const DOMAIN_EVENTS_EXCHANGE = 'domain.events';
 
-// `company-specialist.removed` has a contract (contracts/events/company-specialist.removed.v1.json)
-// but is NOT published here - legacy has no code path that removes a relation
-// (no removal endpoint exists), so there is nothing to trigger it yet.
-export type CompanySpecialistDomainEventName = 'company-specialist.accepted';
+export type CompanySpecialistDomainEventName = 'company-specialist.accepted' | 'company-specialist.removed';
 
 export const companySpecialistEventRouting: Record<
   CompanySpecialistDomainEventName,
   { exchange: string; routingKey: string }
 > = {
   'company-specialist.accepted': { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'company-specialist.accepted' },
+  'company-specialist.removed': { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'company-specialist.removed' },
 };
 
 export interface RecordOutboxEventInput {

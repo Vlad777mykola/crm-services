@@ -12,7 +12,8 @@ Owns company membership — extracted from
 |---|---|---|
 | GET | `/companies/:companyId/members` | owner/manager |
 | POST | `/companies/:companyId/members/invite` | owner only |
-| PATCH | `/companies/:companyId/members/:memberId` | owner only (status only, not role) |
+| PATCH | `/companies/:companyId/members/:memberId` | owner only (status only) |
+| PATCH | `/companies/:companyId/members/:memberId/role` | owner only. Only accepts `role: "manager"` - promoting to `owner` (ownership transfer) is not supported by this endpoint, and the current owner cannot be targeted. |
 | DELETE | `/companies/:companyId/members/:memberId` | owner only |
 
 Legacy parity note: "invite" has no pending-invitation step today — if a user
@@ -37,9 +38,7 @@ unused), `processed_events`, `outbox_events`.
 |---|---|
 | `company-member.added` | Owner row created (via `company.created`), or a manager is invited/reactivated. |
 | `company-member.removed` | A member's status is set to `removed` (via PATCH or DELETE). |
-
-`company-member.role_changed` schema exists but is **not published** — no
-code path here changes a member's role after creation (legacy parity).
+| `company-member.role_changed` | A member's role changes via `PATCH .../members/:memberId/role`. |
 
 ## Known temporary compromise
 

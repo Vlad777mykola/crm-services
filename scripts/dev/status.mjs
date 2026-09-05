@@ -36,6 +36,40 @@ function isPortFree(port) {
   });
 }
 
+/**
+ * A port can be closed (service not started), open-but-unready (started, but a
+ * dependency like RabbitMQ never connected), or fully ready. Traefik answers
+ * `502 Bad Gateway` for the first two cases without saying which, so probe the
+ * health endpoints directly and report the distinction.
+ */
+async function probeHealth(port) {
+  async function get(pathname) {
+    try {
+      const res = await fetch(`http://127.0.0.1:${port}${pathname}`, {
+        signal: AbortSignal.timeout(1500),
+      });
+      return res.status;
+    } catch {
+      return null;
+    }
+  }
+
+  const live = await get('/health/live');
+  if (live === null) return { state: 'unreachable' };
+  if (live !== 200) return { state: 'unhealthy', detail: `/health/live -> ${live}` };
+
+  const ready = await get('/health/ready');
+  if (ready === 200) return { state: 'ready' };
+  return { state: 'not-ready', detail: `/health/ready -> ${ready ?? 'no response'}` };
+}
+
+const STATE_LABEL = {
+  ready: 'ready',
+  'not-ready': 'NOT READY (dependency down - check RabbitMQ/Postgres)',
+  unhealthy: 'UNHEALTHY',
+  unreachable: 'no HTTP response',
+};
+
 async function main() {
   console.log('\nDocker (dev stack)');
   try {
@@ -58,9 +92,15 @@ async function main() {
   }
 
   console.log('\nDev ports');
-  for (const [id, svc] of Object.entries(SERVICES)) {
+  for (const [, svc] of Object.entries(SERVICES)) {
     const pid = portOwner(svc.port);
-    console.log(`  ${svc.label} :${svc.port} ${pid ? `pid ${pid}` : 'free'}`);
+    if (!pid) {
+      console.log(`  ${svc.label} :${svc.port} DOWN (nothing listening - gateway will answer 502)`);
+      continue;
+    }
+    const health = await probeHealth(svc.port);
+    const detail = health.detail ? ` - ${health.detail}` : '';
+    console.log(`  ${svc.label} :${svc.port} pid ${pid} ${STATE_LABEL[health.state]}${detail}`);
   }
   for (const [id, ob] of Object.entries(OUTBOX)) {
     const pid = portOwner(ob.healthPort);

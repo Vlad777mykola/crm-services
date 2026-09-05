@@ -4,11 +4,15 @@ import { OutboxEventEntity } from '../db/entities/outbox-event.entity.js';
 
 export const DOMAIN_EVENTS_EXCHANGE = 'domain.events';
 
-export type CompanyMemberDomainEventName = 'company-member.added' | 'company-member.removed';
+export type CompanyMemberDomainEventName =
+  | 'company-member.added'
+  | 'company-member.removed'
+  | 'company-member.role_changed';
 
 export const companyMemberEventRouting: Record<CompanyMemberDomainEventName, { exchange: string; routingKey: string }> = {
   'company-member.added': { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'company-member.added' },
   'company-member.removed': { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'company-member.removed' },
+  'company-member.role_changed': { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'company-member.role_changed' },
 };
 
 export interface RecordOutboxEventInput {

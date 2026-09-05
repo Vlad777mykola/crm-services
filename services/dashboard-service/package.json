@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@crm/auth-kit": "0.0.0",
+    "@crm/authz-kit": "0.0.0",
     "@crm/http-kit": "0.0.0",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",

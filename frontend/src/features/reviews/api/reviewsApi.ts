@@ -1,3 +1,4 @@
+import { parseJsonOrThrow } from '@/shared/api/apiError';
 import { authorizedFetch } from '@/shared/api/authorizedFetch';
 
 // NOTE: hand-written until Orval generates a typed client from contracts/openapi.json
@@ -35,18 +36,6 @@ export interface Review {
 export interface CreateReviewInput {
   rating: number;
   comment?: string | null;
-}
-
-async function parseJsonOrThrow<T>(response: Response): Promise<T> {
-  const body = (await response.json().catch(() => undefined)) as { error?: { message?: string } } | T | undefined;
-
-  if (!response.ok) {
-    const message =
-      body && typeof body === 'object' && 'error' in body ? body.error?.message : undefined;
-    throw new Error(message ?? `Request failed with status ${response.status}`);
-  }
-
-  return body as T;
 }
 
 export async function createReview(appointmentId: string, input: CreateReviewInput): Promise<Review> {

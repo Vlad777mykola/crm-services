@@ -26,6 +26,14 @@ services:
       - '--api.dashboard=true'
       # Dashboard is unauthenticated on :8081 — local dev only.
       - '--api.insecure=true'
+      # Without access logs a failed upstream is just an opaque `502 Bad Gateway`
+      # in the browser. These lines name the router, the resolved upstream URL and
+      # the dial error, so `docker compose logs gateway` says which service is down.
+      - '--log.level=INFO'
+      - '--accesslog=true'
+      - '--accesslog.format=json'
+      - '--accesslog.fields.defaultmode=keep'
+      - '--accesslog.fields.headers.defaultmode=drop'
     ports:
       - '8080:8080'
       - '8081:8081'

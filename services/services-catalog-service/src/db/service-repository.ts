@@ -18,6 +18,15 @@ export interface ServiceSpecialistWithSpecialistRow extends ServiceSpecialistRow
   };
 }
 
+export interface ServiceSpecialistSummary {
+  id: string;
+  displayName: string;
+}
+
+export interface ServiceWithSpecialistsRow extends ServiceRow {
+  specialists: ServiceSpecialistSummary[];
+}
+
 export class ServiceRepository {
   constructor(private readonly dataSource: DataSource) {}
 
@@ -161,10 +170,52 @@ export class ServiceRepository {
 
     return rows.map(({ specialistId, specialistDisplayName, ...row }) => ({
       ...row,
-      ...(specialistId && specialistDisplayName
-        ? { specialist: { id: specialistId, displayName: specialistDisplayName } }
+      ...(specialistId
+        ? { specialist: { id: specialistId, displayName: specialistDisplayName?.trim() || 'Specialist' } }
         : {}),
     }));
+  }
+
+  /**
+   * Rosters for many services in a single round trip, so a services list does
+   * not fan out into one specialists query per row.
+   */
+  async listSpecialistsByServiceIds(serviceIds: string[]): Promise<Map<string, ServiceSpecialistSummary[]>> {
+    const grouped = new Map<string, ServiceSpecialistSummary[]>();
+    if (serviceIds.length === 0) {
+      return grouped;
+    }
+
+    const rows = await this.dataSource.query<
+      Array<{ serviceId: string; specialistId: string | null; specialistDisplayName: string | null }>
+    >(
+      `
+        SELECT
+          assignment."serviceId",
+          specialist."id" AS "specialistId",
+          specialist."displayName" AS "specialistDisplayName"
+        FROM services_schema.service_specialists assignment
+        LEFT JOIN specialists_schema.specialist_profiles specialist
+          ON specialist."id" = assignment."specialistProfileId"
+        WHERE assignment."serviceId" = ANY($1)
+        ORDER BY assignment."createdAt" ASC
+      `,
+      [serviceIds],
+    );
+
+    for (const row of rows) {
+      if (!row.specialistId) {
+        continue;
+      }
+      const roster = grouped.get(row.serviceId) ?? [];
+      roster.push({
+        id: row.specialistId,
+        displayName: row.specialistDisplayName?.trim() || 'Specialist',
+      });
+      grouped.set(row.serviceId, roster);
+    }
+
+    return grouped;
   }
 
   async listAssignmentsBySpecialist(specialistProfileId: string): Promise<ServiceSpecialistRow[]> {

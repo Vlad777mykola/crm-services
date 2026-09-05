@@ -1,3 +1,4 @@
+import { parseJsonOrThrow } from '@/shared/api/apiError';
 import { authorizedFetch } from '@/shared/api/authorizedFetch';
 
 // NOTE: hand-written until Orval generates a typed client from contracts/openapi.json
@@ -133,18 +134,6 @@ function appointmentsQueryString(query: ListAppointmentsQuery = {}): string {
   return queryString ? `?${queryString}` : '';
 }
 
-async function parseJsonOrThrow<T>(response: Response): Promise<T> {
-  const body = (await response.json().catch(() => undefined)) as { error?: { message?: string } } | T | undefined;
-
-  if (!response.ok) {
-    const message =
-      body && typeof body === 'object' && 'error' in body ? body.error?.message : undefined;
-    throw new Error(message ?? `Request failed with status ${response.status}`);
-  }
-
-  return body as T;
-}
-
 export async function createAppointment(companyId: string, input: CreateAppointmentInput): Promise<Appointment> {
   const response = await authorizedFetch(`/companies/${companyId}/appointments`, {
     method: 'POST',
@@ -277,6 +266,58 @@ export async function respondToAppointment(
 export async function completeAppointment(companyId: string, appointmentId: string): Promise<Appointment> {
   const response = await authorizedFetch(`/companies/${companyId}/appointments/${appointmentId}/complete`, {
     method: 'POST',
+  });
+  const body = await parseJsonOrThrow<{ data: Appointment }>(response);
+  return body.data;
+}
+
+export async function rescheduleAppointment(
+  companyId: string,
+  appointmentId: string,
+  input: { startAt: string; specialistProfileId?: string },
+): Promise<Appointment> {
+  const response = await authorizedFetch(`/companies/${companyId}/appointments/${appointmentId}/reschedule`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+  const body = await parseJsonOrThrow<{ data: Appointment }>(response);
+  return body.data;
+}
+
+export async function reassignAppointmentSpecialist(
+  companyId: string,
+  appointmentId: string,
+  specialistProfileId: string,
+): Promise<Appointment> {
+  const response = await authorizedFetch(`/companies/${companyId}/appointments/${appointmentId}/reassign-specialist`, {
+    method: 'POST',
+    body: JSON.stringify({ specialistProfileId }),
+  });
+  const body = await parseJsonOrThrow<{ data: Appointment }>(response);
+  return body.data;
+}
+
+export async function changeAppointmentService(
+  companyId: string,
+  appointmentId: string,
+  serviceId: string,
+): Promise<Appointment> {
+  const response = await authorizedFetch(`/companies/${companyId}/appointments/${appointmentId}/change-service`, {
+    method: 'POST',
+    body: JSON.stringify({ serviceId }),
+  });
+  const body = await parseJsonOrThrow<{ data: Appointment }>(response);
+  return body.data;
+}
+
+export async function updateAppointmentNotes(
+  companyId: string,
+  appointmentId: string,
+  notes: string | null,
+): Promise<Appointment> {
+  const response = await authorizedFetch(`/companies/${companyId}/appointments/${appointmentId}/notes`, {
+    method: 'PATCH',
+    body: JSON.stringify({ notes }),
   });
   const body = await parseJsonOrThrow<{ data: Appointment }>(response);
   return body.data;

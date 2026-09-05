@@ -1,8 +1,29 @@
-import type { Company, CompanyMemberRole, CompanyStatus } from '@/features/companies/api/companiesApi';
-import type { SpecialistProfileStatus } from '@/features/specialists/api/specialistsApi';
+import { parseJsonOrThrow } from '@/shared/api/apiError';
 import { authorizedFetch } from '@/shared/api/authorizedFetch';
+import type { PermissionAction } from '@/shared/lib/permissions';
 
 export type DashboardRole = 'client' | 'company' | 'specialist';
+export type CompanyMemberRole = 'owner' | 'manager';
+export type CompanyStatus = 'draft' | 'published' | 'suspended';
+export type SpecialistProfileStatus = 'draft' | 'published' | 'suspended';
+
+export interface DashboardCompany {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  category: string | null;
+  website: string | null;
+  phone: string | null;
+  email: string | null;
+  status: CompanyStatus;
+  isRemoteSupported: boolean;
+  city: string | null;
+  address: string | null;
+  createdByUserId: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface AppDashboardSummary {
   roles: DashboardRole[];
@@ -17,6 +38,7 @@ export interface AppDashboardSummary {
     name: string;
     status: CompanyStatus;
     role: CompanyMemberRole;
+    permissions: PermissionAction[];
   }>;
   specialist: {
     id: string;
@@ -24,12 +46,16 @@ export interface AppDashboardSummary {
     pendingCompanyRequests: number;
     activeCompanies: number;
     assignedServices: number;
+    permissions: PermissionAction[];
   } | null;
+  /** Baseline permissions that apply regardless of role (e.g. managing your own appointments). */
+  permissions: PermissionAction[];
 }
 
 export interface CompanyDashboardSummary {
-  company: Company;
+  company: DashboardCompany;
   role: CompanyMemberRole;
+  permissions: PermissionAction[];
   pendingAppointments: number;
   activeSpecialists: number;
   pendingSpecialistRequests: number;
@@ -39,17 +65,6 @@ export interface CompanyDashboardSummary {
     draft: number;
     published: number;
   };
-}
-
-async function parseJsonOrThrow<T>(response: Response): Promise<T> {
-  const body = (await response.json().catch(() => undefined)) as { error?: { message?: string } } | T | undefined;
-
-  if (!response.ok) {
-    const message = body && typeof body === 'object' && 'error' in body ? body.error?.message : undefined;
-    throw new Error(message ?? `Request failed with status ${response.status}`);
-  }
-
-  return body as T;
 }
 
 export async function fetchAppDashboardSummary(): Promise<AppDashboardSummary> {

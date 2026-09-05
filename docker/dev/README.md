@@ -312,3 +312,37 @@ Every deploy unit exposes `GET /health/live` (process alive) and `GET /health/re
 | `reviews-service` | 4009 | `/health/live`, `/health/ready` |
 | `outbox-publisher-reviews` | 4509 | `/health/live`, `/health/ready` |
 | `gateway` (Traefik) | 8080 (app traffic), 8081 (dashboard, local dev only) | none of its own - proxies `/health`, `/health/live`, `/health/ready` through to whichever backend currently owns that path |
+
+## Debugging `502 Bad Gateway`
+
+A 502 from `:8080` always means the same thing: Traefik matched a router, but the
+service behind it did not answer. The route is fine; the upstream is not there.
+
+Every domain service awaits its RabbitMQ consumer **before** calling
+`app.listen`, so a service started without RabbitMQ reachable never opens its
+HTTP port at all. It does not crash - it retries with backoff and looks alive in
+the terminal, while the gateway keeps answering 502. RabbitMQ sits behind the
+`events` profile, so `docker compose -f compose.infra.yml up` on its own is not
+enough; use `yarn dev:infra`.
+
+Work through it in this order:
+
+```bash
+# 1. Which service ports are open, and are they ready?
+yarn dev status
+
+# 2. What did the gateway actually try to reach? (JSON access logs)
+docker compose -f docker/dev/compose.infra.yml -f docker/dev/compose.gateway.yml logs gateway
+
+# 3. Talk to the service directly, bypassing Traefik (4006 = company-specialists)
+curl -i http://localhost:4006/health/live
+curl -i http://localhost:4006/health/ready
+```
+
+`yarn dev status` distinguishes the three states the gateway collapses into one:
+nothing listening (`DOWN`), listening but a dependency is down (`NOT READY`), and
+`ready`. The access log line names the `RouterName`, the resolved `ServiceURL`
+and the dial error, which tells you exactly which port Traefik failed to reach.
+
+In the browser the frontend now reports the upstream failure instead of a bare
+status - see `frontend/src/shared/api/apiError.ts`.

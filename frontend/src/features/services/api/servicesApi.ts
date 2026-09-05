@@ -1,3 +1,4 @@
+import { parseJsonOrThrow } from '@/shared/api/apiError';
 import { authorizedFetch } from '@/shared/api/authorizedFetch';
 
 // NOTE: hand-written until Orval generates a typed client from contracts/openapi.json
@@ -7,6 +8,11 @@ export type ServiceStatus = 'draft' | 'published' | 'suspended';
 export interface ServiceCompanySummary {
   id: string;
   name: string;
+}
+
+export interface ServiceSpecialistSummary {
+  id: string;
+  displayName: string;
 }
 
 export interface Service {
@@ -19,6 +25,8 @@ export interface Service {
   price: string | null;
   status: ServiceStatus;
   company?: ServiceCompanySummary;
+  /** Only returned by the company services list. */
+  specialists?: ServiceSpecialistSummary[];
   createdAt: string;
   updatedAt: string;
 }
@@ -52,18 +60,6 @@ export interface PublicServicesQuery {
 export interface PublicServicesResult {
   items: Service[];
   meta: PaginationMeta;
-}
-
-async function parseJsonOrThrow<T>(response: Response): Promise<T> {
-  const body = (await response.json().catch(() => undefined)) as { error?: { message?: string } } | T | undefined;
-
-  if (!response.ok) {
-    const message =
-      body && typeof body === 'object' && 'error' in body ? body.error?.message : undefined;
-    throw new Error(message ?? `Request failed with status ${response.status}`);
-  }
-
-  return body as T;
 }
 
 export async function createService(companyId: string, input: CreateServiceInput): Promise<Service> {

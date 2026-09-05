@@ -6,29 +6,35 @@ import {
   appointmentIdParamsSchema,
   appointmentOnlyIdParamsSchema,
   availableSlotsQuerySchema,
+  changeAppointmentServiceRequestSchema,
   companyIdParamsSchema,
   createTimeBlockRequestSchema,
   createAppointmentRequestSchema,
   listAppointmentsQuerySchema,
+  reassignAppointmentSpecialistRequestSchema,
   respondToAppointmentRequestSchema,
   rescheduleAppointmentRequestSchema,
   setAvailabilityRulesRequestSchema,
   specialistAvailabilityParamsSchema,
   specialistTimeBlockParamsSchema,
   timeBlockParamsSchema,
+  updateAppointmentNotesRequestSchema,
   type AppointmentIdParamsInput,
   type AppointmentOnlyIdParamsInput,
   type AvailableSlotsQueryInput,
+  type ChangeAppointmentServiceInput,
   type CompanyIdParamsInput,
   type CreateTimeBlockInput,
   type CreateAppointmentInput,
   type ListAppointmentsQueryInput,
+  type ReassignAppointmentSpecialistInput,
   type RespondToAppointmentInput,
   type RescheduleAppointmentInput,
   type SetAvailabilityRulesInput,
   type SpecialistAvailabilityParamsInput,
   type SpecialistTimeBlockParamsInput,
   type TimeBlockParamsInput,
+  type UpdateAppointmentNotesInput,
 } from '../../modules/appointments/appointments.schemas.js';
 import { requireAuth } from '../require-auth.js';
 import { validate } from '../validate.js';
@@ -150,6 +156,71 @@ export function createAppointmentsRouter(appointmentsService: AppointmentsServic
           req.context.requestId,
         );
         res.status(200).json({ message: 'Appointment rescheduled', data: appointment });
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
+
+  router.post(
+    '/companies/:companyId/appointments/:appointmentId/reassign-specialist',
+    requireAuth,
+    validate(appointmentIdParamsSchema, 'params'),
+    validate(reassignAppointmentSpecialistRequestSchema, 'body'),
+    async (req, res, next) => {
+      try {
+        const { companyId, appointmentId } = req.params as unknown as AppointmentIdParamsInput;
+        const appointment = await appointmentsService.reassignSpecialist(
+          companyId,
+          appointmentId,
+          req.auth!.userId,
+          req.body as ReassignAppointmentSpecialistInput,
+          req.context.requestId,
+        );
+        res.status(200).json({ message: 'Appointment specialist reassigned', data: appointment });
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
+
+  router.post(
+    '/companies/:companyId/appointments/:appointmentId/change-service',
+    requireAuth,
+    validate(appointmentIdParamsSchema, 'params'),
+    validate(changeAppointmentServiceRequestSchema, 'body'),
+    async (req, res, next) => {
+      try {
+        const { companyId, appointmentId } = req.params as unknown as AppointmentIdParamsInput;
+        const appointment = await appointmentsService.changeService(
+          companyId,
+          appointmentId,
+          req.auth!.userId,
+          req.body as ChangeAppointmentServiceInput,
+          req.context.requestId,
+        );
+        res.status(200).json({ message: 'Appointment service changed', data: appointment });
+      } catch (err) {
+        next(err);
+      }
+    },
+  );
+
+  router.patch(
+    '/companies/:companyId/appointments/:appointmentId/notes',
+    requireAuth,
+    validate(appointmentIdParamsSchema, 'params'),
+    validate(updateAppointmentNotesRequestSchema, 'body'),
+    async (req, res, next) => {
+      try {
+        const { companyId, appointmentId } = req.params as unknown as AppointmentIdParamsInput;
+        const appointment = await appointmentsService.updateNotes(
+          companyId,
+          appointmentId,
+          req.auth!.userId,
+          req.body as UpdateAppointmentNotesInput,
+        );
+        res.status(200).json({ message: 'Appointment notes updated', data: appointment });
       } catch (err) {
         next(err);
       }

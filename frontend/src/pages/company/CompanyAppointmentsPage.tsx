@@ -10,7 +10,9 @@ import {
   respondToAppointment,
   type AppointmentStatus,
 } from '@/features/appointments/api/appointmentsApi';
+import { AppointmentNotesModal } from '@/features/appointments/ui/AppointmentNotesModal';
 import { AppointmentStatusHistoryModal } from '@/features/appointments/ui/AppointmentStatusHistoryModal';
+import { useCompanyPermissions } from '@/features/dashboard/model/useCompanyPermissions';
 import { PageHeader } from '@/widgets/navigation/ui/PageHeader';
 
 const STATUS_COLORS: Record<AppointmentStatus, string> = {
@@ -52,6 +54,8 @@ export function CompanyAppointmentsPage() {
   const range = dayRange(selectedDate);
   const queryKey = ['company', companyId, 'appointments', selectedDate, status];
   const [historyAppointmentId, setHistoryAppointmentId] = useState<string | null>(null);
+  const [notesAppointment, setNotesAppointment] = useState<Appointment | null>(null);
+  const { can } = useCompanyPermissions(companyId);
 
   const { data: appointments, isLoading, isError, error } = useQuery({
     queryKey,
@@ -126,7 +130,14 @@ export function CompanyAppointmentsPage() {
                 <Button key="history" size="small" onClick={() => setHistoryAppointmentId(appointment.id)}>
                   History
                 </Button>,
-                ...(appointment.status === 'pending'
+                ...(can('company.appointments.manage')
+                  ? [
+                      <Button key="notes" size="small" onClick={() => setNotesAppointment(appointment)}>
+                        Notes
+                      </Button>,
+                    ]
+                  : []),
+                ...(appointment.status === 'pending' && can('appointments.approve')
                   ? [
                       <Button
                         key="approve"
@@ -148,7 +159,7 @@ export function CompanyAppointmentsPage() {
                       </Button>,
                     ]
                   : []),
-                ...(appointment.status === 'approved'
+                ...(appointment.status === 'approved' && can('company.appointments.manage')
                   ? [
                       <Button
                         key="complete"
@@ -185,6 +196,15 @@ export function CompanyAppointmentsPage() {
       )}
 
       <AppointmentStatusHistoryModal appointmentId={historyAppointmentId} onClose={() => setHistoryAppointmentId(null)} />
+      {companyId && (
+        <AppointmentNotesModal
+          companyId={companyId}
+          appointmentId={notesAppointment?.id ?? null}
+          initialNotes={notesAppointment?.notes ?? null}
+          onClose={() => setNotesAppointment(null)}
+          invalidateQueryKey={queryKey}
+        />
+      )}
       </Card>
     </>
   );

@@ -41,10 +41,12 @@ export function createUsersRouter(usersService: UsersService): Router {
     }
   });
 
+  // Intentionally unauthenticated (public directory lookup), so it must only
+  // ever return the PII-free PublicUserProfile shape - never email/phone/bio.
   router.get('/users/:id', validate(userIdParamsSchema, 'params'), async (req, res, next) => {
     try {
       const { id } = req.params as unknown as UserIdParamsInput;
-      const user = await usersService.getById(id);
+      const user = await usersService.getPublicById(id);
       res.status(200).json({ message: 'User found', data: user });
     } catch (err) {
       next(err);

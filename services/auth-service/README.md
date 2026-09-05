@@ -45,6 +45,7 @@ namespace — see `docs/architecture/table-ownership-matrix.md`):
 | Event | What happens |
 |---|---|
 | `company-member.added` | Upserts a row into `auth_membership_projection` (companyId, userId, role). |
+| `company-member.role_changed` | Upserts the row's `role` in `auth_membership_projection`. |
 | `company-member.removed` | Deletes the matching row from `auth_membership_projection`. |
 
 ## Published events

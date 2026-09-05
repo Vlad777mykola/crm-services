@@ -112,6 +112,8 @@ paths:
     $ref: './openapi/company-members/paths.yaml#/Invite'
   /companies/{companyId}/members/{memberId}:
     $ref: './openapi/company-members/paths.yaml#/ByMemberId'
+  /companies/{companyId}/members/{memberId}/role:
+    $ref: './openapi/company-members/paths.yaml#/ByMemberIdRole'
   /specialists/profile:
     $ref: './openapi/specialists/paths.yaml#/Profile'
   /specialists/me:
@@ -128,6 +130,8 @@ paths:
     $ref: './openapi/company-specialists/paths.yaml#/CompanyRequestsList'
   /companies/{companyId}/specialists:
     $ref: './openapi/company-specialists/paths.yaml#/CompanySpecialistsList'
+  /companies/{companyId}/specialists/{specialistProfileId}:
+    $ref: './openapi/company-specialists/paths.yaml#/ByCompanySpecialistId'
   /specialists/me/company-requests:
     $ref: './openapi/company-specialists/paths.yaml#/MyCompanyRequests'
   /specialists/me/companies:
@@ -164,6 +168,26 @@ paths:
     $ref: './openapi/appointments/paths.yaml#/Cancel'
   /companies/{companyId}/appointments/{appointmentId}/complete:
     $ref: './openapi/appointments/paths.yaml#/Complete'
+  /companies/{companyId}/appointments/{appointmentId}/reschedule:
+    $ref: './openapi/appointments/paths.yaml#/Reschedule'
+  /companies/{companyId}/appointments/{appointmentId}/reassign-specialist:
+    $ref: './openapi/appointments/paths.yaml#/ReassignSpecialist'
+  /companies/{companyId}/appointments/{appointmentId}/change-service:
+    $ref: './openapi/appointments/paths.yaml#/ChangeService'
+  /companies/{companyId}/appointments/{appointmentId}/notes:
+    $ref: './openapi/appointments/paths.yaml#/Notes'
+  /companies/{companyId}/availability:
+    $ref: './openapi/appointments/paths.yaml#/CompanyAvailability'
+  /companies/{companyId}/time-blocks:
+    $ref: './openapi/appointments/paths.yaml#/CompanyTimeBlocks'
+  /companies/{companyId}/time-blocks/{blockId}:
+    $ref: './openapi/appointments/paths.yaml#/CompanyTimeBlockById'
+  /companies/{companyId}/specialists/{specialistProfileId}/availability:
+    $ref: './openapi/appointments/paths.yaml#/SpecialistAvailability'
+  /companies/{companyId}/specialists/{specialistProfileId}/time-blocks:
+    $ref: './openapi/appointments/paths.yaml#/SpecialistTimeBlocks'
+  /companies/{companyId}/specialists/{specialistProfileId}/time-blocks/{blockId}:
+    $ref: './openapi/appointments/paths.yaml#/SpecialistTimeBlockById'
   /appointments/{appointmentId}/review:
     $ref: './openapi/reviews/paths.yaml#/CreateForAppointment'
   /companies/{companyId}/reviews:

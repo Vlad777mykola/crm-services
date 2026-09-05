@@ -107,6 +107,53 @@ CompanySpecialistsList:
             schema:
               $ref: './schemas.yaml#/CompanySpecialistListResponse'
 
+ByCompanySpecialistId:
+  delete:
+    operationId: removeCompanySpecialist
+    tags:
+      - Company Specialists
+    summary: End a specialist's active relation with a company (owner/manager only)
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: specialistProfileId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: Specialist removed from company
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/CompanySpecialistResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '403':
+        description: Not a company owner/manager
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '404':
+        description: This specialist is not an active relation for this company
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+
 MyCompanyRequests:
   get:
     operationId: listMySpecialistCompanyRequests

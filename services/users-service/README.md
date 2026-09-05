@@ -12,7 +12,7 @@ Owns user profile data (name, phone, city, bio) — extracted from
 |---|---|---|
 | GET | `/users/me` | Requires `Authorization: Bearer <accessToken>` (issued by auth-service). |
 | PATCH | `/users/me` | Same. Body: `{ name?, phone?, city?, bio? }` (all optional, nullable except `name`). |
-| GET | `/users/:id` | No auth required (matches legacy). |
+| GET | `/users/:id` | No auth required. Returns a PII-free `PublicUserProfile` (`id`, `name`, `city`, `status` only) - never `email`/`phone`/`bio`. |
 
 `POST /users` is **not** implemented here — stays on legacy-backend per Q5
 (`table-ownership-matrix.md` "Undecided ownership").

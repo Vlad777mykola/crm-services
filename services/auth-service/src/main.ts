@@ -28,6 +28,7 @@ async function bootstrap(): Promise<void> {
     bindings: [
       { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'company-member.added' },
       { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'company-member.removed' },
+      { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'company-member.role_changed' },
     ],
     onMessage: async (parsedBody) => {
       const envelope = parsedBody as { id: string; type: string; data: Record<string, unknown> };

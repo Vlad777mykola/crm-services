@@ -190,6 +190,236 @@ Complete:
             schema:
               $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
 
+Reschedule:
+  post:
+    operationId: rescheduleAppointment
+    tags:
+      - Appointments
+    summary: Reschedule a pending/approved appointment's time (and, optionally, specialist for backward compatibility) (owner/manager only)
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: appointmentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: './schemas.yaml#/RescheduleAppointmentRequest'
+    responses:
+      '200':
+        description: Appointment rescheduled
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/AppointmentResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '403':
+        description: Not a company owner/manager
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '404':
+        description: Appointment or service not found
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '409':
+        description: Selected slot is not available, or appointment can't be rescheduled
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+
+ReassignSpecialist:
+  post:
+    operationId: reassignAppointmentSpecialist
+    tags:
+      - Appointments
+    summary: Reassign only the specialist on a pending/approved appointment, keeping the existing time slot (owner/manager only)
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: appointmentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: './schemas.yaml#/ReassignAppointmentSpecialistRequest'
+    responses:
+      '200':
+        description: Appointment specialist reassigned
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/AppointmentResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '403':
+        description: Not a company owner/manager
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '404':
+        description: Appointment or service not found
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '409':
+        description: New specialist not assigned to the service, slot unavailable, or appointment can't be reassigned
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+
+ChangeService:
+  post:
+    operationId: changeAppointmentService
+    tags:
+      - Appointments
+    summary: Change the service on a pending/approved appointment, keeping the same start time and specialist (owner/manager only)
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: appointmentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: './schemas.yaml#/ChangeAppointmentServiceRequest'
+    responses:
+      '200':
+        description: Appointment service changed
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/AppointmentResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '403':
+        description: Not a company owner/manager
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '404':
+        description: Appointment or service not found
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '409':
+        description: Current specialist not assigned to the new service, slot unavailable, or appointment can't change service
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+
+Notes:
+  patch:
+    operationId: updateAppointmentNotes
+    tags:
+      - Appointments
+    summary: Update internal notes on an appointment (owner/manager only, no domain event)
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: appointmentId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: './schemas.yaml#/UpdateAppointmentNotesRequest'
+    responses:
+      '200':
+        description: Appointment notes updated
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/AppointmentResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '403':
+        description: Not a company owner/manager
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '404':
+        description: Appointment not found
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+
 MyAppointments:
   get:
     operationId: listMyAppointments
@@ -289,6 +519,364 @@ Cancel:
               $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
       '409':
         description: This appointment can no longer be cancelled
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+
+CompanyAvailability:
+  get:
+    operationId: getCompanyAvailability
+    tags:
+      - Appointments
+    summary: Get a company's availability rules and time blocks (owner/manager only)
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: Company availability
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/AvailabilityWithBlocksResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '403':
+        description: Not a company owner/manager
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+  put:
+    operationId: setCompanyAvailability
+    tags:
+      - Appointments
+    summary: Replace a company's availability rules (owner/manager only)
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: './schemas.yaml#/SetAvailabilityRulesRequest'
+    responses:
+      '200':
+        description: Company availability updated
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/AvailabilityRuleListResponse'
+      '400':
+        description: A rule's startTime must be before its endTime
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '403':
+        description: Not a company owner/manager
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+
+CompanyTimeBlocks:
+  post:
+    operationId: addCompanyTimeBlock
+    tags:
+      - Appointments
+    summary: Add a company-wide time block (owner/manager only)
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: './schemas.yaml#/CreateTimeBlockRequest'
+    responses:
+      '201':
+        description: Company time block added
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/TimeBlockResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '403':
+        description: Not a company owner/manager
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+
+CompanyTimeBlockById:
+  delete:
+    operationId: removeCompanyTimeBlock
+    tags:
+      - Appointments
+    summary: Remove a company-wide time block (owner/manager only)
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: blockId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '204':
+        description: Time block removed
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '403':
+        description: Not a company owner/manager
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+
+SpecialistAvailability:
+  get:
+    operationId: getSpecialistAvailability
+    tags:
+      - Appointments
+    summary: Get a specialist's availability rules and time blocks at a company (the specialist themself, or an owner/manager of the company)
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: specialistProfileId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '200':
+        description: Specialist availability
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/AvailabilityWithBlocksResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '403':
+        description: Not the specialist themself, nor a company owner/manager
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '404':
+        description: This specialist is not an active relation for this company
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+  put:
+    operationId: setSpecialistAvailability
+    tags:
+      - Appointments
+    summary: Replace a specialist's availability rules at a company (the specialist themself, or an owner/manager of the company)
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: specialistProfileId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: './schemas.yaml#/SetAvailabilityRulesRequest'
+    responses:
+      '200':
+        description: Specialist availability updated
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/AvailabilityRuleListResponse'
+      '400':
+        description: A rule's startTime must be before its endTime
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '403':
+        description: Not the specialist themself, nor a company owner/manager
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '404':
+        description: This specialist is not an active relation for this company
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+
+SpecialistTimeBlocks:
+  post:
+    operationId: addSpecialistTimeBlock
+    tags:
+      - Appointments
+    summary: Add a time block to a specialist's schedule at a company (the specialist themself, or an owner/manager of the company)
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: specialistProfileId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: './schemas.yaml#/CreateTimeBlockRequest'
+    responses:
+      '201':
+        description: Specialist time block added
+        content:
+          application/json:
+            schema:
+              $ref: './schemas.yaml#/TimeBlockResponse'
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '403':
+        description: Not the specialist themself, nor a company owner/manager
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '404':
+        description: This specialist is not an active relation for this company
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+
+SpecialistTimeBlockById:
+  delete:
+    operationId: removeSpecialistTimeBlock
+    tags:
+      - Appointments
+    summary: Remove a time block from a specialist's schedule at a company (the specialist themself, or an owner/manager of the company)
+    security:
+      - bearerAuth: []
+    parameters:
+      - name: companyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: specialistProfileId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: blockId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    responses:
+      '204':
+        description: Time block removed
+      '401':
+        description: Unauthorized
+        content:
+          application/json:
+            schema:
+              $ref: '../../openapi.yaml#/components/schemas/ErrorResponse'
+      '403':
+        description: Not the specialist themself, nor a company owner/manager
         content:
           application/json:
             schema:

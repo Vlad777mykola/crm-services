@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, Button, Card, Empty, List, Modal, Space, Spin, Tag } from 'antd';
+import { Alert, Button, Card, Empty, List, Modal, Space, Spin, Tag, Typography } from 'antd';
 import { Link, useParams } from 'react-router';
 
 import { createService, fetchCompanyServices, updateService, type Service } from '@/features/services/api/servicesApi';
@@ -101,7 +101,9 @@ export function CompanyServicesPage() {
                   Edit
                 </Button>,
                 <Link key="specialists" to={`/company/${companyId}/services/${service.id}/specialists`}>
-                  <Button size="small">Specialists</Button>
+                  <Button size="small">
+                    Specialists{service.specialists?.length ? ` (${service.specialists.length})` : ''}
+                  </Button>
                 </Link>,
                 service.status === 'draft' ? (
                   <Button
@@ -124,10 +126,21 @@ export function CompanyServicesPage() {
                   </Space>
                 }
                 description={
-                  <>
-                    {service.durationMinutes} min · {formatPrice(service.price)}
-                    {service.category && ` · ${service.category}`}
-                  </>
+                  <Space direction="vertical" size={2}>
+                    <span>
+                      {service.durationMinutes} min · {formatPrice(service.price)}
+                      {service.category && ` · ${service.category}`}
+                    </span>
+                    {service.specialists && service.specialists.length > 0 ? (
+                      <Space size={4} wrap>
+                        {service.specialists.map((specialist) => (
+                          <Tag key={specialist.id}>{specialist.displayName}</Tag>
+                        ))}
+                      </Space>
+                    ) : (
+                      <Typography.Text type="secondary">No specialists assigned</Typography.Text>
+                    )}
+                  </Space>
                 }
               />
             </List.Item>

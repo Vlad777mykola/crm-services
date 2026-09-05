@@ -27,6 +27,18 @@ export interface RescheduleAppointmentRequest {
   startAt: string;
 }
 
+export interface ReassignAppointmentSpecialistRequest {
+  specialistProfileId: string;
+}
+
+export interface ChangeAppointmentServiceRequest {
+  serviceId: string;
+}
+
+export interface UpdateAppointmentNotesRequest {
+  notes: string | null;
+}
+
 export interface ListAppointmentsQuery {
   companyId?: string;
   from?: string;

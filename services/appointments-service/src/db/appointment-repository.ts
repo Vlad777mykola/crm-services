@@ -103,6 +103,28 @@ export class AppointmentRepository {
     return (await repository.findOne({ where: { id } }))!;
   }
 
+  async updateSpecialist(manager: EntityManager, id: string, specialistProfileId: string): Promise<AppointmentRow> {
+    const repository = manager.getRepository(AppointmentEntity);
+    await repository.update({ id }, { specialistProfileId, updatedAt: new Date() });
+    return (await repository.findOne({ where: { id } }))!;
+  }
+
+  async updateService(
+    manager: EntityManager,
+    id: string,
+    fields: { serviceId: string; endAt: Date },
+  ): Promise<AppointmentRow> {
+    const repository = manager.getRepository(AppointmentEntity);
+    await repository.update({ id }, { serviceId: fields.serviceId, endAt: fields.endAt, updatedAt: new Date() });
+    return (await repository.findOne({ where: { id } }))!;
+  }
+
+  async updateNotes(manager: EntityManager, id: string, notes: string | null): Promise<AppointmentRow> {
+    const repository = manager.getRepository(AppointmentEntity);
+    await repository.update({ id }, { notes, updatedAt: new Date() });
+    return (await repository.findOne({ where: { id } }))!;
+  }
+
   async recordStatusChange(
     manager: EntityManager,
     input: {

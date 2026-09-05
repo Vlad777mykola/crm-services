@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import type {
+  ChangeMemberRoleRequest,
   CompanyIdParams,
   InviteMemberRequest,
   MemberIdParams,
@@ -27,3 +28,8 @@ export const updateMemberRequestSchema: z.ZodType<UpdateMemberRequest> = z.objec
   status: z.enum(['active', 'removed']),
 });
 export type UpdateMemberRequestInput = z.infer<typeof updateMemberRequestSchema>;
+
+export const changeMemberRoleRequestSchema: z.ZodType<ChangeMemberRoleRequest> = z.object({
+  role: z.enum(['owner', 'manager']),
+});
+export type ChangeMemberRoleRequestInput = z.infer<typeof changeMemberRoleRequestSchema>;

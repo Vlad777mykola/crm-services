@@ -4,7 +4,12 @@ import { CreateServiceHandler } from '../../application/commands/create-service/
 import { UpdateServiceHandler } from '../../application/commands/update-service/update-service.handler.js';
 import { ServiceQueries } from '../../application/queries/service-queries.js';
 import { TypeOrmServicesEventOutbox } from '../../application/services/typeorm-services-event-outbox.js';
-import { ServiceRepository, type ServiceRow, type StatusHistoryRow } from '../../db/service-repository.js';
+import {
+  ServiceRepository,
+  type ServiceRow,
+  type ServiceWithSpecialistsRow,
+  type StatusHistoryRow,
+} from '../../db/service-repository.js';
 import type { PaginationMeta } from '../../common/pagination.js';
 import type { CreateServiceRequestInput, PublicServicesQueryInput, UpdateServiceRequestInput } from './services.schemas.js';
 
@@ -31,7 +36,10 @@ export class ServicesService {
     return this.createCommand.execute({ companyId, requesterUserId, input, correlationId });
   }
 
-  async listByCompany(companyId: string, requesterUserId: string | undefined): Promise<ServiceRow[]> {
+  async listByCompany(
+    companyId: string,
+    requesterUserId: string | undefined,
+  ): Promise<ServiceWithSpecialistsRow[]> {
     return this.queries.listByCompany(companyId, requesterUserId);
   }
 

@@ -87,9 +87,10 @@ export function RequestAppointmentPage() {
 
   const specialistOptions = useMemo(
     () =>
-      (specialists ?? [])
-        .filter((entry) => entry.specialist)
-        .map((entry) => ({ value: entry.specialistProfileId, label: entry.specialist!.displayName })),
+      (specialists ?? []).map((entry) => ({
+        value: entry.specialistProfileId,
+        label: entry.specialist?.displayName ?? 'Specialist',
+      })),
     [specialists],
   );
 
