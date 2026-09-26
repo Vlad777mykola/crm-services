@@ -26,7 +26,6 @@ import { CreateCompanyPage } from '@/pages/company/CreateCompanyPage';
 import { ServiceSpecialistsPage } from '@/pages/company/ServiceSpecialistsPage';
 import { HealthPage } from '@/pages/health/HealthPage';
 import { ServicePublicPage } from '@/pages/services/ServicePublicPage';
-import { ServicesListPage } from '@/pages/services/ServicesListPage';
 import { SpecialistAppointmentsPage } from '@/pages/specialist/SpecialistAppointmentsPage';
 import { SpecialistAvailabilityPage } from '@/pages/specialist/SpecialistAvailabilityPage';
 import { SpecialistCompaniesPage } from '@/pages/specialist/SpecialistCompaniesPage';
@@ -48,7 +47,6 @@ export const router = createBrowserRouter([
           { path: '/', element: <HealthPage /> },
           { path: 'companies', element: <CompaniesListPage /> },
           { path: 'companies/:companyId', element: <CompanyPublicPage /> },
-          { path: 'services', element: <ServicesListPage /> },
           { path: 'services/:serviceId', element: <ServicePublicPage /> },
           { path: 'specialists', element: <SpecialistsListPage /> },
           { path: 'specialists/:specialistId', element: <SpecialistPublicPage /> },
