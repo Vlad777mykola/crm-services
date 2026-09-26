@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, Button, Card, Empty, Input, List, Select, Space } from '@/shared/ui';
-import { Controller, useForm } from 'react-hook-form';
+import { AppController, FormField, useAppForm } from '@/shared/form';
 import { Link, useParams } from 'react-router';
 
 import {
@@ -14,7 +13,6 @@ import {
   type SendSpecialistRequestFormValues,
 } from '@/features/company-specialists/model/schemas';
 import { fetchPublicSpecialists } from '@/features/specialists/api/specialistsApi';
-import { FormField } from '@/shared/ui/form/FormField';
 
 export function CompanySpecialistsPage() {
   const { companyId } = useParams<{ companyId: string }>();
@@ -40,8 +38,8 @@ export function CompanySpecialistsPage() {
     handleSubmit,
     reset,
     formState: { isSubmitting },
-  } = useForm<SendSpecialistRequestFormValues>({
-    resolver: zodResolver(sendSpecialistRequestFormSchema),
+  } = useAppForm<SendSpecialistRequestFormValues>({
+    schema: sendSpecialistRequestFormSchema,
     defaultValues: { specialistProfileId: '', message: '' },
   });
 
@@ -78,7 +76,7 @@ export function CompanySpecialistsPage() {
         {requestError && <Alert type="error" message={requestError} style={{ marginBottom: 16 }} showIcon closable onClose={() => setRequestError(null)} />}
         {successMessage && <Alert type="success" message={successMessage} style={{ marginBottom: 16 }} showIcon closable onClose={() => setSuccessMessage(null)} />}
         <form className="crm-form" onSubmit={onSend}>
-          <Controller
+          <AppController
             name="specialistProfileId"
             control={control}
             render={({ field, fieldState }) => (
@@ -95,7 +93,7 @@ export function CompanySpecialistsPage() {
               </FormField>
             )}
           />
-          <Controller
+          <AppController
             name="message"
             control={control}
             render={({ field, fieldState }) => (

@@ -1,9 +1,7 @@
-import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Checkbox, Input } from '@/shared/ui';
-import { Controller, useForm } from 'react-hook-form';
+import { AppController, FormField, useAppForm } from '@/shared/form';
 
 import { companyFormSchema, type CompanyFormValues } from '@/features/companies/model/schemas';
-import { FormField } from '@/shared/ui/form/FormField';
 
 interface CompanyFormProps {
   defaultValues?: Partial<CompanyFormValues>;
@@ -29,8 +27,8 @@ export function CompanyForm({ defaultValues, submitLabel, submitting, onSubmit }
     control,
     handleSubmit,
     formState: { isDirty },
-  } = useForm<CompanyFormValues>({
-    resolver: zodResolver(companyFormSchema),
+  } = useAppForm<CompanyFormValues>({
+    schema: companyFormSchema,
     defaultValues: { ...EMPTY_VALUES, ...defaultValues },
   });
 
@@ -38,7 +36,7 @@ export function CompanyForm({ defaultValues, submitLabel, submitting, onSubmit }
 
   return (
     <form className="crm-form" onSubmit={submit}>
-      <Controller
+      <AppController
         name="name"
         control={control}
         render={({ field, fieldState }) => (
@@ -47,7 +45,7 @@ export function CompanyForm({ defaultValues, submitLabel, submitting, onSubmit }
           </FormField>
         )}
       />
-      <Controller
+      <AppController
         name="description"
         control={control}
         render={({ field, fieldState }) => (
@@ -56,7 +54,7 @@ export function CompanyForm({ defaultValues, submitLabel, submitting, onSubmit }
           </FormField>
         )}
       />
-      <Controller
+      <AppController
         name="category"
         control={control}
         render={({ field, fieldState }) => (
@@ -65,7 +63,7 @@ export function CompanyForm({ defaultValues, submitLabel, submitting, onSubmit }
           </FormField>
         )}
       />
-      <Controller
+      <AppController
         name="website"
         control={control}
         render={({ field, fieldState }) => (
@@ -74,7 +72,7 @@ export function CompanyForm({ defaultValues, submitLabel, submitting, onSubmit }
           </FormField>
         )}
       />
-      <Controller
+      <AppController
         name="phone"
         control={control}
         render={({ field, fieldState }) => (
@@ -83,7 +81,7 @@ export function CompanyForm({ defaultValues, submitLabel, submitting, onSubmit }
           </FormField>
         )}
       />
-      <Controller
+      <AppController
         name="email"
         control={control}
         render={({ field, fieldState }) => (
@@ -92,7 +90,7 @@ export function CompanyForm({ defaultValues, submitLabel, submitting, onSubmit }
           </FormField>
         )}
       />
-      <Controller
+      <AppController
         name="city"
         control={control}
         render={({ field, fieldState }) => (
@@ -101,7 +99,7 @@ export function CompanyForm({ defaultValues, submitLabel, submitting, onSubmit }
           </FormField>
         )}
       />
-      <Controller
+      <AppController
         name="address"
         control={control}
         render={({ field, fieldState }) => (
@@ -110,7 +108,7 @@ export function CompanyForm({ defaultValues, submitLabel, submitting, onSubmit }
           </FormField>
         )}
       />
-      <Controller
+      <AppController
         name="isRemoteSupported"
         control={control}
         render={({ field: { value, onChange, ...field } }) => (

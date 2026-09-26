@@ -32,7 +32,37 @@ export default tseslint.config(
 	},
 	{
 		files: ['src/**/*.{ts,tsx}'],
-		ignores: ['src/shared/ui/**/*.{ts,tsx}'],
+		ignores: ['src/shared/ui/**/*.{ts,tsx}', 'src/shared/form/**/*.{ts,tsx}'],
+		rules: {
+			'no-restricted-imports': [
+				'error',
+				{
+					paths: [
+						{
+							name: 'antd',
+							message: 'Import UI components from @/shared/ui. Direct antd imports are allowed only inside shared/ui.',
+						},
+						{
+							name: 'react-hook-form',
+							message: 'Import form primitives from @/shared/form. Direct react-hook-form imports are allowed only inside shared/form.',
+						},
+						{
+							name: '@hookform/resolvers/zod',
+							message: 'Pass schemas to useAppForm from @/shared/form. Resolver setup belongs inside shared/form.',
+						},
+					],
+					patterns: [
+						{
+							group: ['antd/*'],
+							message: 'Import UI assets/components through @/shared/ui. Direct antd imports are allowed only inside shared/ui.',
+						},
+					],
+				},
+			],
+		},
+	},
+	{
+		files: ['src/shared/form/**/*.{ts,tsx}'],
 		rules: {
 			'no-restricted-imports': [
 				'error',
@@ -47,6 +77,26 @@ export default tseslint.config(
 						{
 							group: ['antd/*'],
 							message: 'Import UI assets/components through @/shared/ui. Direct antd imports are allowed only inside shared/ui.',
+						},
+					],
+				},
+			],
+		},
+	},
+	{
+		files: ['src/shared/ui/**/*.{ts,tsx}'],
+		rules: {
+			'no-restricted-imports': [
+				'error',
+				{
+					paths: [
+						{
+							name: 'react-hook-form',
+							message: 'Import form primitives from @/shared/form. Direct react-hook-form imports are allowed only inside shared/form.',
+						},
+						{
+							name: '@hookform/resolvers/zod',
+							message: 'Pass schemas to useAppForm from @/shared/form. Resolver setup belongs inside shared/form.',
 						},
 					],
 				},

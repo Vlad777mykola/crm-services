@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, Button, Card, Input, List, Space, Spin, Tag } from '@/shared/ui';
-import { Controller, useForm } from 'react-hook-form';
+import { AppController, FormField, useAppForm } from '@/shared/form';
 import { useParams } from 'react-router';
 
 import {
@@ -13,7 +12,6 @@ import {
   type CompanyMember,
 } from '@/features/company-members/api/companyMembersApi';
 import { inviteMemberFormSchema, type InviteMemberFormValues } from '@/features/company-members/model/schemas';
-import { FormField } from '@/shared/ui/form/FormField';
 
 export function CompanyMembersPage() {
   const { companyId } = useParams<{ companyId: string }>();
@@ -33,8 +31,8 @@ export function CompanyMembersPage() {
     handleSubmit,
     reset,
     formState: { isSubmitting },
-  } = useForm<InviteMemberFormValues>({
-    resolver: zodResolver(inviteMemberFormSchema),
+  } = useAppForm<InviteMemberFormValues>({
+    schema: inviteMemberFormSchema,
     defaultValues: { email: '' },
   });
 
@@ -107,7 +105,7 @@ export function CompanyMembersPage() {
   return (
     <Card title="Company members" style={{ maxWidth: 640, margin: '2rem auto' }}>
       <form className="crm-form crm-form--inline" onSubmit={onInvite} style={{ marginBottom: 24 }}>
-        <Controller
+        <AppController
           name="email"
           control={control}
           render={({ field, fieldState }) => (

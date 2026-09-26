@@ -1,9 +1,7 @@
-import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Input, InputNumber } from '@/shared/ui';
-import { Controller, useForm } from 'react-hook-form';
+import { AppController, FormField, useAppForm } from '@/shared/form';
 
 import { serviceFormSchema, type ServiceFormValues } from '@/features/services/model/schemas';
-import { FormField } from '@/shared/ui/form/FormField';
 
 interface ServiceFormProps {
   defaultValues?: Partial<ServiceFormValues>;
@@ -25,8 +23,8 @@ export function ServiceForm({ defaultValues, submitLabel, submitting, onSubmit }
     control,
     handleSubmit,
     formState: { isDirty },
-  } = useForm<ServiceFormValues>({
-    resolver: zodResolver(serviceFormSchema),
+  } = useAppForm<ServiceFormValues>({
+    schema: serviceFormSchema,
     defaultValues: { ...EMPTY_VALUES, ...defaultValues },
   });
 
@@ -34,7 +32,7 @@ export function ServiceForm({ defaultValues, submitLabel, submitting, onSubmit }
 
   return (
     <form className="crm-form" onSubmit={submit}>
-      <Controller
+      <AppController
         name="name"
         control={control}
         render={({ field, fieldState }) => (
@@ -43,7 +41,7 @@ export function ServiceForm({ defaultValues, submitLabel, submitting, onSubmit }
           </FormField>
         )}
       />
-      <Controller
+      <AppController
         name="description"
         control={control}
         render={({ field, fieldState }) => (
@@ -52,7 +50,7 @@ export function ServiceForm({ defaultValues, submitLabel, submitting, onSubmit }
           </FormField>
         )}
       />
-      <Controller
+      <AppController
         name="category"
         control={control}
         render={({ field, fieldState }) => (
@@ -61,7 +59,7 @@ export function ServiceForm({ defaultValues, submitLabel, submitting, onSubmit }
           </FormField>
         )}
       />
-      <Controller
+      <AppController
         name="durationMinutes"
         control={control}
         render={({ field, fieldState }) => (
@@ -76,7 +74,7 @@ export function ServiceForm({ defaultValues, submitLabel, submitting, onSubmit }
           </FormField>
         )}
       />
-      <Controller
+      <AppController
         name="price"
         control={control}
         render={({ field, fieldState }) => (

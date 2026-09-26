@@ -1,15 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { Alert, Button, Card, Descriptions, Empty, Input, Result, Select, Space, Spin, Tag, Typography } from '@/shared/ui';
-import { Controller, useForm, useWatch } from 'react-hook-form';
+import { AppController, FormField, useAppForm, useAppWatch } from '@/shared/form';
 import { Link, useParams, useSearchParams } from 'react-router';
 
 import { createAppointment, fetchAvailableSlots } from '@/features/appointments/api/appointmentsApi';
 import { appointmentRequestFormSchema, type AppointmentRequestFormValues } from '@/features/appointments/model/schemas';
 import { fetchServiceSpecialists } from '@/features/service-specialists/api/serviceSpecialistsApi';
 import { fetchServiceById } from '@/features/services/api/servicesApi';
-import { FormField } from '@/shared/ui/form/FormField';
 
 import './RequestAppointmentPage.css';
 
@@ -54,12 +52,12 @@ export function RequestAppointmentPage() {
     handleSubmit,
     setValue,
     formState: { errors },
-  } = useForm<AppointmentRequestFormValues>({
-    resolver: zodResolver(appointmentRequestFormSchema),
+  } = useAppForm<AppointmentRequestFormValues>({
+    schema: appointmentRequestFormSchema,
     defaultValues: EMPTY_VALUES,
   });
-  const specialistProfileId = useWatch({ control, name: 'specialistProfileId' });
-  const requestedStartAt = useWatch({ control, name: 'requestedStartAt' });
+  const specialistProfileId = useAppWatch({ control, name: 'specialistProfileId' });
+  const requestedStartAt = useAppWatch({ control, name: 'requestedStartAt' });
   const range = dayRange(selectedDate);
 
   const { data: slots, isFetching: isFetchingSlots } = useQuery({
@@ -162,7 +160,7 @@ export function RequestAppointmentPage() {
           </Descriptions>
         </section>
 
-        <Controller
+        <AppController
           name="specialistProfileId"
           control={control}
           render={({ field }) => (
@@ -192,7 +190,7 @@ export function RequestAppointmentPage() {
           />
         </FormField>
 
-        <Controller
+        <AppController
           name="requestedStartAt"
           control={control}
           render={({ field }) => (
@@ -228,7 +226,7 @@ export function RequestAppointmentPage() {
             </FormField>
           )}
         />
-        <Controller
+        <AppController
           name="notes"
           control={control}
           render={({ field }) => (

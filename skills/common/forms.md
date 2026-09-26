@@ -6,7 +6,7 @@ MUST use React Hook Form for form state.
 
 MUST use Zod for form validation schemas.
 
-MUST use `@hookform/resolvers/zod` to connect Zod schemas to React Hook Form.
+MUST use `@/shared/form` for form primitives.
 
 MUST use UI components from `@/shared/ui`.
 
@@ -14,21 +14,23 @@ MUST NOT use Ant Design `Form` or `Form.Item`.
 
 MUST NOT import form controls directly from `antd` outside `shared/ui`.
 
+MUST NOT import `react-hook-form` or `@hookform/resolvers/zod` outside `shared/form`.
+
 ## Required Pattern
 
 Use:
 
 ```ts
-const form = useForm<FormValues>({
-  resolver: zodResolver(schema),
+const form = useAppForm<FormValues>({
+  schema,
   defaultValues,
 });
 ```
 
-Use `Controller` for controlled UI components:
+Use `AppController` for controlled UI components:
 
 ```tsx
-<Controller
+<AppController
   name="name"
   control={control}
   render={({ field, fieldState }) => (
@@ -48,7 +50,8 @@ Use native form submission:
 ## Responsibilities
 
 - Zod owns validation.
-- React Hook Form owns form state, submit state, dirty state, reset, and field registration.
+- `shared/form` owns React Hook Form setup.
+- React Hook Form remains the underlying form-state library.
 - TanStack Query owns API mutations and server state.
 - `@/shared/ui` owns presentation components.
 - `FormField` owns project-level label, spacing, and error display.
@@ -59,3 +62,4 @@ Use native form submission:
 - DO NOT use Ant Design `Form.Item`.
 - DO NOT use Ant Design validation rules.
 - DO NOT couple feature form state to a UI library.
+- DO NOT import React Hook Form directly outside `shared/form`.

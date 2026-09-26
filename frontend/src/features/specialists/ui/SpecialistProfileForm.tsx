@@ -1,9 +1,7 @@
-import { zodResolver } from '@hookform/resolvers/zod';
 import { Button, Checkbox, Input } from '@/shared/ui';
-import { Controller, useForm } from 'react-hook-form';
+import { AppController, FormField, useAppForm } from '@/shared/form';
 
 import { specialistProfileFormSchema, type SpecialistProfileFormValues } from '@/features/specialists/model/schemas';
-import { FormField } from '@/shared/ui/form/FormField';
 
 interface SpecialistProfileFormProps {
   defaultValues?: Partial<SpecialistProfileFormValues>;
@@ -26,8 +24,8 @@ export function SpecialistProfileForm({ defaultValues, submitLabel, submitting, 
     control,
     handleSubmit,
     formState: { isDirty },
-  } = useForm<SpecialistProfileFormValues>({
-    resolver: zodResolver(specialistProfileFormSchema),
+  } = useAppForm<SpecialistProfileFormValues>({
+    schema: specialistProfileFormSchema,
     defaultValues: { ...EMPTY_VALUES, ...defaultValues },
   });
 
@@ -35,7 +33,7 @@ export function SpecialistProfileForm({ defaultValues, submitLabel, submitting, 
 
   return (
     <form className="crm-form" onSubmit={submit}>
-      <Controller
+      <AppController
         name="displayName"
         control={control}
         render={({ field, fieldState }) => (
@@ -44,7 +42,7 @@ export function SpecialistProfileForm({ defaultValues, submitLabel, submitting, 
           </FormField>
         )}
       />
-      <Controller
+      <AppController
         name="headline"
         control={control}
         render={({ field, fieldState }) => (
@@ -53,7 +51,7 @@ export function SpecialistProfileForm({ defaultValues, submitLabel, submitting, 
           </FormField>
         )}
       />
-      <Controller
+      <AppController
         name="bio"
         control={control}
         render={({ field, fieldState }) => (
@@ -62,7 +60,7 @@ export function SpecialistProfileForm({ defaultValues, submitLabel, submitting, 
           </FormField>
         )}
       />
-      <Controller
+      <AppController
         name="category"
         control={control}
         render={({ field, fieldState }) => (
@@ -71,7 +69,7 @@ export function SpecialistProfileForm({ defaultValues, submitLabel, submitting, 
           </FormField>
         )}
       />
-      <Controller
+      <AppController
         name="city"
         control={control}
         render={({ field, fieldState }) => (
@@ -80,7 +78,7 @@ export function SpecialistProfileForm({ defaultValues, submitLabel, submitting, 
           </FormField>
         )}
       />
-      <Controller
+      <AppController
         name="isRemoteSupported"
         control={control}
         render={({ field: { value, onChange, ...field } }) => (

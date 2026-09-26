@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Alert, Button, Card, Input, Spin } from '@/shared/ui';
-import { Controller, useForm } from 'react-hook-form';
+import { AppController, FormField, useAppForm } from '@/shared/form';
 
 import { fetchMyProfile, updateMyProfile } from '@/features/profile/api/profileApi';
 import { profileFormSchema, type ProfileFormValues } from '@/features/profile/model/schemas';
-import { FormField } from '@/shared/ui/form/FormField';
 
 const PROFILE_QUERY_KEY = ['profile', 'me'];
 
@@ -41,8 +39,8 @@ export function ProfileForm({ authDefaults }: ProfileFormProps) {
     handleSubmit,
     reset,
     formState: { isSubmitting, isDirty },
-  } = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileFormSchema),
+  } = useAppForm<ProfileFormValues>({
+    schema: profileFormSchema,
     defaultValues: { name: '', phone: '', city: '', bio: '' },
   });
 
@@ -120,7 +118,7 @@ export function ProfileForm({ authDefaults }: ProfileFormProps) {
         />
       )}
       <form className="crm-form" onSubmit={onSubmit}>
-        <Controller
+        <AppController
           name="name"
           control={control}
           render={({ field, fieldState }) => (
@@ -129,7 +127,7 @@ export function ProfileForm({ authDefaults }: ProfileFormProps) {
             </FormField>
           )}
         />
-        <Controller
+        <AppController
           name="phone"
           control={control}
           render={({ field, fieldState }) => (
@@ -138,7 +136,7 @@ export function ProfileForm({ authDefaults }: ProfileFormProps) {
             </FormField>
           )}
         />
-        <Controller
+        <AppController
           name="city"
           control={control}
           render={({ field, fieldState }) => (
@@ -147,7 +145,7 @@ export function ProfileForm({ authDefaults }: ProfileFormProps) {
             </FormField>
           )}
         />
-        <Controller
+        <AppController
           name="bio"
           control={control}
           render={({ field, fieldState }) => (

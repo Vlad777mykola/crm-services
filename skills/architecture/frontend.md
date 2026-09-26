@@ -6,7 +6,8 @@
 - MUST keep dependency direction top-to-bottom only.
 - MUST place API calls in the owning feature API segment.
 - MUST use TanStack Query for server state.
-- MUST use React Hook Form + Zod for forms.
+- MUST use `@/shared/form` for forms.
+- MUST keep React Hook Form and Zod resolver imports inside `shared/form`.
 - MUST import reusable UI components from `@/shared/ui`.
 - MUST NOT import `antd` outside `frontend/src/shared/ui`.
 - MUST NOT use Ant Design `Form` or `Form.Item`.

@@ -1,12 +1,10 @@
 import { useState } from 'react';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { Alert, Button, Card, Input, Typography } from '@/shared/ui';
-import { Controller, useForm } from 'react-hook-form';
+import { AppController, FormField, useAppForm } from '@/shared/form';
 import { Link, useNavigate } from 'react-router';
 
 import { useAuth } from '@/features/auth/model/useAuth';
 import { registerFormSchema, type RegisterFormValues } from '@/features/auth/model/schemas';
-import { FormField } from '@/shared/ui/form/FormField';
 
 export function RegisterPage() {
   const { register: registerUser } = useAuth();
@@ -17,8 +15,8 @@ export function RegisterPage() {
     control,
     handleSubmit,
     formState: { isSubmitting },
-  } = useForm<RegisterFormValues>({
-    resolver: zodResolver(registerFormSchema),
+  } = useAppForm<RegisterFormValues>({
+    schema: registerFormSchema,
     defaultValues: { email: '', name: '', password: '' },
   });
 
@@ -36,7 +34,7 @@ export function RegisterPage() {
     <Card title="Create an account" style={{ maxWidth: 400, margin: '4rem auto' }}>
       {formError && <Alert type="error" message={formError} style={{ marginBottom: 16 }} showIcon />}
       <form className="crm-form" onSubmit={onSubmit}>
-        <Controller
+        <AppController
           name="name"
           control={control}
           render={({ field, fieldState }) => (
@@ -45,7 +43,7 @@ export function RegisterPage() {
             </FormField>
           )}
         />
-        <Controller
+        <AppController
           name="email"
           control={control}
           render={({ field, fieldState }) => (
@@ -54,7 +52,7 @@ export function RegisterPage() {
             </FormField>
           )}
         />
-        <Controller
+        <AppController
           name="password"
           control={control}
           render={({ field, fieldState }) => (
