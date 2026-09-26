@@ -1,16 +1,20 @@
 import { useState } from 'react';
+import type { KeyboardEvent, MouseEvent } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
-import { Alert, Avatar, Button, Card, Checkbox, Empty, Input, List, Pagination, Rate, Space, Tag, Spin, Typography } from '@/shared/ui';
-import { Link } from 'react-router';
+import { CheckCircleFilled, EnvironmentOutlined } from '@ant-design/icons';
+import { Alert, Avatar, Card, Checkbox, Empty, Input, List, Pagination, Rate, Space, Tag, Spin, Typography } from '@/shared/ui';
+import { Link, useNavigate } from 'react-router';
 
 import { fetchPublicSpecialists, type PublicSpecialistsQuery } from '@/features/specialists/api/specialistsApi';
 import { PublicBrowseTabs } from '@/widgets/navigation/ui/PublicBrowseTabs';
+import '@/pages/publicDirectory.css';
 
 const PAGE_SIZE = 10;
 
 export function SpecialistsListPage() {
   const [filters, setFilters] = useState<PublicSpecialistsQuery>({ page: 1, pageSize: PAGE_SIZE });
+  const navigate = useNavigate();
 
   const { data, isLoading, isFetching, isError, error } = useQuery({
     queryKey: ['specialists', 'public', filters],
@@ -22,8 +26,23 @@ export function SpecialistsListPage() {
     setFilters((current) => ({ ...current, ...patch, page: 1 }));
   }
 
+  function openSpecialist(specialistId: string) {
+    navigate(`/specialists/${specialistId}`);
+  }
+
+  function handleCardKeyDown(event: KeyboardEvent<HTMLElement>, specialistId: string) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      openSpecialist(specialistId);
+    }
+  }
+
+  function stopCardNavigation(event: MouseEvent<HTMLElement>) {
+    event.stopPropagation();
+  }
+
   return (
-    <Card title={<PublicBrowseTabs />} style={{ maxWidth: 720, margin: '2rem auto' }}>
+    <Card title={<PublicBrowseTabs />} className="public-directory-card">
       <Space direction="vertical" style={{ width: '100%', marginBottom: '1rem' }}>
         <Input.Search
           allowClear
@@ -63,43 +82,55 @@ export function SpecialistsListPage() {
       {data && data.items.length > 0 && (
         <>
           <List
+            className="public-result-list"
             loading={isFetching}
             dataSource={data.items}
             renderItem={(specialist) => (
               <List.Item
-                actions={[
-                  <Link key="view" to={`/specialists/${specialist.id}`}>
-                    <Button type="primary">View</Button>
-                  </Link>,
-                ]}
+                role="link"
+                tabIndex={0}
+                aria-label={`View ${specialist.displayName}`}
+                onClick={() => openSpecialist(specialist.id)}
+                onKeyDown={(event) => handleCardKeyDown(event, specialist.id)}
               >
-                <List.Item.Meta
-                  avatar={<Avatar size={48}>{specialist.displayName.slice(0, 1).toUpperCase()}</Avatar>}
-                  title={<Link to={`/specialists/${specialist.id}`}>{specialist.displayName}</Link>}
-                  description={
-                    <Space direction="vertical" size={6}>
-                      <span>
-                        {specialist.headline && <Typography.Text type="secondary">{specialist.headline}</Typography.Text>}
-                        {specialist.category && <Typography.Text type="secondary"> · {specialist.category}</Typography.Text>}
-                        {specialist.city && <Typography.Text type="secondary"> · {specialist.city}</Typography.Text>}
+                <article className="public-result-card">
+                  <Avatar size={96} className="public-result-card__avatar">
+                    {specialist.displayName.slice(0, 1).toUpperCase()}
+                  </Avatar>
+                  <div className="public-result-card__body">
+                    <div className="public-result-card__header">
+                      <Typography.Title level={3} className="public-result-card__name">
+                        {specialist.displayName}
+                      </Typography.Title>
+                      {specialist.isRemoteSupported && <Tag className="public-result-card__badge">Remote-friendly</Tag>}
+                    </div>
+                    <div className="public-result-card__meta">
+                      <CheckCircleFilled style={{ color: '#00856f' }} />
+                      {specialist.headline && <span>{specialist.headline}</span>}
+                      {specialist.category && <span>{specialist.category}</span>}
+                      {specialist.city && (
+                        <span>
+                          <EnvironmentOutlined /> {specialist.city}
+                        </span>
+                      )}
+                    </div>
+                    {specialist.bio && <div className="public-result-card__description">{specialist.bio}</div>}
+                    <div className="public-result-card__rating">
+                      <Rate allowHalf disabled value={specialist.rating} style={{ fontSize: 16 }} />
+                      <span className="public-result-card__rating-text">
+                        {specialist.rating.toFixed(1)} ({specialist.reviewsCount} reviews)
                       </span>
-                      <Space size={6} wrap>
-                        <Rate allowHalf disabled value={specialist.rating} style={{ fontSize: 14 }} />
-                        <Typography.Text type="secondary">
-                          {specialist.rating.toFixed(1)} ({specialist.reviewsCount} reviews)
-                        </Typography.Text>
-                      </Space>
-                      <Space size={[4, 4]} wrap>
-                        {specialist.companies.length === 0 && <Typography.Text type="secondary">No active companies yet</Typography.Text>}
-                        {specialist.companies.map((company) => (
-                          <Link key={company.id} to={`/companies/${company.id}`}>
-                            <Tag>{company.name}</Tag>
-                          </Link>
-                        ))}
-                      </Space>
+                    </div>
+                    <Space size={[4, 4]} wrap className="public-result-card__tags">
+                      {specialist.companies.length === 0 && <Typography.Text type="secondary">No active companies yet</Typography.Text>}
+                      {specialist.companies.map((company) => (
+                        <Link key={company.id} to={`/companies/${company.id}`} onClick={stopCardNavigation}>
+                          <Tag>{company.name}</Tag>
+                        </Link>
+                      ))}
                     </Space>
-                  }
-                />
+                  </div>
+                </article>
               </List.Item>
             )}
           />

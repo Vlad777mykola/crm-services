@@ -1,8 +1,27 @@
-import type { DataSource, EntityManager } from 'typeorm';
+import type { DataSource, EntityManager, SelectQueryBuilder } from 'typeorm';
 import { In } from 'typeorm';
 
 import { CompanyEntity, type CompanyRow, type CompanyStatus } from './entities/company.entity.js';
 import { CompanyStatusHistoryEntity, type StatusHistoryRow } from './entities/company-status-history.entity.js';
+
+export interface PublicCompanyRow extends CompanyRow {
+  rating: number;
+  reviewsCount: number;
+}
+
+interface CompanyRatingRaw {
+  companyId: string;
+  rating: string | number | null;
+  reviewsCount: string | number | null;
+}
+
+interface DatabaseErrorShape {
+  code?: string;
+  driverError?: {
+    code?: string;
+  };
+  message?: string;
+}
 
 function slugify(name: string): string {
   const base = name
@@ -54,6 +73,14 @@ export class CompanyRepository {
     return this.dataSource.getRepository(CompanyEntity).findOne({ where: { id: companyId } });
   }
 
+  async findPublicById(companyId: string): Promise<PublicCompanyRow | null> {
+    const company = await this.findById(companyId);
+    if (!company) return null;
+
+    const [publicCompany] = await this.attachRatings([company]);
+    return publicCompany;
+  }
+
   async findByIdWithManager(manager: EntityManager, companyId: string): Promise<CompanyRow | null> {
     return manager.getRepository(CompanyEntity).findOne({ where: { id: companyId } });
   }
@@ -90,27 +117,10 @@ export class CompanyRepository {
     city?: string;
     skip: number;
     take: number;
-  }): Promise<{ items: CompanyRow[]; total: number }> {
-    const query = this.dataSource
-      .getRepository(CompanyEntity)
-      .createQueryBuilder('company')
-      .where('company.status = :status', { status: 'published' })
-      .orderBy('company.createdAt', 'DESC')
-      .take(filters.take)
-      .skip(filters.skip);
-
-    if (filters.q) {
-      query.andWhere('(company.name ILIKE :q OR company.description ILIKE :q)', { q: `%${filters.q}%` });
-    }
-    if (filters.category) {
-      query.andWhere('company.category ILIKE :category', { category: `%${filters.category}%` });
-    }
-    if (filters.city) {
-      query.andWhere('company.city ILIKE :city', { city: `%${filters.city}%` });
-    }
-
-    const [items, total] = await query.getManyAndCount();
-    return { items, total };
+  }): Promise<{ items: PublicCompanyRow[]; total: number }> {
+    const query = this.applyPublicFilters(this.basePublicQuery(), filters);
+    const [companies, total] = await query.take(filters.take).skip(filters.skip).getManyAndCount();
+    return { items: await this.attachRatings(companies), total };
   }
 
   async insertStatusHistory(
@@ -138,4 +148,78 @@ export class CompanyRepository {
       order: { createdAt: 'DESC' },
     });
   }
+
+  private basePublicQuery(): SelectQueryBuilder<CompanyRow> {
+    return this.dataSource
+      .getRepository(CompanyEntity)
+      .createQueryBuilder('company')
+      .where('company.status = :status', { status: 'published' })
+      .orderBy('company.createdAt', 'DESC');
+  }
+
+  private applyPublicFilters(
+    query: SelectQueryBuilder<CompanyRow>,
+    filters: { q?: string; category?: string; city?: string },
+  ): SelectQueryBuilder<CompanyRow> {
+    if (filters.q) {
+      query.andWhere('(company.name ILIKE :q OR company.description ILIKE :q)', { q: `%${filters.q}%` });
+    }
+    if (filters.category) {
+      query.andWhere('company.category ILIKE :category', { category: `%${filters.category}%` });
+    }
+    if (filters.city) {
+      query.andWhere('company.city ILIKE :city', { city: `%${filters.city}%` });
+    }
+
+    return query;
+  }
+
+  private async attachRatings(companies: CompanyRow[]): Promise<PublicCompanyRow[]> {
+    if (companies.length === 0) return [];
+
+    const ratings = await this.findRatings(companies.map((company) => company.id));
+    return companies.map((company) => toPublicCompanyRow(company, ratings.get(company.id)));
+  }
+
+  private async findRatings(companyIds: string[]): Promise<Map<string, CompanyRatingRaw>> {
+    try {
+      const rows = await this.dataSource.query<CompanyRatingRaw[]>(
+        `
+          SELECT
+            "companyId",
+            "averageRating" AS "rating",
+            "reviewsCount"
+          FROM companies_schema.company_rating_summary
+          WHERE "companyId" = ANY($1::uuid[])
+        `,
+        [companyIds],
+      );
+
+      return new Map(rows.map((row) => [row.companyId, row]));
+    } catch (err) {
+      if (!isRatingProjectionUnavailable(err)) {
+        throw err;
+      }
+
+      return new Map();
+    }
+  }
+}
+
+function toPublicCompanyRow(company: CompanyRow, rating?: CompanyRatingRaw): PublicCompanyRow {
+  return {
+    ...company,
+    rating: Number(rating?.rating ?? 0),
+    reviewsCount: Number(rating?.reviewsCount ?? 0),
+  };
+}
+
+function isRatingProjectionUnavailable(error: unknown): boolean {
+  const candidate = error as DatabaseErrorShape;
+  const code = candidate.driverError?.code ?? candidate.code;
+  return (
+    code === '42P01' ||
+    code === '42703' ||
+    Boolean(candidate.message?.includes('company_rating_summary'))
+  );
 }

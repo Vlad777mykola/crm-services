@@ -1,0 +1,150 @@
+.public-directory-card {
+  max-width: 960px;
+  margin: 2rem auto;
+}
+
+.public-directory-card .ant-card-body {
+  background: #f5f3f1;
+}
+
+.public-result-list .ant-list-item {
+  padding: 0;
+  border-block-end: 0;
+}
+
+.public-result-list .ant-list-item + .ant-list-item {
+  margin-top: 16px;
+}
+
+.public-result-card {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 22px;
+  padding: 24px;
+  border: 1px solid #ebe7e2;
+  border-radius: 28px;
+  background: #ffffff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.public-result-card:hover,
+.public-result-card:focus-visible {
+  border-color: #b8eee0;
+  box-shadow: 0 14px 30px rgba(15, 118, 110, 0.14);
+  outline: none;
+  transform: translateY(-1px);
+}
+
+.public-result-card__avatar {
+  border: 1px solid #e7eceb;
+  background: #f7fbfa;
+  color: #0f766e;
+  font-size: 34px;
+  font-weight: 700;
+}
+
+.public-result-card__body {
+  min-width: 0;
+}
+
+.public-result-card__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.public-result-card__name {
+  margin: 0;
+  color: #262626;
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.public-result-card__badge {
+  border: 0;
+  border-radius: 999px;
+  background: #ddf4d2;
+  color: #249400;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.public-result-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  color: #514d49;
+  font-size: 16px;
+}
+
+.public-result-card__description {
+  display: -webkit-box;
+  margin-top: 12px;
+  overflow: hidden;
+  color: #514d49;
+  font-size: 16px;
+  line-height: 1.45;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.public-result-card__rating {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.public-result-card__rating .ant-rate {
+  color: #009f87;
+}
+
+.public-result-card__rating-text {
+  color: #5d5752;
+  font-size: 16px;
+}
+
+.public-result-card__tags {
+  margin-top: 14px;
+}
+
+.public-result-card__tags .ant-tag {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+@media (max-width: 640px) {
+  .public-directory-card {
+    margin: 1rem auto;
+  }
+
+  .public-result-card {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 18px;
+    border-radius: 18px;
+  }
+
+  .public-result-card__avatar {
+    width: 72px !important;
+    height: 72px !important;
+    font-size: 26px;
+  }
+
+  .public-result-card__name {
+    font-size: 20px;
+  }
+}

@@ -66,6 +66,15 @@ export async function ensureCompaniesSchema(dataSource: DataSource): Promise<voi
   `);
 
   await dataSource.query(`
+    CREATE TABLE IF NOT EXISTS companies_schema.company_rating_summary (
+      "companyId" uuid PRIMARY KEY,
+      "averageRating" numeric(3, 2) NOT NULL DEFAULT 0,
+      "reviewsCount" int NOT NULL DEFAULT 0,
+      "updatedAt" timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+
+  await dataSource.query(`
     CREATE TABLE IF NOT EXISTS companies_schema.company_membership_projection (
       "companyId" uuid NOT NULL,
       "userId" uuid NOT NULL,

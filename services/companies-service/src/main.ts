@@ -1,6 +1,7 @@
 import { createApp } from './app.js';
 import { processInboundEvent } from './consumer/process-inbound-event.js';
 import { CompanyInsightRepository } from './db/company-insight-repository.js';
+import { CompanyRatingRepository } from './db/company-rating-repository.js';
 import { createDataSource } from './db/data-source.js';
 import { ensureCompaniesSchema } from './db/schema.js';
 import { env } from './env.js';
@@ -19,6 +20,7 @@ async function bootstrap(): Promise<void> {
 
   const processedEvents = new ProcessedEventsRepository();
   const insights = new CompanyInsightRepository();
+  const ratings = new CompanyRatingRepository();
   const companiesService = new CompaniesService(dataSource);
 
   const consumer = await consumeFromRabbitMq({
@@ -27,13 +29,14 @@ async function bootstrap(): Promise<void> {
     deadLetterExchange: DOMAIN_EVENTS_DLX,
     bindings: [
       { exchange: ANALYTICS_EVENTS_EXCHANGE, routingKey: 'ai.company_insight_created' },
+      { exchange: ANALYTICS_EVENTS_EXCHANGE, routingKey: 'analytics.company_rating_updated' },
       { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'company-member.added' },
       { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'company-member.role_changed' },
       { exchange: DOMAIN_EVENTS_EXCHANGE, routingKey: 'company-member.removed' },
     ],
     onMessage: async (parsedBody) => {
       const envelope = parsedBody as { id: string; type: string; data: Record<string, unknown> };
-      await processInboundEvent({ dataSource, processedEvents, insights }, envelope);
+      await processInboundEvent({ dataSource, processedEvents, insights, ratings }, envelope);
     },
   });
 

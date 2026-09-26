@@ -24,6 +24,11 @@ export interface Company {
   updatedAt: string;
 }
 
+export interface PublicCompany extends Company {
+  rating: number;
+  reviewsCount: number;
+}
+
 export interface CompanyMembership {
   role: CompanyMemberRole;
   company: Company;
@@ -61,7 +66,7 @@ export interface PublicCompaniesQuery {
 }
 
 export interface PublicCompaniesResult {
-  items: Company[];
+  items: PublicCompany[];
   meta: PaginationMeta;
 }
 
@@ -84,7 +89,7 @@ export async function fetchPublicCompanies(query: PublicCompaniesQuery = {}): Pr
 
   const queryString = params.toString();
   const response = await authorizedFetch(`/companies/public${queryString ? `?${queryString}` : ''}`);
-  const body = await parseJsonOrThrow<{ data: Company[]; meta: PaginationMeta }>(response);
+  const body = await parseJsonOrThrow<{ data: PublicCompany[]; meta: PaginationMeta }>(response);
   return { items: body.data, meta: body.meta };
 }
 
@@ -94,9 +99,9 @@ export async function fetchMyCompanies(): Promise<CompanyMembership[]> {
   return body.data;
 }
 
-export async function fetchCompanyById(companyId: string): Promise<Company> {
+export async function fetchCompanyById(companyId: string): Promise<PublicCompany> {
   const response = await authorizedFetch(`/companies/${companyId}`);
-  const body = await parseJsonOrThrow<{ data: Company }>(response);
+  const body = await parseJsonOrThrow<{ data: PublicCompany }>(response);
   return body.data;
 }
 

@@ -125,6 +125,20 @@ Company:
     - createdAt
     - updatedAt
 
+PublicCompany:
+  allOf:
+    - $ref: '#/Company'
+    - type: object
+      properties:
+        rating:
+          type: number
+          format: float
+        reviewsCount:
+          type: integer
+      required:
+        - rating
+        - reviewsCount
+
 CompanyResponse:
   type: object
   properties:
@@ -132,6 +146,17 @@ CompanyResponse:
       type: string
     data:
       $ref: '#/Company'
+  required:
+    - message
+    - data
+
+PublicCompanyResponse:
+  type: object
+  properties:
+    message:
+      type: string
+    data:
+      $ref: '#/PublicCompany'
   required:
     - message
     - data
@@ -144,7 +169,7 @@ CompanyListResponse:
     data:
       type: array
       items:
-        $ref: '#/Company'
+        $ref: '#/PublicCompany'
     meta:
       $ref: '../../openapi.yaml#/components/schemas/PaginationMeta'
   required:

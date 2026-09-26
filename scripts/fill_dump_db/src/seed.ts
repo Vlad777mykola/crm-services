@@ -1000,6 +1000,18 @@ export async function seedDatabase(): Promise<void> {
   });
   console.log('[fill_dump_db] created specialists-service rating summaries');
 
+  await insertRow('companies_schema', 'company_rating_summary', {
+    companyId: dentalId,
+    averageRating: 5,
+    reviewsCount: 1,
+  });
+  await insertRow('companies_schema', 'company_rating_summary', {
+    companyId: beautyId,
+    averageRating: 4,
+    reviewsCount: 1,
+  });
+  console.log('[fill_dump_db] created companies-service rating summaries');
+
   // ---------------------------------------------------------------------
   // Notifications - one per NotificationType
   // ---------------------------------------------------------------------

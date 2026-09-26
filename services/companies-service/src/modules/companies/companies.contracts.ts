@@ -34,3 +34,8 @@ export interface PublicCompaniesQuery {
   category?: string;
   city?: string;
 }
+
+export interface PublicCompanyRating {
+  rating: number;
+  reviewsCount: number;
+}

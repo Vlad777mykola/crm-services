@@ -81,6 +81,14 @@ export async function ensureCompaniesSchema(): Promise<void> {
     CREATE INDEX IF NOT EXISTS "IDX_company_insight_projections_companyId" ON companies_schema.company_insight_projections ("companyId")
   `);
   await query(`
+    CREATE TABLE IF NOT EXISTS companies_schema.company_rating_summary (
+      "companyId" uuid PRIMARY KEY,
+      "averageRating" numeric(3, 2) NOT NULL DEFAULT 0,
+      "reviewsCount" int NOT NULL DEFAULT 0,
+      "updatedAt" timestamptz NOT NULL DEFAULT now()
+    )
+  `);
+  await query(`
     CREATE TABLE IF NOT EXISTS companies_schema.company_membership_projection (
       "companyId" uuid NOT NULL,
       "userId" uuid NOT NULL,

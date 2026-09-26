@@ -1,7 +1,7 @@
 import type { DataSource } from 'typeorm';
 
 import { buildPaginationMeta, resolvePagination, type PaginationMeta } from '../../common/pagination.js';
-import { CompanyRepository } from '../../db/company-repository.js';
+import { CompanyRepository, type PublicCompanyRow } from '../../db/company-repository.js';
 import type { CompanyRow } from '../../db/entities/company.entity.js';
 import type { StatusHistoryRow } from '../../db/entities/company-status-history.entity.js';
 import { AppError } from '../../errors/AppError.js';
@@ -19,7 +19,7 @@ export class CompanyQueries {
     private readonly companies: CompanyRepository,
   ) {}
 
-  async getPublic(query: PublicCompaniesQueryInput): Promise<{ items: CompanyRow[]; meta: PaginationMeta }> {
+  async getPublic(query: PublicCompaniesQueryInput): Promise<{ items: PublicCompanyRow[]; meta: PaginationMeta }> {
     const { page, pageSize, skip, take } = resolvePagination(query);
     const { items, total } = await this.companies.listPublic({
       q: query.q,
@@ -45,20 +45,20 @@ export class CompanyQueries {
       .map((membership) => ({ role: membership.role, company: byId.get(membership.companyId)! }));
   }
 
-  async getById(companyId: string, requesterUserId: string | undefined): Promise<CompanyRow> {
+  async getById(companyId: string, requesterUserId: string | undefined): Promise<CompanyRow | PublicCompanyRow> {
     const company = await this.companies.findById(companyId);
     if (!company) {
       throw new AppError('Company not found', 404);
     }
 
     if (company.status === 'published') {
-      return company;
+      return (await this.companies.findPublicById(companyId)) ?? company;
     }
 
     if (!(await canSeePrivateCompany(this.dataSource, companyId, requesterUserId))) {
       throw new AppError('Company not found', 404);
     }
-    return company;
+    return (await this.companies.findPublicById(companyId)) ?? company;
   }
 
   async getStatusHistory(companyId: string, requesterUserId: string): Promise<StatusHistoryRow[]> {

@@ -109,7 +109,7 @@ CompanyById:
         content:
           application/json:
             schema:
-              $ref: './schemas.yaml#/CompanyResponse'
+              $ref: './schemas.yaml#/PublicCompanyResponse'
       '404':
         description: Company not found
         content:

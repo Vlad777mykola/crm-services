@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Alert, Button, Card, Descriptions, Empty, List, Space, Spin, Tag, Typography } from '@/shared/ui';
+import { Alert, Button, Card, Descriptions, Empty, List, Rate, Space, Spin, Tag, Typography } from '@/shared/ui';
 import { Link, useParams } from 'react-router';
 
 import { fetchCompanyById } from '@/features/companies/api/companiesApi';
@@ -60,6 +60,12 @@ export function CompanyPublicPage() {
         title={company.name}
         extra={company.isRemoteSupported ? <Tag color="blue">Remote supported</Tag> : null}
       >
+        <Space size={8} wrap style={{ marginBottom: 12 }}>
+          <Rate allowHalf disabled value={company.rating} style={{ fontSize: 16 }} />
+          <Typography.Text type="secondary">
+            {company.rating.toFixed(1)} ({company.reviewsCount} reviews)
+          </Typography.Text>
+        </Space>
         {company.description && <Typography.Paragraph>{company.description}</Typography.Paragraph>}
         <Descriptions column={1}>
           {company.category && <Descriptions.Item label="Category">{company.category}</Descriptions.Item>}

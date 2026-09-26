@@ -6,6 +6,11 @@ import {
 import type {
   AiCompanyInsightCreatedData,
 } from '../application/event-handlers/record-ai-company-insight/record-ai-company-insight.event.js';
+import type {
+  CompanyRatingUpdatedData,
+} from '../application/event-handlers/record-company-rating/record-company-rating.event.js';
+import { RecordCompanyRatingHandler } from '../application/event-handlers/record-company-rating/record-company-rating.handler.js';
+import type { CompanyRatingRepository } from '../db/company-rating-repository.js';
 import type { CompanyInsightRepository } from '../db/company-insight-repository.js';
 import {
   removeMembershipProjection,
@@ -24,6 +29,7 @@ export interface ProcessInboundEventDeps {
   dataSource: DataSource;
   processedEvents: ProcessedEventsRepository;
   insights: CompanyInsightRepository;
+  ratings: CompanyRatingRepository;
 }
 
 export async function processInboundEvent(deps: ProcessInboundEventDeps, envelope: InboundEnvelope): Promise<void> {
@@ -38,6 +44,11 @@ export async function processInboundEvent(deps: ProcessInboundEventDeps, envelop
       await new RecordAiCompanyInsightHandler(deps.insights).handle(
         manager,
         envelope.data as unknown as AiCompanyInsightCreatedData,
+      );
+    } else if (envelope.type === 'analytics.company_rating_updated') {
+      await new RecordCompanyRatingHandler(deps.ratings).handle(
+        manager,
+        envelope.data as unknown as CompanyRatingUpdatedData,
       );
     } else if (envelope.type === 'company-member.added') {
       const data = envelope.data as unknown as { companyId: string; userId: string; role: 'owner' | 'manager' };

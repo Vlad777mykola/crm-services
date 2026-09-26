@@ -4,7 +4,7 @@ import { CreateCompanyHandler } from '../../application/commands/create-company/
 import { UpdateCompanyHandler } from '../../application/commands/update-company/update-company.handler.js';
 import { CompanyQueries, type CompanyMembership } from '../../application/queries/company-queries.js';
 import { TypeOrmCompanyEventOutbox } from '../../application/services/typeorm-company-event-outbox.js';
-import { CompanyRepository } from '../../db/company-repository.js';
+import { CompanyRepository, type PublicCompanyRow } from '../../db/company-repository.js';
 import type { CompanyRow } from '../../db/entities/company.entity.js';
 import type { StatusHistoryRow } from '../../db/entities/company-status-history.entity.js';
 import type { PaginationMeta } from '../../common/pagination.js';
@@ -31,7 +31,7 @@ export class CompaniesService {
 
   async getPublic(
     query: PublicCompaniesQueryInput,
-  ): Promise<{ items: CompanyRow[]; meta: PaginationMeta }> {
+  ): Promise<{ items: PublicCompanyRow[]; meta: PaginationMeta }> {
     return this.queries.getPublic(query);
   }
 
@@ -39,7 +39,7 @@ export class CompaniesService {
     return this.queries.getMyCompanies(userId);
   }
 
-  async getById(companyId: string, requesterUserId: string | undefined): Promise<CompanyRow> {
+  async getById(companyId: string, requesterUserId: string | undefined): Promise<CompanyRow | PublicCompanyRow> {
     return this.queries.getById(companyId, requesterUserId);
   }
 
