@@ -1,6 +1,6 @@
 import type { PropsWithChildren } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ConfigProvider } from 'antd';
+import { ConfigProvider } from '@/shared/ui';
 
 import { AuthProvider } from '@/features/auth/model/AuthContext';
 

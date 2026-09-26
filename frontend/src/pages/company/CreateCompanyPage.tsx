@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { Alert, Card } from 'antd';
+import { Alert, Card } from '@/shared/ui';
 import { useNavigate } from 'react-router';
 
 import { createCompany } from '@/features/companies/api/companiesApi';

@@ -1,4 +1,4 @@
-import { Layout } from 'antd';
+import { Layout } from '@/shared/ui';
 import { Outlet } from 'react-router';
 
 import './layouts.css';

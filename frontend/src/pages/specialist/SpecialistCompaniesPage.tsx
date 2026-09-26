@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Alert, Card, Empty, List, Space, Spin } from 'antd';
+import { Alert, Card, Empty, List, Space, Spin } from '@/shared/ui';
 import { Link } from 'react-router';
 
 import { fetchMySpecialistCompanies } from '@/features/company-specialists/api/companySpecialistsApi';

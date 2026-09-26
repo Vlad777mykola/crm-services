@@ -1,0 +1,38 @@
+import 'antd/dist/reset.css';
+
+export {
+  Alert,
+  Avatar,
+  Badge,
+  Breadcrumb,
+  Button,
+  Card,
+  Checkbox,
+  Col,
+  ConfigProvider,
+  Descriptions,
+  Drawer,
+  Dropdown,
+  Empty,
+  Input,
+  InputNumber,
+  Layout,
+  List,
+  Menu,
+  Modal,
+  Pagination,
+  Rate,
+  Result,
+  Row,
+  Select,
+  Space,
+  Spin,
+  Statistic,
+  Table,
+  Tabs,
+  Tag,
+  Timeline,
+  Typography,
+} from 'antd';
+
+export type { MenuProps } from 'antd';

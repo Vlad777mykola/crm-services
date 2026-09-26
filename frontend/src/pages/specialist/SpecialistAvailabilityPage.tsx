@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
-import { Alert, Button, Card, Empty, List, Select, Space, Tag, Typography } from 'antd';
+import { Alert, Button, Card, Empty, List, Select, Space, Tag, Typography } from '@/shared/ui';
 import { Link } from 'react-router';
 
 import { fetchMySpecialistCompanies } from '@/features/company-specialists/api/companySpecialistsApi';

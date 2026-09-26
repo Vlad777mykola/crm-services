@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, Button, Card, Col, Descriptions, Row, Space, Spin, Statistic, Tag } from 'antd';
+import { Alert, Button, Card, Col, Descriptions, Row, Space, Spin, Statistic, Tag } from '@/shared/ui';
 import { Link, useParams } from 'react-router';
 
 import { updateCompany } from '@/features/companies/api/companiesApi';

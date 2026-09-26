@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Alert, Button, Card, Descriptions, Empty, List, Rate, Space, Spin, Tag, Typography } from 'antd';
+import { Alert, Button, Card, Descriptions, Empty, List, Rate, Space, Spin, Tag, Typography } from '@/shared/ui';
 import { Link, useParams } from 'react-router';
 
 import { fetchSpecialistReviews } from '@/features/reviews/api/reviewsApi';

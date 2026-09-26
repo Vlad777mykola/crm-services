@@ -1,4 +1,4 @@
-import { Empty, List, Rate, Space, Typography } from 'antd';
+import { Empty, List, Rate, Space, Typography } from '@/shared/ui';
 
 import type { Review } from '@/features/reviews/api/reviewsApi';
 

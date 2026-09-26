@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Alert, Button, Card, Input, Typography } from 'antd';
+import { Alert, Button, Card, Input, Typography } from '@/shared/ui';
 import { Controller, useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router';
 

@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button, Input, InputNumber } from 'antd';
+import { Button, Input, InputNumber } from '@/shared/ui';
 import { Controller, useForm } from 'react-hook-form';
 
 import { serviceFormSchema, type ServiceFormValues } from '@/features/services/model/schemas';

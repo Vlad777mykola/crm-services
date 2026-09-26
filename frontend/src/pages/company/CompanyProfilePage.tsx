@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, Card, Spin } from 'antd';
+import { Alert, Card, Spin } from '@/shared/ui';
 import { useParams } from 'react-router';
 
 import { fetchCompanyById, updateCompany } from '@/features/companies/api/companiesApi';

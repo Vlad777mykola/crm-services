@@ -1,5 +1,5 @@
 import type { PropsWithChildren } from 'react';
-import { Spin } from 'antd';
+import { Spin } from '@/shared/ui';
 import { Navigate } from 'react-router';
 
 import { useAuth } from '@/features/auth/model/useAuth';

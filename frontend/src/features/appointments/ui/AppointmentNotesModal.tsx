@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Alert, Input, Modal } from 'antd';
+import { Alert, Input, Modal } from '@/shared/ui';
 
 import { updateAppointmentNotes } from '@/features/appointments/api/appointmentsApi';
 

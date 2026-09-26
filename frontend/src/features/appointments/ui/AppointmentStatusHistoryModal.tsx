@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Alert, Empty, Modal, Spin, Timeline } from 'antd';
+import { Alert, Empty, Modal, Spin, Timeline } from '@/shared/ui';
 
 import { fetchAppointmentStatusHistory } from '@/features/appointments/api/appointmentsApi';
 

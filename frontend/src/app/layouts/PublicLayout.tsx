@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { Drawer } from 'antd';
+import { Drawer } from '@/shared/ui';
 import { Outlet } from 'react-router';
 
 import { AppHeader } from '@/app/layouts/AppHeader';

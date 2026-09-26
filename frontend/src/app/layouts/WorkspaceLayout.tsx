@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-import { Drawer, Result, Spin } from 'antd';
+import { Drawer, Result, Spin } from '@/shared/ui';
 import { Link, Outlet, useLocation } from 'react-router';
 
 import { AppHeader } from '@/app/layouts/AppHeader';

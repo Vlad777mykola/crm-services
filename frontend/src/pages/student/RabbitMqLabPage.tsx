@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Alert, Button, Card, Descriptions, Input, Space, Typography } from 'antd';
+import { Alert, Button, Card, Descriptions, Input, Space, Typography } from '@/shared/ui';
 import { useState } from 'react';
 
 import { getApiUrl } from '@/shared/lib/env';

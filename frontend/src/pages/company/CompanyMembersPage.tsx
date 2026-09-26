@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, Button, Card, Input, List, Space, Spin, Tag } from 'antd';
+import { Alert, Button, Card, Input, List, Space, Spin, Tag } from '@/shared/ui';
 import { Controller, useForm } from 'react-hook-form';
 import { useParams } from 'react-router';
 

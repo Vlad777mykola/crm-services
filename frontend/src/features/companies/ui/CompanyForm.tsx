@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button, Checkbox, Input } from 'antd';
+import { Button, Checkbox, Input } from '@/shared/ui';
 import { Controller, useForm } from 'react-hook-form';
 
 import { companyFormSchema, type CompanyFormValues } from '@/features/companies/model/schemas';

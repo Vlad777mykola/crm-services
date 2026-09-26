@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
-import { Alert, Avatar, Button, Card, Checkbox, Empty, Input, List, Pagination, Rate, Space, Tag, Spin, Typography } from 'antd';
+import { Alert, Avatar, Button, Card, Checkbox, Empty, Input, List, Pagination, Rate, Space, Tag, Spin, Typography } from '@/shared/ui';
 import { Link } from 'react-router';
 
 import { fetchPublicSpecialists, type PublicSpecialistsQuery } from '@/features/specialists/api/specialistsApi';

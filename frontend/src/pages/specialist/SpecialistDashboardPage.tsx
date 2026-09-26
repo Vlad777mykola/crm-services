@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Alert, Button, Card, Col, Empty, Row, Space, Spin, Statistic, Tag, Typography } from 'antd';
+import { Alert, Button, Card, Col, Empty, Row, Space, Spin, Statistic, Tag, Typography } from '@/shared/ui';
 import { Link } from 'react-router';
 
 import { fetchAppDashboardSummary } from '@/features/dashboard/api/dashboardApi';

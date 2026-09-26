@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, Button, Card, Empty, List, Modal, Space, Spin, Tag, Typography } from 'antd';
+import { Alert, Button, Card, Empty, List, Modal, Space, Spin, Tag, Typography } from '@/shared/ui';
 import { Link, useParams } from 'react-router';
 
 import { createService, fetchCompanyServices, updateService, type Service } from '@/features/services/api/servicesApi';

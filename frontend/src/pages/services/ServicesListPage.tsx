@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
-import { Alert, Card, Empty, Input, List, Pagination, Space, Spin, Typography } from 'antd';
+import { Alert, Card, Empty, Input, List, Pagination, Space, Spin, Typography } from '@/shared/ui';
 import { Link } from 'react-router';
 
 import { fetchPublicServices, type PublicServicesQuery } from '@/features/services/api/servicesApi';

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, Button, Card, Spin, Tag } from 'antd';
+import { Alert, Button, Card, Spin, Tag } from '@/shared/ui';
 
 import {
   createMySpecialistProfile,

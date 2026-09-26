@@ -1,6 +1,6 @@
 import { BellOutlined, UserOutlined } from '@ant-design/icons';
-import { Badge, Button, Dropdown } from 'antd';
-import type { MenuProps } from 'antd';
+import { Badge, Button, Dropdown } from '@/shared/ui';
+import type { MenuProps } from '@/shared/ui';
 import { Link, useNavigate } from 'react-router';
 
 import { useAuth } from '@/features/auth/model/useAuth';

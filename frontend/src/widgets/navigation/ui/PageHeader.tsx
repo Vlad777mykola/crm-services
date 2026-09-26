@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { Breadcrumb, Typography } from 'antd';
+import { Breadcrumb, Typography } from '@/shared/ui';
 import { Link } from 'react-router';
 
 import './navigation.css';

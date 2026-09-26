@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Alert, Card, Descriptions, Spin } from 'antd';
+import { Alert, Card, Descriptions, Spin } from '@/shared/ui';
 
 import { apiFetch } from '@/shared/api/client';
 

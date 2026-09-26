@@ -30,4 +30,27 @@ export default tseslint.config(
 		...fsdBoundariesConfig,
 		files: ['src/**/*.{ts,tsx}'],
 	},
+	{
+		files: ['src/**/*.{ts,tsx}'],
+		ignores: ['src/shared/ui/**/*.{ts,tsx}'],
+		rules: {
+			'no-restricted-imports': [
+				'error',
+				{
+					paths: [
+						{
+							name: 'antd',
+							message: 'Import UI components from @/shared/ui. Direct antd imports are allowed only inside shared/ui.',
+						},
+					],
+					patterns: [
+						{
+							group: ['antd/*'],
+							message: 'Import UI assets/components through @/shared/ui. Direct antd imports are allowed only inside shared/ui.',
+						},
+					],
+				},
+			],
+		},
+	},
 );

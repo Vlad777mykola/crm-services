@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, Button, Card, Empty, List, Space, Spin, Tag } from 'antd';
+import { Alert, Button, Card, Empty, List, Space, Spin, Tag } from '@/shared/ui';
 import { Link } from 'react-router';
 
 import {

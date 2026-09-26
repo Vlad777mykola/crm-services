@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Alert, Badge, Button, Card, Col, Descriptions, Empty, List, Row, Space, Spin, Statistic, Tag, Typography } from 'antd';
+import { Alert, Badge, Button, Card, Col, Descriptions, Empty, List, Row, Space, Spin, Statistic, Tag, Typography } from '@/shared/ui';
 import { Link } from 'react-router';
 
 import { useAuth } from '@/features/auth/model/useAuth';

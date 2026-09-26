@@ -1,4 +1,4 @@
-import { Badge, Menu, Typography } from 'antd';
+import { Badge, Menu, Typography } from '@/shared/ui';
 import { Link, useLocation } from 'react-router';
 
 import { resolveNav } from '@/widgets/navigation/model/resolveNav';

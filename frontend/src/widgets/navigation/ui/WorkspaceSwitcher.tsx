@@ -1,4 +1,4 @@
-import { Select } from 'antd';
+import { Select } from '@/shared/ui';
 import { useNavigate } from 'react-router';
 
 import type { WorkspaceOption } from '@/widgets/navigation/model/types';
