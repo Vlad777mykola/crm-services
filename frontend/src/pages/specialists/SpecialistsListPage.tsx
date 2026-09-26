@@ -5,6 +5,7 @@ import { Alert, Avatar, Button, Card, Checkbox, Empty, Input, List, Pagination, 
 import { Link } from 'react-router';
 
 import { fetchPublicSpecialists, type PublicSpecialistsQuery } from '@/features/specialists/api/specialistsApi';
+import { PublicBrowseTabs } from '@/widgets/navigation/ui/PublicBrowseTabs';
 
 const PAGE_SIZE = 10;
 
@@ -22,7 +23,7 @@ export function SpecialistsListPage() {
   }
 
   return (
-    <Card title="Specialists" style={{ maxWidth: 720, margin: '2rem auto' }}>
+    <Card title={<PublicBrowseTabs />} style={{ maxWidth: 720, margin: '2rem auto' }}>
       <Space direction="vertical" style={{ width: '100%', marginBottom: '1rem' }}>
         <Input.Search
           allowClear

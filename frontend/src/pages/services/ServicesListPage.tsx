@@ -5,6 +5,7 @@ import { Alert, Card, Empty, Input, List, Pagination, Space, Spin, Typography } 
 import { Link } from 'react-router';
 
 import { fetchPublicServices, type PublicServicesQuery } from '@/features/services/api/servicesApi';
+import { PublicBrowseTabs } from '@/widgets/navigation/ui/PublicBrowseTabs';
 
 const PAGE_SIZE = 10;
 
@@ -26,7 +27,7 @@ export function ServicesListPage() {
   }
 
   return (
-    <Card title="Services" style={{ maxWidth: 720, margin: '2rem auto' }}>
+    <Card title={<PublicBrowseTabs />} style={{ maxWidth: 720, margin: '2rem auto' }}>
       <Space direction="vertical" style={{ width: '100%', marginBottom: '1rem' }}>
         <Input.Search
           allowClear

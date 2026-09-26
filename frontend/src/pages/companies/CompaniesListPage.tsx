@@ -5,6 +5,7 @@ import { Alert, Card, Empty, Input, List, Pagination, Space, Spin, Typography } 
 import { Link } from 'react-router';
 
 import { fetchPublicCompanies, type PublicCompaniesQuery } from '@/features/companies/api/companiesApi';
+import { PublicBrowseTabs } from '@/widgets/navigation/ui/PublicBrowseTabs';
 
 const PAGE_SIZE = 10;
 
@@ -22,7 +23,7 @@ export function CompaniesListPage() {
   }
 
   return (
-    <Card title="Companies" style={{ maxWidth: 720, margin: '2rem auto' }}>
+    <Card title={<PublicBrowseTabs />} style={{ maxWidth: 720, margin: '2rem auto' }}>
       <Space direction="vertical" style={{ width: '100%', marginBottom: '1rem' }}>
         <Input.Search
           allowClear

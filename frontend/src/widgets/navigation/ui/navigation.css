@@ -80,6 +80,14 @@
   gap: 8px;
 }
 
+.public-browse-tabs .ant-tabs-nav {
+  margin: 0;
+}
+
+.public-browse-tabs .ant-tabs-tab {
+  padding-block: 12px;
+}
+
 @media (max-width: 900px) {
   .app-sidebar {
     display: none;
