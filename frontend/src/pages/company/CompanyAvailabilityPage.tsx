@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, Button, Card, Checkbox, Empty, Form, Input, List, Select, Space, Spin } from 'antd';
+import { Alert, Button, Card, Checkbox, Empty, Input, List, Select, Space, Spin } from 'antd';
 import { Link, useParams } from 'react-router';
 
 import {
@@ -259,33 +259,31 @@ export function CompanyAvailabilityPage() {
       </Card>
 
       <Card title="Company time blocks">
-        <Form layout="vertical">
-          <Space wrap>
-            <Input
-              type="datetime-local"
-              value={companyBlock.startsAt}
-              onChange={(event) => setCompanyBlock((value) => ({ ...value, startsAt: event.target.value }))}
-            />
-            <Input
-              type="datetime-local"
-              value={companyBlock.endsAt}
-              onChange={(event) => setCompanyBlock((value) => ({ ...value, endsAt: event.target.value }))}
-            />
-            <Input
-              placeholder="Reason"
-              value={companyBlock.reason}
-              onChange={(event) => setCompanyBlock((value) => ({ ...value, reason: event.target.value }))}
-            />
-            <Button
-              type="primary"
-              disabled={!companyBlock.startsAt || !companyBlock.endsAt}
-              loading={addCompanyBlock.isPending}
-              onClick={() => addCompanyBlock.mutate()}
-            >
-              Add block
-            </Button>
-          </Space>
-        </Form>
+        <Space wrap>
+          <Input
+            type="datetime-local"
+            value={companyBlock.startsAt}
+            onChange={(event) => setCompanyBlock((value) => ({ ...value, startsAt: event.target.value }))}
+          />
+          <Input
+            type="datetime-local"
+            value={companyBlock.endsAt}
+            onChange={(event) => setCompanyBlock((value) => ({ ...value, endsAt: event.target.value }))}
+          />
+          <Input
+            placeholder="Reason"
+            value={companyBlock.reason}
+            onChange={(event) => setCompanyBlock((value) => ({ ...value, reason: event.target.value }))}
+          />
+          <Button
+            type="primary"
+            disabled={!companyBlock.startsAt || !companyBlock.endsAt}
+            loading={addCompanyBlock.isPending}
+            onClick={() => addCompanyBlock.mutate()}
+          >
+            Add block
+          </Button>
+        </Space>
         <BlockList
           blocks={companyAvailability?.blocks ?? []}
           deleting={removeCompanyBlock.isPending}

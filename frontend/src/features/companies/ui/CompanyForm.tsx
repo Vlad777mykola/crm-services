@@ -1,8 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button, Checkbox, Form, Input } from 'antd';
+import { Button, Checkbox, Input } from 'antd';
 import { Controller, useForm } from 'react-hook-form';
 
 import { companyFormSchema, type CompanyFormValues } from '@/features/companies/model/schemas';
+import { FormField } from '@/shared/ui/form/FormField';
 
 interface CompanyFormProps {
   defaultValues?: Partial<CompanyFormValues>;
@@ -36,93 +37,93 @@ export function CompanyForm({ defaultValues, submitLabel, submitting, onSubmit }
   const submit = handleSubmit(onSubmit);
 
   return (
-    <Form layout="vertical" onFinish={submit}>
+    <form className="crm-form" onSubmit={submit}>
       <Controller
         name="name"
         control={control}
         render={({ field, fieldState }) => (
-          <Form.Item label="Company name" validateStatus={fieldState.error ? 'error' : ''} help={fieldState.error?.message}>
-            <Input {...field} />
-          </Form.Item>
+          <FormField label="Company name" error={fieldState.error?.message}>
+            <Input {...field} status={fieldState.error ? 'error' : undefined} />
+          </FormField>
         )}
       />
       <Controller
         name="description"
         control={control}
         render={({ field, fieldState }) => (
-          <Form.Item label="Description" validateStatus={fieldState.error ? 'error' : ''} help={fieldState.error?.message}>
-            <Input.TextArea {...field} rows={3} />
-          </Form.Item>
+          <FormField label="Description" error={fieldState.error?.message}>
+            <Input.TextArea {...field} rows={3} status={fieldState.error ? 'error' : undefined} />
+          </FormField>
         )}
       />
       <Controller
         name="category"
         control={control}
         render={({ field, fieldState }) => (
-          <Form.Item label="Category" validateStatus={fieldState.error ? 'error' : ''} help={fieldState.error?.message}>
-            <Input {...field} placeholder="e.g. dental, hair salon, consulting" />
-          </Form.Item>
+          <FormField label="Category" error={fieldState.error?.message}>
+            <Input {...field} placeholder="e.g. dental, hair salon, consulting" status={fieldState.error ? 'error' : undefined} />
+          </FormField>
         )}
       />
       <Controller
         name="website"
         control={control}
         render={({ field, fieldState }) => (
-          <Form.Item label="Website" validateStatus={fieldState.error ? 'error' : ''} help={fieldState.error?.message}>
-            <Input {...field} placeholder="https://" />
-          </Form.Item>
+          <FormField label="Website" error={fieldState.error?.message}>
+            <Input {...field} placeholder="https://" status={fieldState.error ? 'error' : undefined} />
+          </FormField>
         )}
       />
       <Controller
         name="phone"
         control={control}
         render={({ field, fieldState }) => (
-          <Form.Item label="Phone" validateStatus={fieldState.error ? 'error' : ''} help={fieldState.error?.message}>
-            <Input {...field} />
-          </Form.Item>
+          <FormField label="Phone" error={fieldState.error?.message}>
+            <Input {...field} status={fieldState.error ? 'error' : undefined} />
+          </FormField>
         )}
       />
       <Controller
         name="email"
         control={control}
         render={({ field, fieldState }) => (
-          <Form.Item label="Email" validateStatus={fieldState.error ? 'error' : ''} help={fieldState.error?.message}>
-            <Input {...field} />
-          </Form.Item>
+          <FormField label="Email" error={fieldState.error?.message}>
+            <Input {...field} status={fieldState.error ? 'error' : undefined} />
+          </FormField>
         )}
       />
       <Controller
         name="city"
         control={control}
         render={({ field, fieldState }) => (
-          <Form.Item label="City" validateStatus={fieldState.error ? 'error' : ''} help={fieldState.error?.message}>
-            <Input {...field} />
-          </Form.Item>
+          <FormField label="City" error={fieldState.error?.message}>
+            <Input {...field} status={fieldState.error ? 'error' : undefined} />
+          </FormField>
         )}
       />
       <Controller
         name="address"
         control={control}
         render={({ field, fieldState }) => (
-          <Form.Item label="Address" validateStatus={fieldState.error ? 'error' : ''} help={fieldState.error?.message}>
-            <Input {...field} />
-          </Form.Item>
+          <FormField label="Address" error={fieldState.error?.message}>
+            <Input {...field} status={fieldState.error ? 'error' : undefined} />
+          </FormField>
         )}
       />
       <Controller
         name="isRemoteSupported"
         control={control}
         render={({ field: { value, onChange, ...field } }) => (
-          <Form.Item>
+          <FormField>
             <Checkbox checked={value} onChange={(event) => onChange(event.target.checked)} {...field}>
               Remote/online service supported
             </Checkbox>
-          </Form.Item>
+          </FormField>
         )}
       />
       <Button type="primary" htmlType="submit" loading={submitting} disabled={defaultValues !== undefined && !isDirty}>
         {submitLabel}
       </Button>
-    </Form>
+    </form>
   );
 }

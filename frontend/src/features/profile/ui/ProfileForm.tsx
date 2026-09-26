@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, Button, Card, Form, Input, Spin } from 'antd';
+import { Alert, Button, Card, Input, Spin } from 'antd';
 import { Controller, useForm } from 'react-hook-form';
 
 import { fetchMyProfile, updateMyProfile } from '@/features/profile/api/profileApi';
 import { profileFormSchema, type ProfileFormValues } from '@/features/profile/model/schemas';
+import { FormField } from '@/shared/ui/form/FormField';
 
 const PROFILE_QUERY_KEY = ['profile', 'me'];
 
@@ -118,51 +119,47 @@ export function ProfileForm({ authDefaults }: ProfileFormProps) {
           showIcon
         />
       )}
-      <Form layout="vertical" onFinish={onSubmit}>
+      <form className="crm-form" onSubmit={onSubmit}>
         <Controller
           name="name"
           control={control}
           render={({ field, fieldState }) => (
-            <Form.Item label="Name" validateStatus={fieldState.error ? 'error' : ''} help={fieldState.error?.message}>
-              <Input {...field} />
-            </Form.Item>
+            <FormField label="Name" error={fieldState.error?.message}>
+              <Input {...field} status={fieldState.error ? 'error' : undefined} />
+            </FormField>
           )}
         />
         <Controller
           name="phone"
           control={control}
           render={({ field, fieldState }) => (
-            <Form.Item
-              label="Phone"
-              validateStatus={fieldState.error ? 'error' : ''}
-              help={fieldState.error?.message}
-            >
-              <Input {...field} />
-            </Form.Item>
+            <FormField label="Phone" error={fieldState.error?.message}>
+              <Input {...field} status={fieldState.error ? 'error' : undefined} />
+            </FormField>
           )}
         />
         <Controller
           name="city"
           control={control}
           render={({ field, fieldState }) => (
-            <Form.Item label="City" validateStatus={fieldState.error ? 'error' : ''} help={fieldState.error?.message}>
-              <Input {...field} />
-            </Form.Item>
+            <FormField label="City" error={fieldState.error?.message}>
+              <Input {...field} status={fieldState.error ? 'error' : undefined} />
+            </FormField>
           )}
         />
         <Controller
           name="bio"
           control={control}
           render={({ field, fieldState }) => (
-            <Form.Item label="Bio" validateStatus={fieldState.error ? 'error' : ''} help={fieldState.error?.message}>
-              <Input.TextArea {...field} rows={4} />
-            </Form.Item>
+            <FormField label="Bio" error={fieldState.error?.message}>
+              <Input.TextArea {...field} rows={4} status={fieldState.error ? 'error' : undefined} />
+            </FormField>
           )}
         />
         <Button type="primary" htmlType="submit" loading={isSubmitting || mutation.isPending} disabled={!isDirty}>
           Save changes
         </Button>
-      </Form>
+      </form>
     </Card>
   );
 }

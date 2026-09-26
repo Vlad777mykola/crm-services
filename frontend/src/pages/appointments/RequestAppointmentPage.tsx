@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Alert, Button, Card, Descriptions, Empty, Form, Input, Result, Select, Space, Spin, Tag, Typography } from 'antd';
+import { Alert, Button, Card, Descriptions, Empty, Input, Result, Select, Space, Spin, Tag, Typography } from 'antd';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { Link, useParams, useSearchParams } from 'react-router';
 
@@ -9,6 +9,7 @@ import { createAppointment, fetchAvailableSlots } from '@/features/appointments/
 import { appointmentRequestFormSchema, type AppointmentRequestFormValues } from '@/features/appointments/model/schemas';
 import { fetchServiceSpecialists } from '@/features/service-specialists/api/serviceSpecialistsApi';
 import { fetchServiceById } from '@/features/services/api/servicesApi';
+import { FormField } from '@/shared/ui/form/FormField';
 
 import './RequestAppointmentPage.css';
 
@@ -150,7 +151,7 @@ export function RequestAppointmentPage() {
           showIcon
         />
       )}
-      <Form layout="vertical" onFinish={handleSubmit((values) => requestMutation.mutate(values))}>
+      <form className="crm-form" onSubmit={handleSubmit((values) => requestMutation.mutate(values))}>
         <section className="booking-section">
           <Typography.Title level={5}>Service</Typography.Title>
           <Descriptions column={1} size="small">
@@ -165,11 +166,7 @@ export function RequestAppointmentPage() {
           name="specialistProfileId"
           control={control}
           render={({ field }) => (
-            <Form.Item
-              label="Specialist"
-              validateStatus={errors.specialistProfileId ? 'error' : ''}
-              help={errors.specialistProfileId?.message}
-            >
+            <FormField label="Specialist" error={errors.specialistProfileId?.message}>
               <Select
                 {...field}
                 options={specialistOptions}
@@ -178,12 +175,13 @@ export function RequestAppointmentPage() {
                   setValue('requestedStartAt', '');
                 }}
                 placeholder="Choose specialist"
+                status={errors.specialistProfileId ? 'error' : undefined}
               />
-            </Form.Item>
+            </FormField>
           )}
         />
 
-        <Form.Item label="Date">
+        <FormField label="Date">
           <Input
             type="date"
             value={selectedDate}
@@ -192,17 +190,13 @@ export function RequestAppointmentPage() {
               setValue('requestedStartAt', '');
             }}
           />
-        </Form.Item>
+        </FormField>
 
         <Controller
           name="requestedStartAt"
           control={control}
           render={({ field }) => (
-            <Form.Item
-              label="Available time"
-              validateStatus={errors.requestedStartAt ? 'error' : ''}
-              help={errors.requestedStartAt?.message}
-            >
+            <FormField label="Available time" error={errors.requestedStartAt?.message}>
               {!specialistProfileId || !selectedDate ? (
                 <Empty description="Choose a specialist and date first" />
               ) : isFetchingSlots ? (
@@ -231,16 +225,16 @@ export function RequestAppointmentPage() {
                   </Space>
                 </Space>
               )}
-            </Form.Item>
+            </FormField>
           )}
         />
         <Controller
           name="notes"
           control={control}
           render={({ field }) => (
-            <Form.Item label="Notes for the company (optional)">
+            <FormField label="Notes for the company (optional)">
               <Input.TextArea {...field} rows={3} placeholder="Anything the company should know" />
-            </Form.Item>
+            </FormField>
           )}
         />
         <section className="booking-section">
@@ -265,7 +259,7 @@ export function RequestAppointmentPage() {
             <Button>Cancel</Button>
           </Link>
         </Space>
-      </Form>
+      </form>
     </Card>
   );
 }

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, Button, Card, Form, Input, List, Space, Spin, Tag } from 'antd';
+import { Alert, Button, Card, Input, List, Space, Spin, Tag } from 'antd';
 import { Controller, useForm } from 'react-hook-form';
 import { useParams } from 'react-router';
 
@@ -13,6 +13,7 @@ import {
   type CompanyMember,
 } from '@/features/company-members/api/companyMembersApi';
 import { inviteMemberFormSchema, type InviteMemberFormValues } from '@/features/company-members/model/schemas';
+import { FormField } from '@/shared/ui/form/FormField';
 
 export function CompanyMembersPage() {
   const { companyId } = useParams<{ companyId: string }>();
@@ -105,26 +106,20 @@ export function CompanyMembersPage() {
 
   return (
     <Card title="Company members" style={{ maxWidth: 640, margin: '2rem auto' }}>
-      <Form layout="inline" onFinish={onInvite} style={{ marginBottom: 24 }}>
+      <form className="crm-form crm-form--inline" onSubmit={onInvite} style={{ marginBottom: 24 }}>
         <Controller
           name="email"
           control={control}
           render={({ field, fieldState }) => (
-            <Form.Item
-              validateStatus={fieldState.error ? 'error' : ''}
-              help={fieldState.error?.message}
-              style={{ flex: 1, minWidth: 260 }}
-            >
-              <Input {...field} placeholder="Invite by email" />
-            </Form.Item>
+            <FormField error={fieldState.error?.message} style={{ flex: 1, minWidth: 260 }}>
+              <Input {...field} placeholder="Invite by email" status={fieldState.error ? 'error' : undefined} />
+            </FormField>
           )}
         />
-        <Form.Item>
-          <Button type="primary" htmlType="submit" loading={isSubmitting || inviteMutation.isPending}>
-            Invite as manager
-          </Button>
-        </Form.Item>
-      </Form>
+        <Button type="primary" htmlType="submit" loading={isSubmitting || inviteMutation.isPending}>
+          Invite as manager
+        </Button>
+      </form>
 
       {inviteError && <Alert type="error" message={inviteError} style={{ marginBottom: 16 }} showIcon closable onClose={() => setInviteError(null)} />}
       {actionError && <Alert type="error" message={actionError} style={{ marginBottom: 16 }} showIcon closable onClose={() => setActionError(null)} />}

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert, Button, Card, Empty, Form, Input, List, Select, Space } from 'antd';
+import { Alert, Button, Card, Empty, Input, List, Select, Space } from 'antd';
 import { Controller, useForm } from 'react-hook-form';
 import { Link, useParams } from 'react-router';
 
@@ -14,6 +14,7 @@ import {
   type SendSpecialistRequestFormValues,
 } from '@/features/company-specialists/model/schemas';
 import { fetchPublicSpecialists } from '@/features/specialists/api/specialistsApi';
+import { FormField } from '@/shared/ui/form/FormField';
 
 export function CompanySpecialistsPage() {
   const { companyId } = useParams<{ companyId: string }>();
@@ -76,12 +77,12 @@ export function CompanySpecialistsPage() {
       <Card title="Request a specialist">
         {requestError && <Alert type="error" message={requestError} style={{ marginBottom: 16 }} showIcon closable onClose={() => setRequestError(null)} />}
         {successMessage && <Alert type="success" message={successMessage} style={{ marginBottom: 16 }} showIcon closable onClose={() => setSuccessMessage(null)} />}
-        <Form layout="vertical" onFinish={onSend}>
+        <form className="crm-form" onSubmit={onSend}>
           <Controller
             name="specialistProfileId"
             control={control}
             render={({ field, fieldState }) => (
-              <Form.Item label="Specialist" validateStatus={fieldState.error ? 'error' : ''} help={fieldState.error?.message}>
+              <FormField label="Specialist" error={fieldState.error?.message}>
                 <Select
                   {...field}
                   showSearch
@@ -89,25 +90,29 @@ export function CompanySpecialistsPage() {
                   options={availableOptions}
                   optionFilterProp="label"
                   value={field.value || undefined}
+                  status={fieldState.error ? 'error' : undefined}
                 />
-              </Form.Item>
+              </FormField>
             )}
           />
           <Controller
             name="message"
             control={control}
             render={({ field, fieldState }) => (
-              <Form.Item label="Message (optional)" validateStatus={fieldState.error ? 'error' : ''} help={fieldState.error?.message}>
-                <Input.TextArea {...field} rows={3} placeholder="Tell them why you'd like them to join" />
-              </Form.Item>
+              <FormField label="Message (optional)" error={fieldState.error?.message}>
+                <Input.TextArea
+                  {...field}
+                  rows={3}
+                  placeholder="Tell them why you'd like them to join"
+                  status={fieldState.error ? 'error' : undefined}
+                />
+              </FormField>
             )}
           />
-          <Form.Item>
-            <Button type="primary" htmlType="submit" loading={isSubmitting || requestMutation.isPending}>
-              Send request
-            </Button>
-          </Form.Item>
-        </Form>
+          <Button type="primary" htmlType="submit" loading={isSubmitting || requestMutation.isPending}>
+            Send request
+          </Button>
+        </form>
         <Link to={`/company/${companyId}/specialist-requests`}>View sent requests</Link>
       </Card>
 

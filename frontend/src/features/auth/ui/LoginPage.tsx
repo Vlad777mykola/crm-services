@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Alert, Button, Card, Form, Input, Typography } from 'antd';
+import { Alert, Button, Card, Input, Typography } from 'antd';
 import { Controller, useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router';
 
 import { useAuth } from '@/features/auth/model/useAuth';
 import { loginFormSchema, type LoginFormValues } from '@/features/auth/model/schemas';
+import { FormField } from '@/shared/ui/form/FormField';
 
 export function LoginPage() {
   const { login } = useAuth();
@@ -34,33 +35,29 @@ export function LoginPage() {
   return (
     <Card title="Log in" style={{ maxWidth: 400, margin: '4rem auto' }}>
       {formError && <Alert type="error" message={formError} style={{ marginBottom: 16 }} showIcon />}
-      <Form layout="vertical" onFinish={onSubmit}>
+      <form className="crm-form" onSubmit={onSubmit}>
         <Controller
           name="email"
           control={control}
           render={({ field, fieldState }) => (
-            <Form.Item label="Email" validateStatus={fieldState.error ? 'error' : ''} help={fieldState.error?.message}>
-              <Input {...field} type="email" autoComplete="email" />
-            </Form.Item>
+            <FormField label="Email" error={fieldState.error?.message}>
+              <Input {...field} type="email" autoComplete="email" status={fieldState.error ? 'error' : undefined} />
+            </FormField>
           )}
         />
         <Controller
           name="password"
           control={control}
           render={({ field, fieldState }) => (
-            <Form.Item
-              label="Password"
-              validateStatus={fieldState.error ? 'error' : ''}
-              help={fieldState.error?.message}
-            >
-              <Input.Password {...field} autoComplete="current-password" />
-            </Form.Item>
+            <FormField label="Password" error={fieldState.error?.message}>
+              <Input.Password {...field} autoComplete="current-password" status={fieldState.error ? 'error' : undefined} />
+            </FormField>
           )}
         />
         <Button type="primary" htmlType="submit" block loading={isSubmitting}>
           Log in
         </Button>
-      </Form>
+      </form>
       <Typography.Paragraph style={{ marginTop: 16, textAlign: 'center' }}>
         Don&apos;t have an account? <Link to="/register">Register</Link>
       </Typography.Paragraph>

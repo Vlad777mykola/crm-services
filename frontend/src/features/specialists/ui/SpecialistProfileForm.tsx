@@ -1,8 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button, Checkbox, Form, Input } from 'antd';
+import { Button, Checkbox, Input } from 'antd';
 import { Controller, useForm } from 'react-hook-form';
 
 import { specialistProfileFormSchema, type SpecialistProfileFormValues } from '@/features/specialists/model/schemas';
+import { FormField } from '@/shared/ui/form/FormField';
 
 interface SpecialistProfileFormProps {
   defaultValues?: Partial<SpecialistProfileFormValues>;
@@ -33,66 +34,66 @@ export function SpecialistProfileForm({ defaultValues, submitLabel, submitting, 
   const submit = handleSubmit(onSubmit);
 
   return (
-    <Form layout="vertical" onFinish={submit}>
+    <form className="crm-form" onSubmit={submit}>
       <Controller
         name="displayName"
         control={control}
         render={({ field, fieldState }) => (
-          <Form.Item label="Display name" validateStatus={fieldState.error ? 'error' : ''} help={fieldState.error?.message}>
-            <Input {...field} />
-          </Form.Item>
+          <FormField label="Display name" error={fieldState.error?.message}>
+            <Input {...field} status={fieldState.error ? 'error' : undefined} />
+          </FormField>
         )}
       />
       <Controller
         name="headline"
         control={control}
         render={({ field, fieldState }) => (
-          <Form.Item label="Headline" validateStatus={fieldState.error ? 'error' : ''} help={fieldState.error?.message}>
-            <Input {...field} placeholder="e.g. Senior hair stylist" />
-          </Form.Item>
+          <FormField label="Headline" error={fieldState.error?.message}>
+            <Input {...field} placeholder="e.g. Senior hair stylist" status={fieldState.error ? 'error' : undefined} />
+          </FormField>
         )}
       />
       <Controller
         name="bio"
         control={control}
         render={({ field, fieldState }) => (
-          <Form.Item label="Bio" validateStatus={fieldState.error ? 'error' : ''} help={fieldState.error?.message}>
-            <Input.TextArea {...field} rows={3} />
-          </Form.Item>
+          <FormField label="Bio" error={fieldState.error?.message}>
+            <Input.TextArea {...field} rows={3} status={fieldState.error ? 'error' : undefined} />
+          </FormField>
         )}
       />
       <Controller
         name="category"
         control={control}
         render={({ field, fieldState }) => (
-          <Form.Item label="Category" validateStatus={fieldState.error ? 'error' : ''} help={fieldState.error?.message}>
-            <Input {...field} placeholder="e.g. dental, hair salon, consulting" />
-          </Form.Item>
+          <FormField label="Category" error={fieldState.error?.message}>
+            <Input {...field} placeholder="e.g. dental, hair salon, consulting" status={fieldState.error ? 'error' : undefined} />
+          </FormField>
         )}
       />
       <Controller
         name="city"
         control={control}
         render={({ field, fieldState }) => (
-          <Form.Item label="City" validateStatus={fieldState.error ? 'error' : ''} help={fieldState.error?.message}>
-            <Input {...field} />
-          </Form.Item>
+          <FormField label="City" error={fieldState.error?.message}>
+            <Input {...field} status={fieldState.error ? 'error' : undefined} />
+          </FormField>
         )}
       />
       <Controller
         name="isRemoteSupported"
         control={control}
         render={({ field: { value, onChange, ...field } }) => (
-          <Form.Item>
+          <FormField>
             <Checkbox checked={value} onChange={(event) => onChange(event.target.checked)} {...field}>
               Available for remote/online work
             </Checkbox>
-          </Form.Item>
+          </FormField>
         )}
       />
       <Button type="primary" htmlType="submit" loading={submitting} disabled={defaultValues !== undefined && !isDirty}>
         {submitLabel}
       </Button>
-    </Form>
+    </form>
   );
 }
