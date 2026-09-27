@@ -1,43 +1,49 @@
 :root {
-  --crm-bg: #f5f6f8;
-  --crm-bg-elevated: rgba(255, 255, 255, 0.86);
+  --crm-bg: #f6f7f8;
+  --crm-bg-elevated: #ffffff;
   --crm-surface: #ffffff;
-  --crm-surface-muted: #f7f8fa;
-  --crm-surface-subtle: #eef7f5;
-  --crm-text: #171717;
-  --crm-text-muted: #5f646d;
-  --crm-border: rgba(17, 24, 39, 0.1);
-  --crm-border-strong: rgba(17, 24, 39, 0.16);
-  --crm-shadow-sm: 0 10px 30px rgba(15, 23, 42, 0.07);
-  --crm-shadow-md: 0 20px 55px rgba(15, 23, 42, 0.11);
-  --crm-accent: #0f766e;
-  --crm-accent-strong: #0b5f59;
+  --crm-surface-muted: #f2f4f5;
+  --crm-surface-subtle: #eaf5f3;
+  --crm-text: #181b20;
+  --crm-text-muted: #606873;
+  --crm-text-tertiary: #8a919b;
+  --crm-border: #e5e8eb;
+  --crm-border-strong: #d5dadf;
+  --crm-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.04);
+  --crm-shadow-md: 0 8px 22px rgba(15, 23, 42, 0.08);
+  --crm-accent: #0f6b63;
+  --crm-accent-strong: #0b5953;
   --crm-accent-soft: #dff7f1;
-  --crm-success-soft: #e6f6df;
-  --crm-success-text: #267a16;
-  --crm-header-bg: rgba(255, 255, 255, 0.78);
-  --crm-control-bg: rgba(255, 255, 255, 0.9);
+  --crm-rating: #d28a13;
+  --crm-rating-soft: #fff7e8;
+  --crm-success-soft: #eaf6ee;
+  --crm-success-text: #287a4b;
+  --crm-header-bg: #ffffff;
+  --crm-control-bg: #ffffff;
 }
 
 :root[data-theme='dark'] {
-  --crm-bg: #0b0c0f;
-  --crm-bg-elevated: rgba(22, 24, 29, 0.82);
-  --crm-surface: #15171c;
-  --crm-surface-muted: #1d2027;
-  --crm-surface-subtle: #123530;
-  --crm-text: #f5f7fa;
-  --crm-text-muted: #a4abb8;
-  --crm-border: rgba(255, 255, 255, 0.1);
-  --crm-border-strong: rgba(255, 255, 255, 0.18);
-  --crm-shadow-sm: 0 12px 34px rgba(0, 0, 0, 0.32);
-  --crm-shadow-md: 0 22px 60px rgba(0, 0, 0, 0.44);
-  --crm-accent: #48d6c4;
-  --crm-accent-strong: #7ee8db;
-  --crm-accent-soft: rgba(72, 214, 196, 0.16);
-  --crm-success-soft: rgba(105, 205, 96, 0.16);
-  --crm-success-text: #8ee77d;
-  --crm-header-bg: rgba(14, 16, 20, 0.74);
-  --crm-control-bg: rgba(24, 27, 33, 0.9);
+  --crm-bg: #101215;
+  --crm-bg-elevated: #171a1e;
+  --crm-surface: #171a1e;
+  --crm-surface-muted: #1d2126;
+  --crm-surface-subtle: #16332f;
+  --crm-text: #f4f6f7;
+  --crm-text-muted: #aab0b7;
+  --crm-text-tertiary: #7e858e;
+  --crm-border: #292e34;
+  --crm-border-strong: #363c43;
+  --crm-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.28), 0 4px 12px rgba(0, 0, 0, 0.22);
+  --crm-shadow-md: 0 10px 28px rgba(0, 0, 0, 0.34);
+  --crm-accent: #55bfb2;
+  --crm-accent-strong: #69cec1;
+  --crm-accent-soft: rgba(85, 191, 178, 0.16);
+  --crm-rating: #e2a64a;
+  --crm-rating-soft: rgba(226, 166, 74, 0.14);
+  --crm-success-soft: rgba(99, 193, 132, 0.15);
+  --crm-success-text: #63c184;
+  --crm-header-bg: #171a1e;
+  --crm-control-bg: #1d2126;
 }
 
 body {
@@ -48,9 +54,7 @@ body {
 
 .app-shell {
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top left, rgba(15, 118, 110, 0.08), transparent 34rem),
-    var(--crm-bg);
+  background: var(--crm-bg);
   color: var(--crm-text);
 }
 
@@ -61,8 +65,7 @@ body {
   height: 64px;
   border-bottom: 1px solid var(--crm-border);
   background: var(--crm-header-bg);
-  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.06);
-  backdrop-filter: blur(22px);
+  box-shadow: var(--crm-shadow-sm);
 }
 
 .layout-header__inner {
@@ -107,7 +110,7 @@ body {
   align-items: center;
   justify-content: center;
   border: 1px solid var(--crm-border);
-  border-radius: 9px;
+  border-radius: 8px;
   background: var(--crm-control-bg);
   color: var(--crm-accent);
   font-size: 12px;
@@ -166,7 +169,7 @@ body {
 
 .ant-card {
   border-color: var(--crm-border);
-  border-radius: 16px;
+  border-radius: 8px;
   background: var(--crm-surface);
   box-shadow: var(--crm-shadow-sm);
 }
@@ -189,6 +192,10 @@ body {
 .ant-picker,
 .ant-btn {
   border-radius: 10px;
+}
+
+.ant-btn {
+  font-weight: 600;
 }
 
 @media (max-width: 900px) {

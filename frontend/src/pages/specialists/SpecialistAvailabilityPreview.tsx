@@ -21,7 +21,7 @@ interface DayRange {
   to: string;
 }
 
-const DAYS_TO_SHOW = 7;
+const DAYS_TO_SHOW = 14;
 const COLLAPSED_SLOTS_PER_DAY = 2;
 const SLOT_QUERY_LIMIT = 8;
 
@@ -65,7 +65,7 @@ export function SpecialistAvailabilityPreview({ specialistProfileId, companies }
   const navigate = useNavigate();
   const [requestedCompanyId, setRequestedCompanyId] = useState<string>();
   const [requestedServiceId, setRequestedServiceId] = useState<string>();
-  const [showMoreHours, setShowMoreHours] = useState(false);
+  const [showAllTimes, setShowAllTimes] = useState(false);
   const dayRanges = useMemo(() => buildDayRanges(), []);
 
   const bookableCompanies = useMemo(
@@ -114,17 +114,17 @@ export function SpecialistAvailabilityPreview({ specialistProfileId, companies }
     const company = bookableCompanies.find((item) => item.id === companyId);
     setRequestedCompanyId(companyId);
     setRequestedServiceId(company?.services[0]?.id);
-    setShowMoreHours(false);
+    setShowAllTimes(false);
   }
 
   function handleServiceChange(serviceId: string) {
     setRequestedServiceId(serviceId);
-    setShowMoreHours(false);
+    setShowAllTimes(false);
   }
 
-  function toggleMoreHours(event: MouseEvent<HTMLElement>) {
+  function toggleAllTimes(event: MouseEvent<HTMLElement>) {
     event.stopPropagation();
-    setShowMoreHours((current) => !current);
+    setShowAllTimes((current) => !current);
   }
 
   function openBooking(event: MouseEvent<HTMLElement>) {
@@ -141,7 +141,10 @@ export function SpecialistAvailabilityPreview({ specialistProfileId, companies }
       onKeyDown={stopCardNavigation}
     >
       <Space direction="vertical" size={12} style={{ width: '100%' }}>
-        <Typography.Text strong>Available appointments</Typography.Text>
+        <div className="company-availability-preview__summary">
+          <Typography.Text strong>Next available</Typography.Text>
+          {selectedService && <span>{selectedService.name}</span>}
+        </div>
 
         {bookableCompanies.length === 0 ? (
           <Empty description="No appointment times yet" image={Empty.PRESENTED_IMAGE_SIMPLE} />
@@ -165,7 +168,7 @@ export function SpecialistAvailabilityPreview({ specialistProfileId, companies }
             <div className="company-availability-preview__days">
               {dayRanges.map((range, index) => {
                 const slots = (slotQueries[index]?.data ?? []) as AvailableSlot[];
-                const visibleSlots = showMoreHours ? slots : slots.slice(0, COLLAPSED_SLOTS_PER_DAY);
+                const visibleSlots = showAllTimes ? slots : slots.slice(0, COLLAPSED_SLOTS_PER_DAY);
                 const hiddenSlotsCount = slots.length - visibleSlots.length;
 
                 return (
@@ -186,7 +189,7 @@ export function SpecialistAvailabilityPreview({ specialistProfileId, companies }
                               {formatSlotTime(slot.startAt)}
                             </Button>
                           ))}
-                          {!showMoreHours && hiddenSlotsCount > 0 && (
+                          {!showAllTimes && hiddenSlotsCount > 0 && (
                             <span className="company-availability-preview__hidden-count">+{hiddenSlotsCount}</span>
                           )}
                         </>
@@ -197,12 +200,17 @@ export function SpecialistAvailabilityPreview({ specialistProfileId, companies }
                   </section>
                 );
               })}
+              <section className="company-availability-preview__calendar-day">
+                <Button className="company-availability-preview__calendar-button" onClick={openBooking}>
+                  See full calendar
+                </Button>
+              </section>
             </div>
 
             {hasHiddenSlots && (
               <div className="company-availability-preview__more-wrap">
-                <Button className="company-availability-preview__more" onClick={toggleMoreHours}>
-                  {showMoreHours ? 'Show fewer hours' : 'Show more hours'}
+                <Button className="company-availability-preview__more" onClick={toggleAllTimes}>
+                  {showAllTimes ? 'Show fewer times' : 'Show all times'}
                 </Button>
               </div>
             )}

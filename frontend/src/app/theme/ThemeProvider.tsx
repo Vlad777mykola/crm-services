@@ -58,8 +58,8 @@ export function ThemeProvider({ children }: PropsWithChildren) {
         theme={{
           algorithm: resolvedTheme === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
           token: {
-            borderRadius: 10,
-            colorPrimary: '#0f766e',
+            borderRadius: 8,
+            colorPrimary: resolvedTheme === 'dark' ? '#55BFB2' : '#0F6B63',
             fontFamily:
               '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
           },
