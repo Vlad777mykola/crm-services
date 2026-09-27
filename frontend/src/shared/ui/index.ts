@@ -33,6 +33,7 @@ export {
   Tag,
   Timeline,
   Typography,
+  theme,
 } from 'antd';
 
 export type { MenuProps } from 'antd';

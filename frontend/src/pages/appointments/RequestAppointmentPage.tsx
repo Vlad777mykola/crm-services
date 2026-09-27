@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Alert, Button, Card, Descriptions, Empty, Input, Result, Select, Space, Spin, Tag, Typography } from '@/shared/ui';
+import { Alert, Button, Descriptions, Empty, Input, Result, Select, Space, Spin, Tag, Typography } from '@/shared/ui';
 import { AppController, FormField, useAppForm, useAppWatch } from '@/shared/form';
 import { Link, useParams, useSearchParams } from 'react-router';
 
@@ -137,10 +137,20 @@ export function RequestAppointmentPage() {
   const selectedSlot = (slots ?? []).find((slot) => slot.startAt === requestedStartAt);
 
   return (
-    <Card
-      title="Request appointment"
-      extra={<Link to={`/services/${service.id}`}>Back to service</Link>}
-    >
+    <main className="booking-page">
+      <div className="booking-page__header">
+        <div>
+          <Typography.Text className="booking-page__eyebrow">Appointment request</Typography.Text>
+          <Typography.Title level={1} className="booking-page__title">
+            Choose a time
+          </Typography.Title>
+          <Typography.Paragraph className="booking-page__subtitle">
+            Select a specialist and an available slot. The company will confirm your request.
+          </Typography.Paragraph>
+        </div>
+        <Link to={`/services/${service.id}`}>Back to service</Link>
+      </div>
+
       {requestMutation.isError && (
         <Alert
           type="error"
@@ -149,95 +159,98 @@ export function RequestAppointmentPage() {
           showIcon
         />
       )}
-      <form className="crm-form" onSubmit={handleSubmit((values) => requestMutation.mutate(values))}>
-        <section className="booking-section">
-          <Typography.Title level={5}>Service</Typography.Title>
-          <Descriptions column={1} size="small">
-            <Descriptions.Item label="Name">{service.name}</Descriptions.Item>
-            <Descriptions.Item label="Company">{service.company?.name ?? 'Company'}</Descriptions.Item>
-            <Descriptions.Item label="Duration">{service.durationMinutes} min</Descriptions.Item>
-            <Descriptions.Item label="Price">{service.price ? `$${service.price}` : 'Price on request'}</Descriptions.Item>
-          </Descriptions>
+      <form className="crm-form booking-layout" onSubmit={handleSubmit((values) => requestMutation.mutate(values))}>
+        <section className="booking-card booking-card--main">
+          <section className="booking-section">
+            <Typography.Title level={5}>Service</Typography.Title>
+            <Descriptions column={1} size="small">
+              <Descriptions.Item label="Name">{service.name}</Descriptions.Item>
+              <Descriptions.Item label="Company">{service.company?.name ?? 'Company'}</Descriptions.Item>
+              <Descriptions.Item label="Duration">{service.durationMinutes} min</Descriptions.Item>
+              <Descriptions.Item label="Price">{service.price ? `$${service.price}` : 'Price on request'}</Descriptions.Item>
+            </Descriptions>
+          </section>
+
+          <AppController
+            name="specialistProfileId"
+            control={control}
+            render={({ field }) => (
+              <FormField label="Specialist" error={errors.specialistProfileId?.message}>
+                <Select
+                  {...field}
+                  options={specialistOptions}
+                  onChange={(value) => {
+                    field.onChange(value);
+                    setValue('requestedStartAt', '');
+                  }}
+                  placeholder="Choose specialist"
+                  status={errors.specialistProfileId ? 'error' : undefined}
+                />
+              </FormField>
+            )}
+          />
+
+          <FormField label="Date">
+            <Input
+              type="date"
+              value={selectedDate}
+              onChange={(event) => {
+                setSelectedDate(event.target.value);
+                setValue('requestedStartAt', '');
+              }}
+            />
+          </FormField>
+
+          <AppController
+            name="requestedStartAt"
+            control={control}
+            render={({ field }) => (
+              <FormField label="Available time" error={errors.requestedStartAt?.message}>
+                {!specialistProfileId || !selectedDate ? (
+                  <Empty description="Choose a specialist and date first" />
+                ) : isFetchingSlots ? (
+                  <Spin size="small" />
+                ) : !slots || slots.length === 0 ? (
+                  <Empty description="No slots" />
+                ) : (
+                  <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                    <Typography.Text type="secondary">
+                      {new Date(`${selectedDate}T00:00:00`).toLocaleDateString([], {
+                        weekday: 'long',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </Typography.Text>
+                    <Space wrap className="booking-slots">
+                      {slots.map((slot) => (
+                        <Button
+                          key={slot.startAt}
+                          type={field.value === slot.startAt ? 'primary' : 'default'}
+                          onClick={() => field.onChange(slot.startAt)}
+                        >
+                          {formatSlot(slot.startAt)}
+                        </Button>
+                      ))}
+                    </Space>
+                  </Space>
+                )}
+              </FormField>
+            )}
+          />
+          <AppController
+            name="notes"
+            control={control}
+            render={({ field }) => (
+              <FormField label="Notes for the company (optional)">
+                <Input.TextArea {...field} rows={3} placeholder="Anything the company should know" />
+              </FormField>
+            )}
+          />
         </section>
 
-        <AppController
-          name="specialistProfileId"
-          control={control}
-          render={({ field }) => (
-            <FormField label="Specialist" error={errors.specialistProfileId?.message}>
-              <Select
-                {...field}
-                options={specialistOptions}
-                onChange={(value) => {
-                  field.onChange(value);
-                  setValue('requestedStartAt', '');
-                }}
-                placeholder="Choose specialist"
-                status={errors.specialistProfileId ? 'error' : undefined}
-              />
-            </FormField>
-          )}
-        />
-
-        <FormField label="Date">
-          <Input
-            type="date"
-            value={selectedDate}
-            onChange={(event) => {
-              setSelectedDate(event.target.value);
-              setValue('requestedStartAt', '');
-            }}
-          />
-        </FormField>
-
-        <AppController
-          name="requestedStartAt"
-          control={control}
-          render={({ field }) => (
-            <FormField label="Available time" error={errors.requestedStartAt?.message}>
-              {!specialistProfileId || !selectedDate ? (
-                <Empty description="Choose a specialist and date first" />
-              ) : isFetchingSlots ? (
-                <Spin size="small" />
-              ) : !slots || slots.length === 0 ? (
-                <Empty description="No slots" />
-              ) : (
-                <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                  <Typography.Text type="secondary">
-                    {new Date(`${selectedDate}T00:00:00`).toLocaleDateString([], {
-                      weekday: 'long',
-                      month: 'short',
-                      day: 'numeric',
-                    })}
-                  </Typography.Text>
-                  <Space wrap>
-                    {slots.map((slot) => (
-                      <Button
-                        key={slot.startAt}
-                        type={field.value === slot.startAt ? 'primary' : 'default'}
-                        onClick={() => field.onChange(slot.startAt)}
-                      >
-                        {formatSlot(slot.startAt)}
-                      </Button>
-                    ))}
-                  </Space>
-                </Space>
-              )}
-            </FormField>
-          )}
-        />
-        <AppController
-          name="notes"
-          control={control}
-          render={({ field }) => (
-            <FormField label="Notes for the company (optional)">
-              <Input.TextArea {...field} rows={3} placeholder="Anything the company should know" />
-            </FormField>
-          )}
-        />
-        <section className="booking-section">
+        <aside className="booking-card booking-summary">
           <Typography.Title level={5}>Summary</Typography.Title>
-          <Space direction="vertical" size="small">
+          <Space direction="vertical" size="small" className="booking-summary__items">
             <span>{service.company?.name ?? 'Company'}</span>
             <span>{service.name}</span>
             <span>{selectedSpecialist?.label ?? 'Choose specialist'}</span>
@@ -248,16 +261,16 @@ export function RequestAppointmentPage() {
             </span>
             <Tag>{service.durationMinutes} min</Tag>
           </Space>
-        </section>
-        <Space wrap>
-          <Button type="primary" htmlType="submit" loading={requestMutation.isPending}>
-            Confirm appointment
-          </Button>
-          <Link to={`/services/${service.id}`}>
-            <Button>Cancel</Button>
-          </Link>
-        </Space>
+          <Space wrap className="booking-summary__actions">
+            <Button type="primary" htmlType="submit" loading={requestMutation.isPending}>
+              Confirm appointment
+            </Button>
+            <Link to={`/services/${service.id}`}>
+              <Button>Cancel</Button>
+            </Link>
+          </Space>
+        </aside>
       </form>
-    </Card>
+    </main>
   );
 }

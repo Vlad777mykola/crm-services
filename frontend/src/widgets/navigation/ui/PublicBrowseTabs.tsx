@@ -13,6 +13,7 @@ export function PublicBrowseTabs() {
   return (
     <Tabs
       activeKey={activeItem?.key}
+      aria-label="Browse public listings"
       className="public-browse-tabs"
       items={publicNav.map((item) => ({ key: item.key, label: item.label }))}
       onChange={(key) => {

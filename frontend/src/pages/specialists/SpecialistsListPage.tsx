@@ -3,7 +3,7 @@ import type { KeyboardEvent, MouseEvent } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
 import { CheckCircleFilled, EnvironmentOutlined } from '@ant-design/icons';
-import { Alert, Avatar, Card, Checkbox, Empty, Input, List, Pagination, Rate, Space, Tag, Spin, Typography } from '@/shared/ui';
+import { Alert, Avatar, Checkbox, Empty, Input, List, Pagination, Rate, Space, Tag, Spin, Typography } from '@/shared/ui';
 import { Link, useNavigate } from 'react-router';
 
 import { fetchPublicSpecialists, type PublicSpecialistsQuery } from '@/features/specialists/api/specialistsApi';
@@ -42,26 +42,38 @@ export function SpecialistsListPage() {
     event.stopPropagation();
   }
 
+  const resultCount = data?.meta.total ?? 0;
+
   return (
-    <Card title={<PublicBrowseTabs />} className="public-directory-card">
-      <Space direction="vertical" style={{ width: '100%', marginBottom: '1rem' }}>
+    <section className="public-directory">
+      <div className="public-directory__hero">
+        <div>
+          <Typography.Title level={1} className="public-directory__title">
+            Find the right specialist
+          </Typography.Title>
+          <Typography.Paragraph className="public-directory__subtitle">
+            Compare professionals by specialty, city, reviews, and live appointment times.
+          </Typography.Paragraph>
+        </div>
+        <PublicBrowseTabs />
+      </div>
+
+      <div className="public-directory__search-panel">
         <Input.Search
           allowClear
           placeholder="Search specialists by name, headline, or bio"
           onSearch={(value) => updateFilter({ q: value || undefined })}
         />
-        <Space wrap>
+        <Space wrap className="public-directory__filters">
           <Input
             allowClear
             placeholder="Category"
-            style={{ width: 200 }}
             onPressEnter={(e) => updateFilter({ category: e.currentTarget.value || undefined })}
             onBlur={(e) => updateFilter({ category: e.currentTarget.value || undefined })}
           />
           <Input
             allowClear
             placeholder="City"
-            style={{ width: 200 }}
             onPressEnter={(e) => updateFilter({ city: e.currentTarget.value || undefined })}
             onBlur={(e) => updateFilter({ city: e.currentTarget.value || undefined })}
           />
@@ -69,7 +81,12 @@ export function SpecialistsListPage() {
             Remote-friendly only
           </Checkbox>
         </Space>
-      </Space>
+        <div className="public-directory__result-bar">
+          <Typography.Text type="secondary">
+            {isLoading ? 'Searching...' : `${resultCount} ${resultCount === 1 ? 'specialist' : 'specialists'}`}
+          </Typography.Text>
+        </div>
+      </div>
 
       {isLoading && <Spin style={{ display: 'block', margin: '2rem auto' }} />}
       {isError && (
@@ -140,7 +157,7 @@ export function SpecialistsListPage() {
             )}
           />
           <Pagination
-            style={{ marginTop: '1rem', textAlign: 'right' }}
+            className="public-directory__pagination"
             current={data.meta.page}
             pageSize={data.meta.pageSize}
             total={data.meta.total}
@@ -149,6 +166,6 @@ export function SpecialistsListPage() {
           />
         </>
       )}
-    </Card>
+    </section>
   );
 }

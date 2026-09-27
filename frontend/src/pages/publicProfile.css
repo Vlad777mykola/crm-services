@@ -1,0 +1,135 @@
+.public-profile {
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.public-profile--wide {
+  max-width: 1120px;
+}
+
+.public-profile__stack {
+  display: grid;
+  gap: 18px;
+}
+
+.public-profile__hero,
+.public-profile__section,
+.booking-card {
+  border: 1px solid var(--crm-border);
+  border-radius: 24px;
+  background: var(--crm-surface);
+  box-shadow: var(--crm-shadow-sm);
+}
+
+.public-profile__hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: start;
+  padding: 26px;
+}
+
+.public-profile__kicker {
+  display: inline-flex;
+  margin-bottom: 8px;
+  color: var(--crm-accent);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.public-profile__title.ant-typography {
+  margin: 0;
+  color: var(--crm-text);
+  font-size: clamp(30px, 4.5vw, 46px);
+  font-weight: 760;
+  letter-spacing: 0;
+  line-height: 1.06;
+}
+
+.public-profile__subtitle.ant-typography {
+  max-width: 720px;
+  margin: 12px 0 0;
+  color: var(--crm-text-muted);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.public-profile__rating {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.public-profile__rating .ant-rate {
+  color: var(--crm-accent);
+}
+
+.public-profile__rating-text {
+  color: var(--crm-text-muted);
+  font-weight: 600;
+}
+
+.public-profile__hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.public-profile__section {
+  padding: 22px;
+}
+
+.public-profile__section-title.ant-typography {
+  margin-top: 0;
+  color: var(--crm-text);
+}
+
+.public-profile__metadata {
+  margin-top: 18px;
+}
+
+.public-profile__metadata .ant-descriptions-item-label {
+  color: var(--crm-text-muted);
+}
+
+.public-profile__metadata .ant-descriptions-item-content {
+  color: var(--crm-text);
+}
+
+.public-profile__list .ant-list-item {
+  padding-inline: 0;
+  border-block-end-color: var(--crm-border);
+}
+
+.public-profile__list .ant-list-item:last-child {
+  border-block-end: 0;
+}
+
+.public-profile__tag.ant-tag,
+.public-profile .ant-tag {
+  border-color: var(--crm-border);
+  border-radius: 999px;
+}
+
+.public-profile__primary-meta {
+  color: var(--crm-text-muted);
+}
+
+@media (max-width: 760px) {
+  .public-profile__hero {
+    grid-template-columns: 1fr;
+    padding: 20px;
+  }
+
+  .public-profile__hero-actions {
+    justify-content: flex-start;
+  }
+
+  .public-profile__section {
+    padding: 18px;
+  }
+}

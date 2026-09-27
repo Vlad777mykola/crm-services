@@ -1,8 +1,8 @@
 .app-sidebar {
   width: 248px;
   min-width: 248px;
-  border-right: 1px solid #e5e7eb;
-  background: #ffffff;
+  border-right: 1px solid var(--crm-border);
+  background: var(--crm-surface);
 }
 
 .app-sidebar--drawer {
@@ -46,7 +46,7 @@
 
 .workspace-switcher__dropdown .workspace-switcher__section-start {
   margin-top: 4px;
-  border-top: 1px solid #eaecf0;
+  border-top: 1px solid var(--crm-border);
 }
 
 .workspace-switcher__dropdown .workspace-switcher__section-start .ant-select-item-option-content {
@@ -80,12 +80,72 @@
   gap: 8px;
 }
 
+.public-browse-tabs {
+  width: 264px;
+  height: 46px;
+  padding: 4px;
+  border: 1px solid var(--crm-border);
+  border-radius: 999px;
+  background: var(--crm-bg-elevated);
+  box-shadow: var(--crm-shadow-sm);
+  backdrop-filter: blur(18px);
+}
+
 .public-browse-tabs .ant-tabs-nav {
   margin: 0;
+  padding: 0;
+}
+
+.public-browse-tabs .ant-tabs-nav-list {
+  display: flex;
+  width: 100%;
+  height: 36px;
+}
+
+.public-browse-tabs .ant-tabs-nav::before {
+  border-bottom: 0;
+}
+
+.public-browse-tabs .ant-tabs-ink-bar {
+  display: none;
 }
 
 .public-browse-tabs .ant-tabs-tab {
-  padding-block: 12px;
+  flex: 1 1 0;
+  min-width: 124px;
+  height: 36px;
+  justify-content: center;
+  margin: 0;
+  padding: 8px 16px;
+  border-radius: 999px;
+  color: var(--crm-text-muted);
+  font-weight: 700;
+  transition:
+    background 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.public-browse-tabs .ant-tabs-tab + .ant-tabs-tab {
+  margin-left: 4px;
+}
+
+.public-browse-tabs .ant-tabs-tab:hover {
+  color: var(--crm-text);
+}
+
+.public-browse-tabs .ant-tabs-tab-active .ant-tabs-tab-btn {
+  color: var(--crm-accent-strong);
+}
+
+.public-browse-tabs .ant-tabs-tab-active {
+  background: var(--crm-surface);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
+:root[data-theme='dark'] .public-browse-tabs .ant-tabs-tab-active {
+  background: var(--crm-surface-muted);
+  box-shadow: none;
 }
 
 @media (max-width: 900px) {
@@ -117,6 +177,10 @@
   .page-header__actions {
     justify-content: flex-start;
     margin-top: 12px;
+  }
+
+  .public-browse-tabs {
+    width: min(100%, 264px);
   }
 }
 

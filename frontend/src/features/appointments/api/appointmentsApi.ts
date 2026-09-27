@@ -1,4 +1,5 @@
 import { parseJsonOrThrow } from '@/shared/api/apiError';
+import { apiFetch } from '@/shared/api/client';
 import { authorizedFetch } from '@/shared/api/authorizedFetch';
 
 // NOTE: hand-written until Orval generates a typed client from contracts/openapi.json
@@ -154,8 +155,7 @@ export async function fetchAvailableSlots(query: AvailableSlotsQuery): Promise<A
   if (query.slotStepMinutes) params.set('slotStepMinutes', String(query.slotStepMinutes));
   if (query.limit) params.set('limit', String(query.limit));
 
-  const response = await authorizedFetch(`/appointments/available-slots?${params.toString()}`);
-  const body = await parseJsonOrThrow<{ data: AvailableSlot[] }>(response);
+  const body = await apiFetch<{ data: AvailableSlot[] }>(`/appointments/available-slots?${params.toString()}`);
   return body.data;
 }
 

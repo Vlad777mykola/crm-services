@@ -391,7 +391,6 @@ export function createAppointmentsRouter(appointmentsService: AppointmentsServic
 
   router.get(
     '/appointments/available-slots',
-    requireAuth,
     validate(availableSlotsQuerySchema, 'query'),
     async (req, res, next) => {
       try {

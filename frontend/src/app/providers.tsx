@@ -1,17 +1,17 @@
 import type { PropsWithChildren } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ConfigProvider } from '@/shared/ui';
 
 import { AuthProvider } from '@/features/auth/model/AuthContext';
+import { ThemeProvider } from '@/app/theme/ThemeProvider';
 
 const queryClient = new QueryClient();
 
 export function AppProviders({ children }: PropsWithChildren) {
   return (
     <QueryClientProvider client={queryClient}>
-      <ConfigProvider>
+      <ThemeProvider>
         <AuthProvider>{children}</AuthProvider>
-      </ConfigProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

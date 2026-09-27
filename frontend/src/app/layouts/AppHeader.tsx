@@ -1,8 +1,9 @@
-import { BellOutlined, UserOutlined } from '@ant-design/icons';
+import { BellOutlined, DesktopOutlined, MenuOutlined, MoonOutlined, SunOutlined, UserOutlined } from '@ant-design/icons';
 import { Badge, Button, Dropdown } from '@/shared/ui';
 import type { MenuProps } from '@/shared/ui';
 import { Link, useNavigate } from 'react-router';
 
+import { useThemeMode } from '@/app/theme/useThemeMode';
 import { useAuth } from '@/features/auth/model/useAuth';
 import { WorkspaceSwitcher } from '@/widgets/navigation/ui/WorkspaceSwitcher';
 import type { WorkspaceOption } from '@/widgets/navigation/model/types';
@@ -23,6 +24,7 @@ export function AppHeader({
   onMenuClick,
 }: AppHeaderProps) {
   const { status, logout, user } = useAuth();
+  const { mode, resolvedTheme, setMode } = useThemeMode();
   const navigate = useNavigate();
   const isAuthenticated = status === 'authenticated';
   const brandPath = isAuthenticated ? '/app' : '/companies';
@@ -43,18 +45,37 @@ export function AppHeader({
       }
     },
   };
+  const themeMenu: MenuProps = {
+    selectedKeys: [mode],
+    items: [
+      { key: 'system', icon: <DesktopOutlined />, label: 'System' },
+      { key: 'light', icon: <SunOutlined />, label: 'Light' },
+      { key: 'dark', icon: <MoonOutlined />, label: 'Dark' },
+    ],
+    onClick: ({ key }) => {
+      if (key === 'system' || key === 'light' || key === 'dark') {
+        setMode(key);
+      }
+    },
+  };
+  const ThemeIcon = resolvedTheme === 'dark' ? MoonOutlined : SunOutlined;
 
   return (
     <header className="layout-header">
       <div className="layout-header__inner">
         <div className="layout-header__left">
           {onMenuClick && (
-            <Button className="layout-header__menu-button" type="text" onClick={onMenuClick} aria-label="Open navigation">
-              Menu
-            </Button>
+            <Button
+              className="layout-header__menu-button"
+              type="text"
+              icon={<MenuOutlined />}
+              onClick={onMenuClick}
+              aria-label="Open navigation"
+            />
           )}
           <Link className="layout-header__brand" to={brandPath}>
-            CRM Services
+            <span className="layout-header__brand-mark">CS</span>
+            <span>CRM Services</span>
           </Link>
         </div>
 
@@ -66,6 +87,13 @@ export function AppHeader({
               loading={workspaceLoading}
             />
           )}
+          <Dropdown menu={themeMenu} trigger={['click']}>
+            <Button
+              type="text"
+              icon={<ThemeIcon />}
+              aria-label={`Theme menu, currently ${mode}`}
+            />
+          </Dropdown>
           {isAuthenticated ? (
             <>
               <Badge count={unreadNotifications} size="small">

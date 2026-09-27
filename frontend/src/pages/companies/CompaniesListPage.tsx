@@ -3,7 +3,7 @@ import type { KeyboardEvent } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
 import { EnvironmentOutlined, GlobalOutlined } from '@ant-design/icons';
-import { Alert, Avatar, Card, Empty, Input, List, Pagination, Rate, Space, Spin, Tag, Typography } from '@/shared/ui';
+import { Alert, Avatar, Empty, Input, List, Pagination, Rate, Space, Spin, Tag, Typography } from '@/shared/ui';
 import { useNavigate } from 'react-router';
 
 import { fetchPublicCompanies, type PublicCompaniesQuery } from '@/features/companies/api/companiesApi';
@@ -47,31 +47,48 @@ export function CompaniesListPage() {
     }
   }
 
+  const resultCount = data?.meta.total ?? 0;
+
   return (
-    <Card title={<PublicBrowseTabs />} className="public-directory-card">
-      <Space direction="vertical" style={{ width: '100%', marginBottom: '1rem' }}>
+    <section className="public-directory">
+      <div className="public-directory__hero">
+        <div>
+          <Typography.Title level={1} className="public-directory__title">
+            Find the right company
+          </Typography.Title>
+          <Typography.Paragraph className="public-directory__subtitle">
+            Search by name, category, or city. Compare reviews and choose an available appointment time.
+          </Typography.Paragraph>
+        </div>
+        <PublicBrowseTabs />
+      </div>
+
+      <div className="public-directory__search-panel">
         <Input.Search
           allowClear
           placeholder="Search companies by name or description"
           onSearch={(value) => updateFilter({ q: value || undefined })}
         />
-        <Space wrap>
+        <Space wrap className="public-directory__filters">
           <Input
             allowClear
             placeholder="Category"
-            style={{ width: 200 }}
             onPressEnter={(e) => updateFilter({ category: e.currentTarget.value || undefined })}
             onBlur={(e) => updateFilter({ category: e.currentTarget.value || undefined })}
           />
           <Input
             allowClear
             placeholder="City"
-            style={{ width: 200 }}
             onPressEnter={(e) => updateFilter({ city: e.currentTarget.value || undefined })}
             onBlur={(e) => updateFilter({ city: e.currentTarget.value || undefined })}
           />
         </Space>
-      </Space>
+        <div className="public-directory__result-bar">
+          <Typography.Text type="secondary">
+            {isLoading ? 'Searching...' : `${resultCount} ${resultCount === 1 ? 'company' : 'companies'}`}
+          </Typography.Text>
+        </div>
+      </div>
 
       {isLoading && <Spin style={{ display: 'block', margin: '2rem auto' }} />}
       {isError && (
@@ -139,7 +156,7 @@ export function CompaniesListPage() {
             )}
           />
           <Pagination
-            style={{ marginTop: '1rem', textAlign: 'right' }}
+            className="public-directory__pagination"
             current={data.meta.page}
             pageSize={data.meta.pageSize}
             total={data.meta.total}
@@ -148,6 +165,6 @@ export function CompaniesListPage() {
           />
         </>
       )}
-    </Card>
+    </section>
   );
 }
