@@ -7,6 +7,7 @@ import { Alert, Avatar, Card, Empty, Input, List, Pagination, Rate, Space, Spin,
 import { useNavigate } from 'react-router';
 
 import { fetchPublicCompanies, type PublicCompaniesQuery } from '@/features/companies/api/companiesApi';
+import { CompanyAvailabilityPreview } from '@/pages/companies/CompanyAvailabilityPreview';
 import { PublicBrowseTabs } from '@/widgets/navigation/ui/PublicBrowseTabs';
 import '@/pages/publicDirectory.css';
 
@@ -95,7 +96,7 @@ export function CompaniesListPage() {
                 onClick={() => openCompany(company.id)}
                 onKeyDown={(event) => handleCardKeyDown(event, company.id)}
               >
-                <article className="public-result-card">
+                <article className="public-result-card public-result-card--company">
                   <Avatar shape="square" size={96} className="public-result-card__avatar">
                     {getInitials(company.name)}
                   </Avatar>
@@ -132,6 +133,7 @@ export function CompaniesListPage() {
                       </span>
                     </div>
                   </div>
+                  <CompanyAvailabilityPreview companyId={company.id} />
                 </article>
               </List.Item>
             )}

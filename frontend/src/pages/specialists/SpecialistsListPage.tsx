@@ -7,6 +7,7 @@ import { Alert, Avatar, Card, Checkbox, Empty, Input, List, Pagination, Rate, Sp
 import { Link, useNavigate } from 'react-router';
 
 import { fetchPublicSpecialists, type PublicSpecialistsQuery } from '@/features/specialists/api/specialistsApi';
+import { SpecialistAvailabilityPreview } from '@/pages/specialists/SpecialistAvailabilityPreview';
 import { PublicBrowseTabs } from '@/widgets/navigation/ui/PublicBrowseTabs';
 import '@/pages/publicDirectory.css';
 
@@ -93,7 +94,7 @@ export function SpecialistsListPage() {
                 onClick={() => openSpecialist(specialist.id)}
                 onKeyDown={(event) => handleCardKeyDown(event, specialist.id)}
               >
-                <article className="public-result-card">
+                <article className="public-result-card public-result-card--specialist">
                   <Avatar size={96} className="public-result-card__avatar">
                     {specialist.displayName.slice(0, 1).toUpperCase()}
                   </Avatar>
@@ -130,6 +131,10 @@ export function SpecialistsListPage() {
                       ))}
                     </Space>
                   </div>
+                  <SpecialistAvailabilityPreview
+                    specialistProfileId={specialist.id}
+                    companies={specialist.companies}
+                  />
                 </article>
               </List.Item>
             )}

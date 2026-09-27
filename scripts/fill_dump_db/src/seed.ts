@@ -11,14 +11,14 @@ const TEETH_CLEANING_DURATION_MINUTES = 30;
 const TEETH_WHITENING_DURATION_MINUTES = 60;
 const HAIRCUT_DURATION_MINUTES = 45;
 const MANICURE_DURATION_MINUTES = 40;
-const WEEKDAYS = [1, 2, 3, 4, 5] as const;
+const BOOKABLE_DAYS = [0, 1, 2, 3, 4, 5, 6] as const;
 
 function addMinutes(date: Date, minutes: number): Date {
   return new Date(date.getTime() + minutes * 60_000);
 }
 
 async function seedCompanyWeekdayAvailability(companyId: string): Promise<void> {
-  for (const weekday of WEEKDAYS) {
+  for (const weekday of BOOKABLE_DAYS) {
     await insertRow('appointments_schema', 'company_availability_rules', {
       companyId,
       weekday,
@@ -36,7 +36,7 @@ async function seedSpecialistWeekdayAvailability(
   startTime = '09:00',
   endTime = '18:00',
 ): Promise<void> {
-  for (const weekday of WEEKDAYS) {
+  for (const weekday of BOOKABLE_DAYS) {
     await insertRow('appointments_schema', 'specialist_availability_rules', {
       companyId,
       specialistProfileId,
@@ -734,7 +734,7 @@ export async function seedDatabase(): Promise<void> {
   await seedSpecialistWeekdayAvailability(dentalId, olenaId);
   await seedSpecialistWeekdayAvailability(beautyId, ninaId);
   await seedSpecialistWeekdayAvailability(beautyId, olenaId, '10:00', '16:00');
-  console.log('[fill_dump_db] created appointments-service weekday availability rules');
+  console.log('[fill_dump_db] created appointments-service daily availability rules');
 
   // ---------------------------------------------------------------------
   // Appointments - one of each AppointmentStatus (3x completed: 2 reviewed, 1 not)
